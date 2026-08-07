@@ -1,0 +1,561 @@
+# Weekly Football Stats Tracker
+
+## Product Requirements & Design Document (PRD v1)
+
+---
+
+# 1. Project Overview
+
+## Project Name
+
+**Weekly Football Stats Tracker**
+
+## Objective
+
+Develop a web application that allows a football group to record weekly matches, automatically track player statistics, maintain match history, and generate leaderboards with minimal manual input.
+
+The system is designed around the principle that **the only information entered during a game is the scoring event**. All scores, winners, and player statistics are calculated automatically.
+
+---
+
+# 2. Problem Statement
+
+Currently, weekly football statistics are difficult to maintain because:
+
+* Goals are forgotten after matches.
+* Individual player records are lost.
+* Match history is unavailable.
+* Team performance cannot be reviewed.
+* Maintaining statistics manually is time-consuming.
+
+The objective is to create a simple system that requires very little data entry while producing detailed statistics.
+
+---
+
+# 3. Goals
+
+* Track every player's goals.
+* Track games played.
+* Store every football session.
+* Support multiple game formats.
+* Generate automatic leaderboards.
+* Minimize manual input.
+* Be expandable for future AI and WhatsApp integration.
+
+---
+
+# 4. Game Formats
+
+## Mode 1 – Standard Match
+
+* Two teams
+* Usually 5 vs 5
+* One continuous match
+* Goals determine the running score
+* Final score generated automatically
+
+### Example
+
+Red Team
+
+* Soumil
+* Rahul
+* Aryan
+* Vivek
+* Aman
+
+Blue Team
+
+* Rohan
+* Aditya
+* Harsh
+* Neel
+* Kunal
+
+Goal Timeline
+
+Soumil
+
+Rahul
+
+Rahul
+
+Soumil
+
+Automatically becomes
+
+Red 2 – 2 Blue
+
+---
+
+## Mode 2 – Winner Stays
+
+Three teams participate.
+
+Example
+
+Team A
+
+Team B
+
+Team C
+
+Initially
+
+A vs B
+
+Waiting Team
+
+C
+
+When someone from Team A scores
+
+Winner = Team A
+
+Rotation
+
+A vs C
+
+Waiting Team
+
+B
+
+If Team C scores
+
+Winner = Team C
+
+Rotation
+
+C vs B
+
+Waiting Team
+
+A
+
+This repeats until the session ends.
+
+---
+
+# 5. No Goal Override
+
+If no goal is scored within the predefined time limit (for example 10 minutes):
+
+* No player goal is recorded.
+* Current winning team remains on the field.
+* Waiting team rotates normally.
+* Rotation is updated manually using a **No Goal / Time Up** action.
+
+This is the only gameplay override required.
+
+---
+
+# 6. Core Design Principle
+
+The application is **event-driven**.
+
+Only events are stored.
+
+Everything else is calculated.
+
+Examples of events
+
+* Goal
+* No Goal / Time Up
+* Session End
+* Undo Last Event
+
+Scores, winners, player statistics, and leaderboards are generated from these events.
+
+---
+
+# 7. User Flow
+
+## Start Session
+
+↓
+
+Create New Session
+
+↓
+
+Select Game Mode
+
+↓
+
+Create Teams
+
+↓
+
+Assign Players
+
+↓
+
+Start Session
+
+↓
+
+Record Goals
+
+↓
+
+Application Updates Scores Automatically
+
+↓
+
+End Session
+
+↓
+
+Statistics Updated
+
+---
+
+# 8. Functional Requirements
+
+## Player Management
+
+* Add player
+* Edit player
+* Delete player
+* Upload player photo (future)
+* Assign jersey number (optional)
+
+---
+
+## Session Management
+
+Create
+
+* Date
+* Location
+* Notes
+* Mode
+
+Store all sessions permanently.
+
+---
+
+## Team Management
+
+Each session allows:
+
+Mode 1
+
+Two teams
+
+Mode 2
+
+Three teams
+
+Players are assigned before play begins.
+
+---
+
+## Goal Recording
+
+During play
+
+Select player
+
+↓
+
+Goal recorded
+
+↓
+
+Automatically
+
+* Player goals increase
+* Team score increases
+* Event added to timeline
+
+No manual score editing required.
+
+---
+
+## Winner Stays Rotation
+
+Automatically after every goal
+
+Current winner remains
+
+Waiting team enters
+
+Application updates the next matchup.
+
+---
+
+## No Goal Override
+
+Button
+
+"No Goal / Time Up"
+
+Application updates rotation
+
+No player statistics change.
+
+---
+
+## End Session
+
+Application calculates
+
+* Final score
+* Winner
+* Games Played
+* Player goals
+* Team statistics
+
+Session is saved permanently.
+
+---
+
+# 9. Dashboard
+
+The homepage displays
+
+* Current Golden Boot
+* Total Players
+* Sessions Played
+* Total Goals
+* Recent Sessions
+* Top Goal Scorers
+
+---
+
+# 10. Player Profile
+
+Each player has a dedicated profile.
+
+Statistics
+
+* Name
+* Photo
+* Games Played
+* Goals
+* Goals Per Game
+* Wins
+* Losses
+* Hat-tricks
+* Last Played
+
+Recent Sessions
+
+Goal History
+
+Performance Graphs (future)
+
+---
+
+# 11. Session Page
+
+Contains
+
+* Date
+* Mode
+* Teams
+* Timeline
+* Final Score
+* Goal Scorers
+
+For Winner Stays
+
+Also displays
+
+* Rotation History
+* Mini-game sequence
+
+---
+
+# 12. Event Timeline
+
+Example
+
+00:45
+
+Goal
+
+Soumil
+
+Score
+
+1 – 0
+
+---
+
+02:11
+
+Goal
+
+Rahul
+
+Score
+
+1 – 1
+
+---
+
+04:58
+
+Goal
+
+Rahul
+
+Score
+
+1 – 2
+
+---
+
+06:17
+
+No Goal
+
+Winner Stayed
+
+Rotation Updated
+
+---
+
+# 13. Statistics
+
+Automatically calculated
+
+Player Statistics
+
+* Total Goals
+* Games Played
+* Goals Per Game
+* Hat-tricks
+* Highest Goals in One Session
+* Highest Goals in One Match
+
+Session Statistics
+
+* Final Score
+* Total Goals
+* Winning Team
+
+Global Statistics
+
+* Golden Boot Leaderboard
+* Most Games Played
+* Most Wins
+* Highest Goals Per Game
+* Longest Winning Streak
+* Most Goals in a Session
+
+---
+
+# 14. Future Features
+
+Version 2
+
+* Assist tracking
+* Own goals
+* Cards
+* MVP voting
+* Player ratings
+* Goal timestamps
+* AI-generated match summaries
+* WhatsApp integration
+* Telegram integration
+* Voice goal logging
+* QR player check-in
+* Smart team balancing
+* Player heatmaps
+
+---
+
+# 15. Database Modules
+
+* Players
+* Sessions
+* Teams
+* Team Players
+* Goal Events
+* Session Events
+
+The **Goal Events** table is the source of truth for all statistics.
+
+---
+
+# 16. Non-Functional Requirements
+
+* Mobile-first responsive UI
+* Simple one-tap goal recording
+* Fast event updates
+* Offline-friendly (future)
+* Automatic calculations
+* Secure authentication
+* Cloud database support
+
+---
+
+# 17. Recommended Tech Stack
+
+Frontend
+
+* React
+* TypeScript
+* Tailwind CSS
+
+Backend
+
+* FastAPI (Python)
+
+Database
+
+* Supabase (PostgreSQL)
+
+Authentication
+
+* Supabase Auth
+
+Hosting
+
+* Vercel (Frontend)
+* Railway or Render (Backend)
+
+---
+
+# 18. Version Roadmap
+
+## Version 1
+
+* Player management
+* Sessions
+* Two game modes
+* Goal recording
+* Automatic score calculation
+* Player statistics
+* Dashboard
+
+## Version 2
+
+* AI summaries
+* WhatsApp bot
+* Telegram bot
+* Voice input
+* Advanced analytics
+
+## Version 3
+
+* Tournament mode
+* League tables
+* Elo ratings
+* Team balancing AI
+* Mobile application
+
+---
+
+# 19. Success Criteria
+
+The project is considered successful if:
+
+* A complete football session can be recorded in under two minutes of total data entry.
+* All player statistics are generated automatically.
+* No manual score calculation is required.
+* Both game formats are fully supported.
+* Historical data remains accessible for every session.

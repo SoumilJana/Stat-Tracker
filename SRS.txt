@@ -1,0 +1,444 @@
+# Software Requirements Specification (SRS)
+
+## Weekly Football Stats Tracker
+
+**Version:** 1.0
+
+---
+
+# 1. Introduction
+
+## 1.1 Purpose
+
+The Weekly Football Stats Tracker is a web application designed to record weekly football sessions and automatically maintain player and match statistics.
+
+The application minimizes manual input by requiring only goal events during gameplay while automatically calculating scores, player statistics, and leaderboards.
+
+---
+
+# 1.2 Scope
+
+The application shall provide:
+
+* Player Management
+* Session Management
+* Team Management
+* Goal Recording
+* Automatic Score Calculation
+* Automatic Player Statistics
+* Historical Match Records
+* Leaderboards
+* Support for Two-Team and Three-Team (Winner Stays) formats
+
+---
+
+# 1.3 Intended Users
+
+* Football Group Members
+* Match Organizer (Administrator)
+
+---
+
+# 2. Overall Description
+
+## 2.1 Product Perspective
+
+The application consists of:
+
+* Frontend Web Application
+* Backend API
+* PostgreSQL Database
+* Authentication Service
+
+Future integrations:
+
+* WhatsApp Bot
+* Telegram Bot
+* AI Assistant
+* Mobile Application
+
+---
+
+## 2.2 Product Functions
+
+The system shall:
+
+* Create football sessions.
+* Register players.
+* Create teams.
+* Record goals.
+* Calculate scores.
+* Generate statistics.
+* Display leaderboards.
+* Store historical data.
+
+---
+
+## 2.3 User Roles
+
+### Administrator
+
+Permissions:
+
+* Create sessions
+* Edit sessions
+* Delete sessions
+* Manage players
+* Manage teams
+* Record goals
+* Undo events
+* End sessions
+
+### Viewer
+
+Permissions:
+
+* View statistics
+* View player cards
+* View leaderboards
+* View session history
+
+---
+
+# 3. Functional Requirements
+
+---
+
+## FR-01 Player Management
+
+The system shall allow:
+
+* Create Player
+* Edit Player
+* Delete Player
+* Search Player
+* Upload Profile Picture (Future)
+
+Player attributes:
+
+* Player ID
+* Name
+* Jersey Number
+* Photo
+* Created Date
+
+---
+
+## FR-02 Session Management
+
+The system shall allow administrators to:
+
+Create
+
+* Session Name
+* Date
+* Location
+* Notes
+* Mode
+
+Modes:
+
+* Standard Match
+* Winner Stays
+
+---
+
+## FR-03 Team Management
+
+For each session the administrator shall:
+
+Create teams.
+
+Mode 1
+
+* Team A
+* Team B
+
+Mode 2
+
+* Team A
+* Team B
+* Team C
+
+Players may belong to only one team per session.
+
+---
+
+## FR-04 Goal Recording
+
+The administrator selects a player.
+
+The system shall automatically:
+
+* Add Goal Event
+* Increase Player Goals
+* Increase Team Score
+* Update Timeline
+* Refresh Dashboard
+
+No manual score input is required.
+
+---
+
+## FR-05 Winner Stays Rotation
+
+Applicable only in Winner Stays mode.
+
+After each goal:
+
+The system shall:
+
+Determine scoring player's team.
+
+That team remains.
+
+The waiting team enters.
+
+The losing team becomes the waiting team.
+
+Rotation updates automatically.
+
+---
+
+## FR-06 No Goal Override
+
+The administrator may trigger:
+
+"No Goal / Time Up"
+
+The system shall:
+
+* Record timeout event
+* Rotate teams
+* Preserve current winning team
+* Leave all player statistics unchanged
+
+---
+
+## FR-07 Undo
+
+The system shall support:
+
+Undo Last Event
+
+The system recalculates:
+
+* Score
+* Statistics
+* Timeline
+* Rotations
+
+---
+
+## FR-08 End Session
+
+When ending the session:
+
+The system shall:
+
+Lock session.
+
+Calculate:
+
+* Final score
+* Winning team
+* Games Played
+* Player statistics
+
+Store permanently.
+
+---
+
+# 4. Non-Functional Requirements
+
+---
+
+## Performance
+
+Dashboard load time
+
+< 2 seconds
+
+Goal recording response
+
+< 500 milliseconds
+
+---
+
+## Availability
+
+99% uptime
+
+---
+
+## Scalability
+
+Support
+
+* 1,000 Players
+
+* 10,000 Sessions
+
+without structural database changes.
+
+---
+
+## Reliability
+
+No recorded event shall be lost.
+
+---
+
+## Security
+
+* User authentication
+* Authorization
+* Secure APIs
+* HTTPS
+* Database backups
+
+---
+
+# 5. System Modules
+
+Module 1
+
+Authentication
+
+---
+
+Module 2
+
+Dashboard
+
+---
+
+Module 3
+
+Player Management
+
+---
+
+Module 4
+
+Session Management
+
+---
+
+Module 5
+
+Goal Recording
+
+---
+
+Module 6
+
+Statistics Engine
+
+---
+
+Module 7
+
+Leaderboards
+
+---
+
+Module 8
+
+History
+
+---
+
+# 6. Data Requirements
+
+Primary entities
+
+* Players
+* Sessions
+* Teams
+* TeamPlayers
+* GoalEvents
+* SessionEvents
+
+The GoalEvents table shall be treated as the primary source of statistical calculations.
+
+---
+
+# 7. Business Rules
+
+BR-01
+
+A player may belong to only one team during a session.
+
+---
+
+BR-02
+
+Each goal increments:
+
+* Player Goals
+* Team Score
+
+---
+
+BR-03
+
+Game score is automatically generated.
+
+---
+
+BR-04
+
+Manual score editing is not permitted.
+
+---
+
+BR-05
+
+Winner Stays mode automatically rotates teams after every goal.
+
+---
+
+BR-06
+
+No Goal override shall not affect player statistics.
+
+---
+
+BR-07
+
+Ended sessions become read-only.
+
+---
+
+# 8. Constraints
+
+* Internet connection required (v1)
+* One active session at a time
+* Administrator permissions required for editing
+
+---
+
+# 9. Assumptions
+
+* Player list exists before session creation.
+* Every goal belongs to one player.
+* A player cannot score for two teams in the same session.
+* Sessions cannot change game mode after starting.
+
+---
+
+# 10. Future Enhancements
+
+* Assist tracking
+* Own goals
+* Cards
+* MVP voting
+* Voice input
+* WhatsApp integration
+* Telegram integration
+* AI match reports
+* Elo ratings
+* Team balancing algorithm
+* Tournament mode
+* Offline mode

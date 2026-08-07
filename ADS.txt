@@ -1,0 +1,543 @@
+# API Design Specification
+
+## Weekly Football Stats Tracker
+
+Version 1.0
+
+---
+
+# 1. API Overview
+
+Architecture Style
+
+REST API
+
+Data Format
+
+JSON
+
+Authentication
+
+JWT (Supabase Auth)
+
+Base URL
+
+```text
+/api/v1
+```
+
+---
+
+# 2. Authentication
+
+## Login
+
+POST
+
+```text
+/auth/login
+```
+
+Response
+
+```json
+{
+  "access_token": "...",
+  "refresh_token": "...",
+  "user": {}
+}
+```
+
+---
+
+## Logout
+
+POST
+
+```text
+/auth/logout
+```
+
+---
+
+## Current User
+
+GET
+
+```text
+/auth/me
+```
+
+---
+
+# 3. Players
+
+## Get All Players
+
+GET
+
+```text
+/players
+```
+
+Optional Query Parameters
+
+```text
+?page
+
+?search
+
+?sort=goals
+
+?sort=name
+```
+
+---
+
+## Get Player
+
+GET
+
+```text
+/players/{id}
+```
+
+---
+
+## Create Player
+
+POST
+
+```text
+/players
+```
+
+Body
+
+```json
+{
+  "name": "Soumil",
+  "jersey_number": 10
+}
+```
+
+---
+
+## Update Player
+
+PUT
+
+```text
+/players/{id}
+```
+
+---
+
+## Delete Player
+
+DELETE
+
+```text
+/players/{id}
+```
+
+---
+
+# 4. Sessions
+
+## Create Session
+
+POST
+
+```text
+/sessions
+```
+
+Body
+
+```json
+{
+  "mode":"STANDARD",
+  "location":"IEM Ground",
+  "date":"2026-08-07"
+}
+```
+
+---
+
+## Get Sessions
+
+GET
+
+```text
+/sessions
+```
+
+---
+
+## Get Session Details
+
+GET
+
+```text
+/sessions/{id}
+```
+
+---
+
+## Start Session
+
+POST
+
+```text
+/sessions/{id}/start
+```
+
+---
+
+## End Session
+
+POST
+
+```text
+/sessions/{id}/end
+```
+
+---
+
+# 5. Teams
+
+## Create Team
+
+POST
+
+```text
+/sessions/{id}/teams
+```
+
+---
+
+## Get Teams
+
+GET
+
+```text
+/sessions/{id}/teams
+```
+
+---
+
+## Add Players
+
+POST
+
+```text
+/sessions/{id}/teams/{teamId}/players
+```
+
+Body
+
+```json
+{
+  "players":[
+    "player_uuid_1",
+    "player_uuid_2"
+  ]
+}
+```
+
+---
+
+# 6. Events (Core API)
+
+Every action becomes an event.
+
+---
+
+## Create Event
+
+POST
+
+```text
+/events
+```
+
+Body
+
+Goal
+
+```json
+{
+  "session_id":"...",
+  "type":"GOAL",
+  "player_id":"..."
+}
+```
+
+Timeout
+
+```json
+{
+  "session_id":"...",
+  "type":"TIMEOUT"
+}
+```
+
+Undo
+
+```json
+{
+  "session_id":"...",
+  "type":"UNDO"
+}
+```
+
+Session Started
+
+```json
+{
+  "session_id":"...",
+  "type":"SESSION_STARTED"
+}
+```
+
+Session Ended
+
+```json
+{
+  "session_id":"...",
+  "type":"SESSION_ENDED"
+}
+```
+
+---
+
+## Get Events
+
+GET
+
+```text
+/sessions/{id}/events
+```
+
+---
+
+# 7. Statistics
+
+## Dashboard
+
+GET
+
+```text
+/dashboard
+```
+
+Returns
+
+* Active Session
+* Total Goals
+* Total Players
+* Golden Boot
+
+---
+
+## Golden Boot
+
+GET
+
+```text
+/statistics/golden-boot
+```
+
+---
+
+## Leaderboards
+
+GET
+
+```text
+/statistics/leaderboards
+```
+
+---
+
+## Player Statistics
+
+GET
+
+```text
+/statistics/player/{id}
+```
+
+---
+
+# 8. History
+
+## Session History
+
+GET
+
+```text
+/history/sessions
+```
+
+---
+
+## Player History
+
+GET
+
+```text
+/history/player/{id}
+```
+
+---
+
+# 9. Search
+
+GET
+
+```text
+/search
+```
+
+Parameters
+
+```text
+players
+
+sessions
+```
+
+---
+
+# 10. Response Format
+
+Every response follows
+
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "",
+  "errors": null
+}
+```
+
+---
+
+# 11. Error Responses
+
+Example
+
+```json
+{
+  "success": false,
+  "message": "Player not found"
+}
+```
+
+Status Codes
+
+200
+
+201
+
+400
+
+401
+
+403
+
+404
+
+409
+
+500
+
+---
+
+# 12. Validation Rules
+
+Player
+
+Name required.
+
+Session
+
+Mode required.
+
+Event
+
+Must belong to active session.
+
+Player
+
+Must belong to active team.
+
+---
+
+# 13. Future APIs
+
+WhatsApp
+
+```text
+POST
+
+/integrations/whatsapp
+```
+
+Telegram
+
+```text
+POST
+
+/integrations/telegram
+```
+
+Voice
+
+```text
+POST
+
+/integrations/voice
+```
+
+AI Summary
+
+```text
+GET
+
+/ai/session-summary/{id}
+```
+
+---
+
+# 14. Versioning
+
+Current
+
+```text
+/api/v1
+```
+
+Future
+
+```text
+/api/v2
+```
+
+Breaking changes only.
+
+---
+
+# 15. API Design Principles
+
+* RESTful
+* Stateless
+* Event-driven
+* JSON only
+* Authentication required
+* Consistent response format
+* Mobile compatible
+* Integration friendly

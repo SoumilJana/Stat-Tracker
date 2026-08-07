@@ -1,0 +1,544 @@
+# System Architecture Document (SAD)
+
+## Weekly Football Stats Tracker
+
+Version 1.0
+
+---
+
+# 1. Overview
+
+The Weekly Football Stats Tracker is a modern web application designed with a modular architecture. The system separates presentation, business logic, and data storage to ensure scalability, maintainability, and future integrations.
+
+Primary objectives:
+
+* Fast goal recording
+* Reliable data storage
+* Automatic statistics
+* Expandability for AI and messaging platforms
+
+---
+
+# 2. High-Level Architecture
+
+```text
+                        Users
+                          │
+                          ▼
+                 React Web Application
+                          │
+                    REST API (FastAPI)
+                          │
+        ┌─────────────────┴─────────────────┐
+        │                                   │
+ Supabase Authentication            Business Logic
+        │                                   │
+        └─────────────────┬─────────────────┘
+                          │
+                   PostgreSQL Database
+                          │
+          Future Integrations Layer
+      (WhatsApp, Telegram, AI, Voice)
+```
+
+---
+
+# 3. Technology Stack
+
+## Frontend
+
+* React 19
+* TypeScript
+* Tailwind CSS
+* React Router
+* TanStack Query
+* Zustand (Global State)
+* Recharts (Statistics)
+* Framer Motion
+
+---
+
+## Backend
+
+* Python
+* FastAPI
+* SQLAlchemy
+* Alembic
+* Pydantic
+
+---
+
+## Database
+
+* PostgreSQL (Supabase)
+
+---
+
+## Authentication
+
+* Supabase Auth
+
+---
+
+## Storage
+
+* Supabase Storage
+
+Future
+
+* Player profile pictures
+* Match photos
+* Team logos
+
+---
+
+## Hosting
+
+Frontend
+
+Vercel
+
+Backend
+
+Railway
+
+Database
+
+Supabase
+
+---
+
+# 4. Core Modules
+
+## Authentication
+
+Responsibilities
+
+* Login
+* Logout
+* Session validation
+* Role management
+
+---
+
+## Player Module
+
+Responsibilities
+
+* Create players
+* Update players
+* Delete players
+* Search players
+
+---
+
+## Session Module
+
+Responsibilities
+
+* Create session
+* Start session
+* End session
+* Session history
+
+---
+
+## Team Module
+
+Responsibilities
+
+* Team creation
+* Team assignment
+* Rotation management
+
+---
+
+## Event Module
+
+Responsibilities
+
+* Record goal
+* Record timeout
+* Undo events
+* Session timeline
+
+This is the most critical module.
+
+---
+
+## Statistics Module
+
+Responsibilities
+
+* Golden Boot
+* Goals per game
+* Games played
+* Team statistics
+* Historical analytics
+
+---
+
+# 5. Application Layers
+
+## Presentation Layer
+
+Handles:
+
+* UI
+* Navigation
+* Animations
+* Forms
+
+No business logic.
+
+---
+
+## API Layer
+
+Handles:
+
+* Validation
+* Authentication
+* Requests
+* Responses
+
+---
+
+## Service Layer
+
+Contains business rules.
+
+Examples
+
+* Goal recording
+* Winner stays rotation
+* Score calculation
+* Statistics generation
+
+---
+
+## Data Layer
+
+Handles
+
+* SQL queries
+* Relationships
+* Transactions
+
+---
+
+# 6. Request Flow
+
+Example
+
+User taps
+
+```text
+⚽ Soumil
+```
+
+↓
+
+Frontend sends
+
+POST /events/goal
+
+↓
+
+Backend validates
+
+* Active session exists
+* Player belongs to current team
+* Session not ended
+
+↓
+
+Database stores event
+
+↓
+
+Statistics recalculated
+
+↓
+
+Updated score returned
+
+↓
+
+UI updates instantly
+
+---
+
+# 7. State Management
+
+Frontend keeps
+
+* Logged-in user
+* Active session
+* Current teams
+* Live score
+* Timeline
+
+Server remains the source of truth.
+
+---
+
+# 8. Business Logic
+
+## Standard Match
+
+Goal
+
+↓
+
+Increase player goals
+
+↓
+
+Increase team score
+
+↓
+
+Update timeline
+
+---
+
+## Winner Stays
+
+Goal
+
+↓
+
+Determine scoring team
+
+↓
+
+Generate rotation
+
+↓
+
+Update active teams
+
+↓
+
+Return new matchup
+
+---
+
+## Timeout
+
+Timeout event
+
+↓
+
+Keep current winner
+
+↓
+
+Rotate challenger
+
+↓
+
+Update active match
+
+---
+
+# 9. Security
+
+Authentication
+
+JWT Tokens
+
+Authorization
+
+Role-based
+
+Validation
+
+Server-side
+
+HTTPS
+
+Required
+
+---
+
+# 10. Error Handling
+
+Examples
+
+Player not found
+
+Session ended
+
+Player not in active match
+
+Duplicate request
+
+Invalid team assignment
+
+Each returns meaningful API errors.
+
+---
+
+# 11. Logging
+
+System logs
+
+* Session start
+* Session end
+* Goal events
+* Undo actions
+* Login attempts
+* Server errors
+
+---
+
+# 12. Future Integrations
+
+## WhatsApp
+
+Incoming messages become events.
+
+Example
+
+"Soumil goal"
+
+↓
+
+Goal Event
+
+---
+
+## Telegram
+
+Same architecture.
+
+---
+
+## Voice Recognition
+
+Speech
+
+↓
+
+Text
+
+↓
+
+Goal Event
+
+---
+
+## AI
+
+Reads event history.
+
+Produces
+
+* Match summary
+* Player insights
+* Season analysis
+
+---
+
+# 13. Scalability
+
+Current target
+
+* 50 players
+* 500 sessions
+
+Future target
+
+* 10,000 players
+* 100,000 sessions
+
+No architectural redesign required.
+
+---
+
+# 14. Backup Strategy
+
+Daily database backups
+
+Weekly storage backups
+
+Point-in-time recovery (Supabase)
+
+---
+
+# 15. Deployment Pipeline
+
+Developer
+
+↓
+
+GitHub
+
+↓
+
+Automatic Build
+
+↓
+
+Vercel (Frontend)
+
+↓
+
+Railway (Backend)
+
+↓
+
+Supabase Database
+
+---
+
+# 16. Future Mobile Support
+
+The backend remains unchanged.
+
+Future clients can include
+
+* Android
+* iOS
+* Progressive Web App (PWA)
+
+All consume the same REST API.
+
+---
+
+# 17. Architecture Principles
+
+* Event-driven data model
+* Thin frontend
+* Business logic in backend
+* Database as source of truth
+* Modular services
+* API-first design
+* Mobile-ready
+* Integration-ready
+
+---
+
+# 18. Version Roadmap
+
+### v1
+
+* Web application
+* Goal tracking
+* Statistics
+* Session history
+
+### v2
+
+* Messaging integrations
+* Voice input
+* AI summaries
+
+### v3
+
+* Tournaments
+* Player rankings
+* Team balancing
+* Mobile apps

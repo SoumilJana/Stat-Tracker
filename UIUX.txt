@@ -1,0 +1,645 @@
+# UI / UX Design Specification
+
+## Weekly Football Stats Tracker
+
+Version 1.0
+
+---
+
+# 1. Design Principles
+
+The application is designed around **Speed**.
+
+The organizer should never spend more time operating the app than watching the game.
+
+Every common action should require:
+
+* One tap
+* Large touch targets
+* Minimal typing
+
+Primary design goals:
+
+* Mobile First
+* Dark Theme
+* One Hand Usage
+* Fast Navigation
+* Real-time Updates
+
+---
+
+# 2. User Journey
+
+```text
+Login
+
+↓
+
+Dashboard
+
+↓
+
+Create Session
+
+↓
+
+Choose Game Mode
+
+↓
+
+Create Teams
+
+↓
+
+Assign Players
+
+↓
+
+Start Session
+
+↓
+
+Record Goals
+
+↓
+
+End Session
+
+↓
+
+View Statistics
+```
+
+---
+
+# 3. Navigation Structure
+
+```
+Dashboard
+│
+├── Sessions
+│     ├── Create Session
+│     ├── Active Session
+│     └── Session History
+│
+├── Players
+│     ├── Player List
+│     ├── Player Profile
+│     └── Add Player
+│
+├── Statistics
+│     ├── Golden Boot
+│     ├── Leaderboards
+│     └── Records
+│
+└── Settings
+```
+
+---
+
+# 4. Dashboard
+
+Purpose
+
+Provide an overview of the entire football group.
+
+Cards
+
+Current Active Session
+
+Golden Boot
+
+Recent Session
+
+Total Players
+
+Total Goals
+
+Quick Actions
+
+Buttons
+
+New Session
+
+Players
+
+Statistics
+
+History
+
+---
+
+# 5. Create Session Screen
+
+Fields
+
+Date
+
+Location
+
+Notes
+
+Game Mode
+
+Buttons
+
+Standard Match
+
+Winner Stays
+
+Next
+
+---
+
+# 6. Team Builder
+
+For Standard
+
+```
+Team Red
+
++ Player
+
++ Player
+
++ Player
+
++ Player
+
++ Player
+
+
+Team Blue
+
++ Player
+
++ Player
+
++ Player
+
++ Player
+
++ Player
+```
+
+For Winner Stays
+
+```
+Team A
+
+Team B
+
+Team C
+```
+
+Each player can only be selected once.
+
+---
+
+# 7. Active Session (Most Important Screen)
+
+Header
+
+```
+Session #27
+
+Winner Stays
+```
+
+Current Match
+
+```
+A
+
+vs
+
+B
+```
+
+Waiting
+
+```
+C
+```
+
+Current Score
+
+```
+A 3
+
+B 2
+```
+
+Large Goal Buttons
+
+```
+⚽ Soumil
+
+⚽ Rahul
+
+⚽ Aman
+
+⚽ Aryan
+
+⚽ Vivek
+```
+
+Second Team
+
+```
+⚽ Rohan
+
+⚽ Kunal
+
+⚽ Harsh
+
+⚽ Neel
+
+⚽ Aditya
+```
+
+Bottom Controls
+
+```
+Undo
+
+Timeout
+
+End Session
+```
+
+---
+
+# 8. Goal Recording
+
+Tap
+
+```
+⚽ Soumil
+```
+
+Animation
+
+```
+Goal Recorded
+```
+
+Automatically
+
+Player
+
++1 Goal
+
+↓
+
+Team Score
+
++1
+
+↓
+
+Timeline Updated
+
+↓
+
+Statistics Updated
+
+---
+
+# 9. Timeline Panel
+
+Shows newest event first.
+
+Example
+
+```
+Soumil ⚽
+
+Score
+
+1–0
+
+----------------
+
+Rahul ⚽
+
+1–1
+
+----------------
+
+Rahul ⚽
+
+1–2
+
+----------------
+
+Timeout
+
+Winner Stayed
+```
+
+---
+
+# 10. End Session
+
+Confirmation
+
+```
+End Session?
+
+Cancel
+
+Confirm
+```
+
+After confirmation
+
+Generate
+
+Final Statistics
+
+Store Session
+
+Return Dashboard
+
+---
+
+# 11. Player List
+
+Scrollable cards
+
+```
+Photo
+
+Soumil
+
+82 Goals
+
+53 Games
+```
+
+Search
+
+Alphabetical Sorting
+
+Goal Sorting
+
+Games Sorting
+
+---
+
+# 12. Player Profile
+
+Header
+
+Player Photo
+
+Name
+
+Statistics
+
+Goals
+
+Games
+
+Goals/Game
+
+Wins
+
+Losses
+
+Recent Sessions
+
+Goal History
+
+Future
+
+Performance Graph
+
+---
+
+# 13. Statistics Screen
+
+Sections
+
+Golden Boot
+
+Most Games
+
+Most Wins
+
+Highest Goals/Game
+
+Most Goals In One Session
+
+Most Hat-tricks
+
+Longest Winning Streak
+
+---
+
+# 14. Session History
+
+Cards
+
+```
+7 Aug
+
+Winner Stays
+
+24 Goals
+
+View
+```
+
+Filters
+
+Date
+
+Mode
+
+Location
+
+---
+
+# 15. Session Details
+
+Shows
+
+Teams
+
+Timeline
+
+Goal Scorers
+
+Final Result
+
+Statistics
+
+---
+
+# 16. Color System
+
+Background
+
+Near Black
+
+Cards
+
+Dark Grey
+
+Primary
+
+Green
+
+Success
+
+Blue
+
+Warning
+
+Orange
+
+Danger
+
+Red
+
+Text
+
+White
+
+Secondary Text
+
+Grey
+
+---
+
+# 17. Typography
+
+Heading
+
+Bold
+
+Large
+
+Player Name
+
+Semi Bold
+
+Statistics
+
+Medium
+
+Timeline
+
+Regular
+
+---
+
+# 18. Components
+
+Reusable Components
+
+Player Card
+
+Statistic Card
+
+Session Card
+
+Goal Button
+
+Leaderboard Row
+
+Timeline Item
+
+Confirmation Dialog
+
+Navigation Bar
+
+Search Bar
+
+Button
+
+Badge
+
+Modal
+
+Toast Notification
+
+---
+
+# 19. Responsive Behaviour
+
+Desktop
+
+Sidebar Navigation
+
+Multi-column Layout
+
+Tablet
+
+Two-column Layout
+
+Mobile
+
+Bottom Navigation
+
+Single-column Layout
+
+Large Goal Buttons
+
+---
+
+# 20. Accessibility
+
+Minimum touch target
+
+44×44 px
+
+High Contrast
+
+Keyboard Navigation
+
+Readable Font Sizes
+
+Color-independent Status Indicators
+
+---
+
+# 21. Micro Interactions
+
+Goal Button
+
+Pulse Animation
+
+Undo
+
+Slide Back Animation
+
+Session End
+
+Celebration Animation
+
+Leaderboard Updates
+
+Smooth Counter Animation
+
+---
+
+# 22. Future UX
+
+Voice Goal Recording
+
+WhatsApp Goal Sync
+
+Live Match Display
+
+WearOS / Smartwatch Goal Recording
+
+Offline Mode
+
+AI Match Summary
+
+Player Heatmaps
+
+Team Suggestions

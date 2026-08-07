@@ -1,0 +1,528 @@
+# Database Design Document (DDD)
+
+## Weekly Football Stats Tracker
+
+Version 1.0
+
+---
+
+# 1. Database Philosophy
+
+The database follows an **Event Sourcing** approach.
+
+Instead of storing calculated values, the database stores **facts**.
+
+Examples of facts:
+
+* Player was created
+* Session started
+* Player assigned to Team A
+* Soumil scored
+* Session ended
+* Timeout occurred
+
+Everything else is calculated.
+
+---
+
+# 2. Database Overview
+
+```
+Players
+     │
+     │
+     ├────────────┐
+     │            │
+     ▼            ▼
+SessionPlayers   GoalEvents
+     │            ▲
+     │            │
+     ▼            │
+Teams─────────────┘
+     │
+     ▼
+Sessions
+```
+
+---
+
+# 3. Tables
+
+## Players
+
+Stores permanent player information.
+
+| Column        | Type               |
+| ------------- | ------------------ |
+| id            | UUID               |
+| name          | TEXT               |
+| jersey_number | INTEGER (nullable) |
+| photo_url     | TEXT               |
+| created_at    | TIMESTAMP          |
+
+Notes
+
+* One record per player.
+* Never deleted (soft delete can be added later).
+
+---
+
+## Sessions
+
+Each football day is one Session.
+
+| Column     | Type                          |
+| ---------- | ----------------------------- |
+| id         | UUID                          |
+| date       | DATE                          |
+| location   | TEXT                          |
+| mode       | ENUM (STANDARD, WINNER_STAYS) |
+| notes      | TEXT                          |
+| started_at | TIMESTAMP                     |
+| ended_at   | TIMESTAMP                     |
+
+Example
+
+```
+Session #14
+
+7 Aug 2026
+
+Winner Stays
+```
+
+---
+
+## Teams
+
+Teams only exist inside a session.
+
+| Column     | Type |
+| ---------- | ---- |
+| id         | UUID |
+| session_id | UUID |
+| team_name  | TEXT |
+| team_color | TEXT |
+
+Example
+
+```
+Session 15
+
+Team A
+
+Team B
+
+Team C
+```
+
+---
+
+## SessionPlayers
+
+Assigns players to teams for a specific session.
+
+| Column     | Type |
+| ---------- | ---- |
+| id         | UUID |
+| session_id | UUID |
+| player_id  | UUID |
+| team_id    | UUID |
+
+Example
+
+```
+Session 15
+
+Soumil
+
+Team A
+```
+
+A player can appear only once in a session.
+
+---
+
+## GoalEvents
+
+The heart of the application.
+
+Every goal equals one row.
+
+| Column     | Type      |
+| ---------- | --------- |
+| id         | UUID      |
+| session_id | UUID      |
+| team_id    | UUID      |
+| player_id  | UUID      |
+| created_at | TIMESTAMP |
+
+Example
+
+```
+Goal #51
+
+Session 14
+
+Player
+
+Soumil
+
+Team
+
+Red
+
+Time
+
+18:24:15
+```
+
+---
+
+## SessionEvents
+
+Stores non-goal events.
+
+| Column     | Type      |
+| ---------- | --------- |
+| id         | UUID      |
+| session_id | UUID      |
+| event_type | ENUM      |
+| metadata   | JSONB     |
+| created_at | TIMESTAMP |
+
+Possible events
+
+```
+SESSION_STARTED
+
+SESSION_ENDED
+
+TIMEOUT
+
+UNDO
+
+TEAM_ROTATED
+```
+
+---
+
+# 4. Relationships
+
+Players
+
+↓
+
+SessionPlayers
+
+↓
+
+Teams
+
+↓
+
+Sessions
+
+GoalEvents connects
+
+Player
+
+↓
+
+Session
+
+↓
+
+Team
+
+Every goal therefore knows
+
+* Who scored
+* Which team
+* Which session
+
+---
+
+# 5. Derived Statistics
+
+Never stored.
+
+Calculated using SQL.
+
+Examples
+
+Total Goals
+
+```
+COUNT(goal_events)
+GROUP BY player
+```
+
+Games Played
+
+```
+COUNT(session_players)
+GROUP BY player
+```
+
+Goals Per Game
+
+```
+Goals
+
+÷
+
+Games Played
+```
+
+Golden Boot
+
+```
+ORDER BY
+
+Goal Count DESC
+```
+
+---
+
+# 6. Standard Match Flow
+
+Session Created
+
+↓
+
+Teams Created
+
+↓
+
+Players Assigned
+
+↓
+
+Goal Events
+
+↓
+
+Session Ended
+
+Everything is calculated afterwards.
+
+---
+
+# 7. Winner Stays Flow
+
+Session
+
+↓
+
+Create Team A
+
+Create Team B
+
+Create Team C
+
+↓
+
+Current Match
+
+A vs B
+
+Waiting
+
+C
+
+↓
+
+Goal Event
+
+↓
+
+Winning Team Determined
+
+↓
+
+Rotation Event Saved
+
+↓
+
+Current Match Updated
+
+Repeat.
+
+---
+
+# 8. Rotation Logic
+
+Current Match
+
+```
+A vs B
+
+Waiting C
+```
+
+Soumil scores
+
+↓
+
+Team A wins
+
+System creates
+
+```
+TEAM_ROTATED
+
+Winner A
+
+Loser B
+
+Waiting C
+```
+
+New Match
+
+```
+A vs C
+
+Waiting B
+```
+
+No manual editing required.
+
+---
+
+# 9. Timeout Logic
+
+Administrator presses
+
+```
+Time Up
+
+No Goal
+```
+
+Application creates
+
+```
+TIMEOUT
+```
+
+Application creates
+
+```
+TEAM_ROTATED
+```
+
+No GoalEvents are created.
+
+---
+
+# 10. Indexes
+
+Index
+
+Players.name
+
+Reason
+
+Fast search
+
+---
+
+Index
+
+GoalEvents.player_id
+
+Reason
+
+Player statistics
+
+---
+
+Index
+
+GoalEvents.session_id
+
+Reason
+
+Match history
+
+---
+
+Index
+
+SessionPlayers.player_id
+
+Reason
+
+Games played
+
+---
+
+Index
+
+Sessions.date
+
+Reason
+
+Recent sessions
+
+---
+
+# 11. Constraints
+
+Player name required.
+
+A player may belong to only one team in a session.
+
+GoalEvents require
+
+* valid player
+* valid team
+* valid session
+
+Sessions cannot be deleted after ending.
+
+---
+
+# 12. Future Tables
+
+AssistEvents
+
+Cards
+
+PlayerRatings
+
+Tournament
+
+TournamentTeams
+
+TournamentMatches
+
+Achievements
+
+VoiceCommands
+
+WhatsAppMessages
+
+TelegramMessages
+
+AIReports
+
+These can be added later without changing the existing schema.
+
+---
+
+# 13. Why Event Sourcing?
+
+Advantages
+
+* Complete history
+* Easy Undo
+* Automatic statistics
+* AI can replay matches
+* Future analytics
+* Reliable auditing
+* Supports new features without redesigning the database
+
+The event log becomes the single source of truth.
