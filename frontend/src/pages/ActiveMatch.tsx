@@ -191,7 +191,7 @@ export default function ActiveMatch() {
 
       {/* Match Day Tallies Header */}
       <div className="flex justify-center mb-6">
-        <div className="bg-neutral-900 border border-neutral-800 rounded-full px-6 py-2 flex items-center gap-4 text-sm shadow-lg">
+        <div className="bg-black border border-white/10 rounded-full px-6 py-3 flex items-center gap-6 text-sm shadow-lg">
           <span className="text-neutral-500 font-bold tracking-widest uppercase">Match Day Tally:</span>
           {Object.entries(teamScores).map(([tId, score]) => {
             const t = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
@@ -206,7 +206,7 @@ export default function ActiveMatch() {
       </div>
 
       {/* Scoreboard */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 md:p-10 mb-8 shadow-2xl relative overflow-hidden">
+      <div className="bg-black border border-white/5 rounded-3xl p-6 md:p-10 mb-8 shadow-2xl relative overflow-hidden">
         {/* Decorative background glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-primary-500/5 blur-[100px] rounded-full pointer-events-none" />
         
@@ -272,7 +272,7 @@ export default function ActiveMatch() {
                 if (!team) return null;
                 
                 return (
-                  <div key={tId} className="bg-neutral-800/30 border border-neutral-800 rounded-xl p-4 shadow-lg shadow-neutral-900/5">
+                  <div key={tId} className="bg-black border border-white/5 rounded-2xl p-5 shadow-lg shadow-black/50">
                     <h4 className="text-white font-bold mb-4 uppercase tracking-wider text-sm flex items-center justify-between">
                       <span>{team.name}</span>
                     </h4>
@@ -282,7 +282,7 @@ export default function ActiveMatch() {
                         return (
                           <div
                             key={player.id}
-                            className="w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900 border border-neutral-800 rounded-lg shadow-sm"
+                            className="w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl shadow-sm"
                           >
                             <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
                             {pGoals > 0 && (
@@ -301,18 +301,18 @@ export default function ActiveMatch() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Team A Players */}
-              <div className="bg-primary-900/10 border border-primary-900/30 rounded-xl p-4 shadow-lg shadow-primary-900/5">
+              <div className="bg-black border border-primary-500/20 rounded-2xl p-5 shadow-lg shadow-primary-900/10 relative overflow-hidden">
                 <h4 className="text-primary-400 font-bold mb-4 uppercase tracking-wider text-sm flex items-center justify-between">
                   <span>{teamA?.name} Goal</span>
                   <span className="bg-primary-500/20 px-2 py-0.5 rounded text-xs">Active</span>
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-3 relative z-10">
                   {teamAPlayersList.map(player => (
                     <button
                       key={player.id}
                       disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
                       onClick={() => recordGoal(player.id, teamA.id)}
-                      className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900 border border-neutral-800 rounded-lg transition-all shadow-sm ${session.status === 'IN_PROGRESS' && profile?.role === 'admin' ? 'hover:bg-primary-900/40 hover:border-primary-500/50 group active:scale-95' : 'disabled:opacity-75 disabled:cursor-default'}`}
+                      className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${session.status === 'IN_PROGRESS' && profile?.role === 'admin' ? 'hover:bg-primary-900/40 hover:border-primary-500/50 group active:scale-95' : 'disabled:opacity-75 disabled:cursor-default'}`}
                     >
                       <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
                       {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
@@ -326,18 +326,18 @@ export default function ActiveMatch() {
               </div>
 
               {/* Team B Players */}
-              <div className="bg-blue-900/10 border border-blue-900/30 rounded-xl p-4 shadow-lg shadow-blue-900/5">
+              <div className="bg-black border border-blue-500/20 rounded-2xl p-5 shadow-lg shadow-blue-900/10 relative overflow-hidden">
                 <h4 className="text-blue-400 font-bold mb-4 uppercase tracking-wider text-sm flex items-center justify-between">
                   <span>{teamB?.name} Goal</span>
                   <span className="bg-blue-500/20 px-2 py-0.5 rounded text-xs">Active</span>
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-3 relative z-10">
                   {teamBPlayersList.map(player => (
                     <button
                       key={player.id}
                       disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
                       onClick={() => recordGoal(player.id, teamB.id)}
-                      className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900 border border-neutral-800 rounded-lg transition-all shadow-sm ${session.status === 'IN_PROGRESS' && profile?.role === 'admin' ? 'hover:bg-blue-900/40 hover:border-blue-500/50 group active:scale-95' : 'disabled:opacity-75 disabled:cursor-default'}`}
+                      className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${session.status === 'IN_PROGRESS' && profile?.role === 'admin' ? 'hover:bg-blue-900/40 hover:border-blue-500/50 group active:scale-95' : 'disabled:opacity-75 disabled:cursor-default'}`}
                     >
                       <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
                       {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
@@ -375,20 +375,20 @@ export default function ActiveMatch() {
         </div>
 
         {/* Activity Feed */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl flex flex-col h-[400px] lg:h-[600px]">
-          <div className="p-4 border-b border-neutral-800 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-neutral-400" />
-            <h3 className="font-bold text-white">Match Events</h3>
+        <div className="bg-black border border-white/5 rounded-3xl flex flex-col h-[400px] lg:h-[600px] shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-white/5 flex items-center gap-3">
+            <Clock className="w-5 h-5 text-neutral-400" />
+            <h3 className="font-bold text-white tracking-widest uppercase">Match Events</h3>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {events.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-neutral-500 space-y-2">
                 <Activity className="w-8 h-8 opacity-20" />
-                <p className="text-sm">No events recorded yet.</p>
+                <p className="text-sm font-medium tracking-wide">No events recorded yet.</p>
               </div>
             ) : (
               events.map((event, idx) => (
-                <div key={event.id} className="flex items-start justify-between group p-2 hover:bg-neutral-800/50 rounded-lg transition-colors">
+                <div key={event.id} className="flex items-start justify-between group p-3 hover:bg-white/5 rounded-2xl transition-colors">
                   <div className="flex gap-3">
                     <div className="mt-1">
                       {event.event_type === 'GOAL' && (

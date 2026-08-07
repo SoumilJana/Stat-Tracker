@@ -174,38 +174,76 @@ export default function Players() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {players.map((player) => (
           <motion.div 
             layoutId={`card-${player.id}`}
             key={player.id} 
             onClick={() => setSelectedPlayer(player)}
-            className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden flex flex-col cursor-pointer hover:border-primary-500/50 transition-colors"
+            className="group relative bg-black border border-white/5 rounded-2xl overflow-hidden cursor-pointer shadow-xl hover:shadow-primary-500/20 hover:border-primary-500/30 transition-all duration-300 aspect-[3/4]"
           >
-            <div className="p-6 flex items-start gap-4">
-              <motion.div layoutId={`avatar-${player.id}`} className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center border-2 border-primary-500/30 flex-shrink-0 text-xl font-bold text-neutral-300 overflow-hidden">
-                {player.photo_url ? (
-                  <img src={player.photo_url} alt={player.username} className="w-full h-full object-cover" />
-                ) : (
-                  player.username.substring(0, 2).toUpperCase()
-                )}
-              </motion.div>
-              <div className="flex-1 min-w-0">
-                <motion.h3 layoutId={`username-${player.id}`} className="text-lg font-bold text-white truncate">{player.username}</motion.h3>
-                {player.full_name && (
-                  <motion.p layoutId={`fullname-${player.id}`} className="text-sm text-neutral-400 truncate">{player.full_name}</motion.p>
-                )}
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-800 text-neutral-300 uppercase tracking-wider">
+            {/* Background Image */}
+            <motion.div layoutId={`avatar-${player.id}`} className="absolute inset-0">
+              {player.photo_url ? (
+                <img src={player.photo_url} alt={player.username} className="w-full h-full object-cover opacity-75 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-neutral-900">
+                  <span className="text-6xl font-black text-neutral-700">{player.username.substring(0, 2).toUpperCase()}</span>
+                </div>
+              )}
+            </motion.div>
+            
+            {/* Dark Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
+
+            {/* Content Container */}
+            <div className="absolute inset-0 p-5 flex flex-col pointer-events-none">
+              
+              {/* Badge */}
+              {player.role && (
+                <div className="mb-2 w-fit">
+                  <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                     {player.role}
                   </span>
                 </div>
+              )}
+
+              {/* Name & Subtitle */}
+              <div>
+                <motion.h3 layoutId={`username-${player.id}`} className="text-2xl sm:text-3xl font-black text-white leading-tight drop-shadow-md mt-1">
+                  {player.username}
+                </motion.h3>
+                {player.full_name && (
+                  <motion.p layoutId={`fullname-${player.id}`} className="text-[10px] font-bold text-primary-400 uppercase tracking-widest mt-1 drop-shadow-md">
+                    {player.full_name}
+                  </motion.p>
+                )}
               </div>
+
+              {/* Stats List */}
+              <div className="mt-auto space-y-3 w-full">
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-2 text-neutral-300">
+                     <Target className="w-4 h-4 text-primary-500/80" />
+                     <span className="text-[10px] font-bold uppercase tracking-widest">Goals</span>
+                   </div>
+                   <span className="text-base font-black text-white">{player.total_goals || 0}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-2 text-neutral-300">
+                     <Activity className="w-4 h-4 text-primary-500/80" />
+                     <span className="text-[10px] font-bold uppercase tracking-widest">Played</span>
+                   </div>
+                   <span className="text-base font-black text-white">{player.games_played || 0}</span>
+                </div>
+              </div>
+
             </div>
           </motion.div>
         ))}
         {players.length === 0 && (
-          <div className="col-span-full py-12 text-center text-neutral-500 bg-neutral-900 border border-dashed border-neutral-700 rounded-xl">
+          <div className="col-span-full py-12 text-center text-neutral-500 bg-[#0B101E] border border-dashed border-neutral-800 rounded-2xl">
             No players found. Add your first player!
           </div>
         )}
@@ -225,74 +263,79 @@ export default function Players() {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
               <motion.div
                 layoutId={`card-${selectedPlayer.id}`}
-                className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden w-full max-w-lg shadow-2xl pointer-events-auto relative flex flex-col max-h-[90vh]"
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-neutral-950 border border-neutral-800 rounded-3xl overflow-hidden w-full max-w-lg shadow-2xl pointer-events-auto relative flex flex-col min-h-[60vh] max-h-[90vh]"
               >
-                {/* Background Image / Header */}
-                <div className="relative h-64 sm:h-80 w-full bg-neutral-800 flex items-center justify-center flex-shrink-0">
-                  <motion.div layoutId={`avatar-${selectedPlayer.id}`} className="absolute inset-0 overflow-hidden">
-                    {selectedPlayer.photo_url ? (
-                      <img src={selectedPlayer.photo_url} alt={selectedPlayer.username} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-6xl font-bold text-neutral-700 bg-neutral-800">
-                        {selectedPlayer.username.substring(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                  </motion.div>
-                  {/* Dark Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/60 to-transparent" />
-                  
-                  <button 
-                    onClick={() => setSelectedPlayer(null)}
-                    className="absolute top-4 right-4 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white backdrop-blur-md transition-colors z-10"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                {/* Full Background Image */}
+                <motion.div layoutId={`avatar-${selectedPlayer.id}`} className="absolute inset-0 overflow-hidden pointer-events-none">
+                  {selectedPlayer.photo_url ? (
+                    <img src={selectedPlayer.photo_url} alt={selectedPlayer.username} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-8xl font-bold text-neutral-800 bg-neutral-900">
+                      {selectedPlayer.username.substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </motion.div>
+                
+                {/* Dark Gradient Overlay for entire modal */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+                
+                <button 
+                  onClick={() => setSelectedPlayer(null)}
+                  className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/50 rounded-full text-white backdrop-blur-md transition-colors z-20"
+                >
+                  <X className="w-5 h-5" />
+                </button>
 
-                  <div className="absolute bottom-6 left-6 right-6 z-10">
-                    <motion.h3 layoutId={`username-${selectedPlayer.id}`} className="text-3xl sm:text-4xl font-black text-white truncate drop-shadow-lg">
+                {/* Content Container */}
+                <div className="relative z-10 flex flex-col h-full flex-1">
+                  
+                  {/* Header / Name Section */}
+                  <div className="pt-32 px-6 sm:px-8 pb-4 mt-auto">
+                    <motion.h3 layoutId={`username-${selectedPlayer.id}`} className="text-4xl sm:text-5xl font-black text-white truncate drop-shadow-xl">
                       {selectedPlayer.username}
                     </motion.h3>
                     {selectedPlayer.full_name && (
-                      <motion.p layoutId={`fullname-${selectedPlayer.id}`} className="text-lg text-primary-400 font-medium truncate drop-shadow-md">
+                      <motion.p layoutId={`fullname-${selectedPlayer.id}`} className="text-xl text-primary-400 font-medium truncate drop-shadow-md mt-1">
                         {selectedPlayer.full_name}
                       </motion.p>
                     )}
                   </div>
-                </div>
 
-                {/* Stats Section */}
-                <div className="p-6 sm:p-8 space-y-8 overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-neutral-950/50 rounded-xl p-4 border border-neutral-800 flex flex-col items-center justify-center text-center">
-                      <Activity className="w-6 h-6 text-primary-500 mb-2" />
-                      <div className="text-4xl font-black text-white">{selectedPlayer.games_played || 0}</div>
-                      <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mt-1">Games Played</div>
+                  {/* Stats Section */}
+                  <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-6 overflow-y-auto w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl min-w-[110px]">
+                        <Activity className="w-4 h-4 text-primary-400 mb-1" />
+                        <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.games_played || 0}</div>
+                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Games Played</div>
+                      </div>
+                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl min-w-[110px]">
+                        <Target className="w-4 h-4 text-primary-400 mb-1" />
+                        <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.total_goals || 0}</div>
+                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Goals Scored</div>
+                      </div>
                     </div>
-                    <div className="bg-neutral-950/50 rounded-xl p-4 border border-neutral-800 flex flex-col items-center justify-center text-center">
-                      <Target className="w-6 h-6 text-primary-500 mb-2" />
-                      <div className="text-4xl font-black text-white">{selectedPlayer.total_goals || 0}</div>
-                      <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mt-1">Goals Scored</div>
-                    </div>
-                  </div>
 
-                  {/* Actions */}
-                  {(user?.id === selectedPlayer.id || isAdmin) && (
-                    <div className="flex justify-end gap-3 pt-4 border-t border-neutral-800">
-                      <button 
-                        onClick={() => openEditModal(selectedPlayer)}
-                        className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors font-medium text-sm"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                        Edit Profile
-                      </button>
-                      {isAdmin && (
-                        <button className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors font-medium text-sm">
-                          <Trash2 className="w-4 h-4" />
-                          Delete
+                    {/* Actions */}
+                    {(user?.id === selectedPlayer.id || isAdmin) && (
+                      <div className="flex justify-end gap-3 pt-4">
+                        <button 
+                          onClick={() => openEditModal(selectedPlayer)}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-xl transition-all font-medium text-sm border border-white/10 hover:border-white/20"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Edit Profile
                         </button>
-                      )}
-                    </div>
-                  )}
+                        {isAdmin && (
+                          <button className="flex items-center gap-2 px-5 py-2.5 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md text-red-100 rounded-xl transition-all font-medium text-sm border border-red-500/30 hover:border-red-500/50">
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             </div>
