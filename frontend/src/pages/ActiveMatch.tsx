@@ -191,7 +191,7 @@ export default function ActiveMatch() {
       <div className="flex justify-center mb-6">
         <div className="bg-neutral-900 border border-neutral-800 rounded-full px-6 py-2 flex items-center gap-4 text-sm shadow-lg">
           <span className="text-neutral-500 font-bold tracking-widest uppercase">Match Day Tally:</span>
-          {Object.entries(teamScores).map(([tId, score], idx) => {
+          {Object.entries(teamScores).map(([tId, score]) => {
             const t = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
             return t ? (
               <div key={tId} className="flex items-center gap-1 font-bold">
