@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Calendar as CalendarIcon, MapPin, PlayCircle, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Matches() {
+  const { profile } = useAuth();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -53,13 +55,15 @@ export default function Matches() {
           <h2 className="text-2xl font-bold leading-7 text-white sm:text-3xl sm:truncate">Matches</h2>
           <p className="mt-1 text-sm text-neutral-400">Match history and active sessions</p>
         </div>
-        <Link
-          to="/matches/new"
-          className="flex items-center gap-2 bg-primary-500 text-black px-4 py-2 rounded-xl font-bold hover:bg-primary-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-        >
-          <Plus className="w-5 h-5" />
-          <span className="hidden sm:inline">New Match</span>
-        </Link>
+        {profile?.role === 'admin' && (
+          <Link
+            to="/matches/new"
+            className="flex items-center gap-2 bg-primary-500 text-black px-4 py-2 rounded-xl font-bold hover:bg-primary-600 transition-colors shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">New Match</span>
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -128,15 +132,19 @@ export default function Matches() {
                   )}
                 </span>
                 <div className="flex items-center gap-4">
-                  <button onClick={(e) => deleteMatch(e, session.id)} className="text-neutral-600 hover:text-red-500 transition-colors p-1" title="Delete Match">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {profile?.role === 'admin' && (
+                    <>
+                      <button onClick={(e) => deleteMatch(e, session.id)} className="text-neutral-600 hover:text-red-500 transition-colors p-1" title="Delete Match">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
 
-                  {session.status === 'SCHEDULED' && (
-                    <button onClick={(e) => startMatch(e, session.id)} className="text-primary-400 flex items-center gap-1 font-bold hover:text-primary-300">
-                      <PlayCircle className="w-4 h-4" />
-                      Start
-                    </button>
+                      {session.status === 'SCHEDULED' && (
+                        <button onClick={(e) => startMatch(e, session.id)} className="text-primary-400 flex items-center gap-1 font-bold hover:text-primary-300">
+                          <PlayCircle className="w-4 h-4" />
+                          Start
+                        </button>
+                      )}
+                    </>
                   )}
                   {session.status === 'IN_PROGRESS' && (
                     <span className="text-primary-400 flex items-center gap-1 font-bold group-hover:translate-x-1 transition-transform">
@@ -162,9 +170,11 @@ export default function Matches() {
               </div>
               <p className="text-lg font-medium text-neutral-400">No matches recorded yet</p>
               <p className="text-sm mt-1">Schedule your first match to get started.</p>
-              <Link to="/matches/new" className="mt-6 text-primary-500 font-bold hover:text-primary-400 transition-colors">
-                + Create Match
-              </Link>
+              {profile?.role === 'admin' && (
+                <Link to="/matches/new" className="mt-6 text-primary-500 font-bold hover:text-primary-400 transition-colors">
+                  + Create Match
+                </Link>
+              )}
             </div>
           </div>
         )}

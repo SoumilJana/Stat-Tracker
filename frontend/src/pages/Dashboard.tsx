@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom';
 import { Trophy, Activity, Users, PlayCircle, Calendar, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
+import { useAuth } from '../contexts/AuthContext';
+
 export default function Dashboard() {
+  const { profile } = useAuth();
   const [topScorer, setTopScorer] = useState<any>(null);
   const [totalGoals, setTotalGoals] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
@@ -154,15 +157,17 @@ export default function Dashboard() {
       </div>
       
       {/* Quick Actions */}
-      <div className="fixed bottom-16 md:bottom-auto md:mt-8 left-0 right-0 p-4 bg-neutral-900/80 backdrop-blur-lg border-t border-neutral-800 md:relative md:bg-transparent md:border-0 md:p-0 z-40">
-        <Link 
-          to="/matches/new"
-          className="flex items-center justify-center gap-2 w-full md:w-auto bg-primary-500 text-black px-6 py-4 rounded-xl font-bold hover:bg-primary-600 transition-colors shadow-lg"
-        >
-          <PlayCircle className="w-5 h-5" />
-          Start New Match
-        </Link>
-      </div>
+      {profile?.role === 'admin' && (
+        <div className="fixed bottom-16 md:bottom-auto md:mt-8 left-0 right-0 p-4 bg-neutral-900/80 backdrop-blur-lg border-t border-neutral-800 md:relative md:bg-transparent md:border-0 md:p-0 z-40">
+          <Link 
+            to="/matches/new"
+            className="flex items-center justify-center gap-2 w-full md:w-auto bg-primary-500 text-black px-6 py-4 rounded-xl font-bold hover:bg-primary-600 transition-colors shadow-lg"
+          >
+            <PlayCircle className="w-5 h-5" />
+            Start New Match
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

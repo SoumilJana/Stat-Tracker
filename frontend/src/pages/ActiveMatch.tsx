@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Activity, Undo2, SkipForward } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ActiveMatch() {
+  const { profile } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<any>(null);
@@ -308,14 +310,16 @@ export default function ActiveMatch() {
                   {teamAPlayersList.map(player => (
                     <button
                       key={player.id}
-                      disabled={session.status !== 'IN_PROGRESS'}
+                      disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
                       onClick={() => recordGoal(player.id, teamA.id)}
-                      className="w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900 hover:bg-primary-900/40 border border-neutral-800 hover:border-primary-500/50 rounded-lg transition-all group disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
+                      className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900 border border-neutral-800 rounded-lg transition-all shadow-sm ${session.status === 'IN_PROGRESS' && profile?.role === 'admin' ? 'hover:bg-primary-900/40 hover:border-primary-500/50 group active:scale-95' : 'disabled:opacity-75 disabled:cursor-default'}`}
                     >
                       <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
-                      <span className="bg-primary-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        + GOAL
-                      </span>
+                      {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
+                        <span className="bg-primary-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          + GOAL
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -331,14 +335,16 @@ export default function ActiveMatch() {
                   {teamBPlayersList.map(player => (
                     <button
                       key={player.id}
-                      disabled={session.status !== 'IN_PROGRESS'}
+                      disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
                       onClick={() => recordGoal(player.id, teamB.id)}
-                      className="w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900 hover:bg-blue-900/40 border border-neutral-800 hover:border-blue-500/50 rounded-lg transition-all group disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
+                      className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900 border border-neutral-800 rounded-lg transition-all shadow-sm ${session.status === 'IN_PROGRESS' && profile?.role === 'admin' ? 'hover:bg-blue-900/40 hover:border-blue-500/50 group active:scale-95' : 'disabled:opacity-75 disabled:cursor-default'}`}
                     >
                       <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
-                      <span className="bg-blue-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        + GOAL
-                      </span>
+                      {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
+                        <span className="bg-blue-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          + GOAL
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -346,7 +352,7 @@ export default function ActiveMatch() {
             </div>
           )}
           
-          {session.status === 'IN_PROGRESS' && (
+          {session.status === 'IN_PROGRESS' && profile?.role === 'admin' && (
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 border-t border-neutral-800">
               {session.mode === 'WINNER_STAYS' && waiting.length > 0 && (
                 <button 
@@ -407,7 +413,7 @@ export default function ActiveMatch() {
                       </p>
                     </div>
                   </div>
-                  {idx === 0 && session.status === 'IN_PROGRESS' && (
+                  {idx === 0 && session.status === 'IN_PROGRESS' && profile?.role === 'admin' && (
                     <button 
                       onClick={() => undoEvent(event.id)}
                       className="text-neutral-500 hover:text-red-400 p-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
