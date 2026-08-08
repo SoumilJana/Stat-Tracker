@@ -16,3 +16,16 @@ export async function createPlayer(data: any) {
   
   return response.json();
 }
+
+export async function deletePlayer(userId: string) {
+  const response = await fetch(`${API_URL}/api/players/${userId}`, {
+    method: 'DELETE',
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to delete player');
+  }
+  
+  return response.json();
+}

@@ -55,3 +55,21 @@ def create_player(request: CreatePlayerRequest):
     except Exception as e:
         # If profile insertion fails, we might want to delete the auth user, but skipping for V1 simplicity
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/{user_id}")
+def delete_player(user_id: str):
+    supabase = get_supabase_admin()
+    
+    try:
+        # Delete user from auth.users via admin API
+        try:
+            supabase.auth.admin.delete_user(user_id)
+        except Exception as auth_e:
+            print(f"Could not delete auth user (maybe it doesn't exist): {auth_e}")
+        
+        # Also ensure profile is deleted in case cascade isn't configured
+        supabase.table("profiles").delete().eq("id", user_id).execute()
+        
+        return {"message": "Player deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

@@ -9,6 +9,7 @@ export default function ActiveMatch() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<any>(null);
+  const [pendingGoal, setPendingGoal] = useState<{playerId: string, teamId: string, teamPlayers: any[]} | null>(null);
   
   // Engine State
   const [onPitch, setOnPitch] = useState<any[]>([]); // Up to 2 teams
@@ -63,7 +64,7 @@ export default function ActiveMatch() {
       // Fetch events
       const { data: eData } = await supabase
         .from('events')
-        .select('*, profiles(username)')
+        .select('*, player:profiles!events_player_id_fkey(username), assister:profiles!events_assisted_by_fkey(username)')
         .eq('session_id', id)
         .order('timestamp', { ascending: false });
       
@@ -120,13 +121,22 @@ export default function ActiveMatch() {
     setLoading(false);
   };
 
-  const recordGoal = async (playerId: string, teamId: string) => {
+  const initiateGoal = (playerId: string, teamId: string, playersList: any[]) => {
+    setPendingGoal({ playerId, teamId, teamPlayers: playersList });
+  };
+
+  const confirmGoal = async (assistedBy: string | null) => {
+    if (!pendingGoal) return;
+    
     const { error } = await supabase.from('events').insert({
       session_id: id,
       event_type: 'GOAL',
-      player_id: playerId,
-      team_id: teamId
+      player_id: pendingGoal.playerId,
+      team_id: pendingGoal.teamId,
+      assisted_by: assistedBy
     });
+    
+    setPendingGoal(null);
     if (error) console.error("Error recording goal:", error);
     else fetchMatchData();
   };
@@ -279,17 +289,25 @@ export default function ActiveMatch() {
                     <div className="space-y-3">
                       {players.map(player => {
                         const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
+                        const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
                         return (
                           <div
                             key={player.id}
                             className="w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl shadow-sm"
                           >
                             <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
-                            {pGoals > 0 && (
-                              <span className="text-primary-400 font-bold flex items-center gap-1">
-                                {pGoals} <span className="text-xs text-neutral-500">GOAL{pGoals > 1 ? 'S' : ''}</span>
-                              </span>
-                            )}
+                            <div className="flex gap-3">
+                              {pGoals > 0 && (
+                                <span className="text-primary-400 font-bold flex items-center gap-1">
+                                  {pGoals} <span className="text-xs text-neutral-500">G</span>
+                                </span>
+                              )}
+                              {pAssists > 0 && (
+                                <span className="text-blue-400 font-bold flex items-center gap-1">
+                                  {pAssists} <span className="text-xs text-neutral-500">A</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -311,7 +329,7 @@ export default function ActiveMatch() {
                     <button
                       key={player.id}
                       disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
-                      onClick={() => recordGoal(player.id, teamA.id)}
+                      onClick={() => initiateGoal(player.id, teamA.id, teamAPlayersList)}
                       className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${session.status === 'IN_PROGRESS' && profile?.role === 'admin' ? 'hover:bg-primary-900/40 hover:border-primary-500/50 group active:scale-95' : 'disabled:opacity-75 disabled:cursor-default'}`}
                     >
                       <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
@@ -336,7 +354,7 @@ export default function ActiveMatch() {
                     <button
                       key={player.id}
                       disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
-                      onClick={() => recordGoal(player.id, teamB.id)}
+                      onClick={() => initiateGoal(player.id, teamB.id, teamBPlayersList)}
                       className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${session.status === 'IN_PROGRESS' && profile?.role === 'admin' ? 'hover:bg-blue-900/40 hover:border-blue-500/50 group active:scale-95' : 'disabled:opacity-75 disabled:cursor-default'}`}
                     >
                       <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
@@ -401,7 +419,8 @@ export default function ActiveMatch() {
                     <div>
                       <p className="text-sm text-white">
                         {event.event_type === 'GOAL' ? (
-                          <><span className="font-bold">{event.profiles?.username}</span> scored for <span className="font-medium text-neutral-400">{Object.values(onPitch).concat(waiting).find(t => t.id === event.team_id)?.name}</span></>
+                          <><span className="font-bold">{event.player?.username || event.profiles?.username}</span> scored for <span className="font-medium text-neutral-400">{Object.values(onPitch).concat(waiting).find(t => t.id === event.team_id)?.name}</span>
+                          {event.assister?.username && <span className="text-neutral-500 ml-1">(Ast: {event.assister.username})</span>}</>
                         ) : event.event_type === 'NO_GOAL_TIME_UP' ? (
                           <span className="italic text-neutral-400">Time up / No goals (Teams rotated)</span>
                         ) : (
@@ -428,6 +447,46 @@ export default function ActiveMatch() {
           </div>
         </div>
       </div>
+      {/* Pending Goal / Assist Modal */}
+      {pendingGoal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative overflow-hidden">
+            <h3 className="text-xl font-bold text-white mb-2 text-center">Who assisted?</h3>
+            <p className="text-neutral-400 text-sm mb-6 text-center">
+              Goal by {pendingGoal.teamPlayers.find(p => p.id === pendingGoal.playerId)?.username}
+            </p>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => confirmGoal(null)}
+                className="w-full py-4 px-4 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-xl border border-white/5 transition-colors"
+              >
+                No Assist
+              </button>
+              
+              {pendingGoal.teamPlayers
+                .filter(p => p.id !== pendingGoal.playerId)
+                .map(player => (
+                  <button
+                    key={player.id}
+                    onClick={() => confirmGoal(player.id)}
+                    className="w-full py-4 px-4 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold rounded-xl border border-primary-500/20 transition-colors"
+                  >
+                    {player.username}
+                  </button>
+                ))
+              }
+            </div>
+
+            <button
+              onClick={() => setPendingGoal(null)}
+              className="mt-6 w-full py-3 text-neutral-500 hover:text-white text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

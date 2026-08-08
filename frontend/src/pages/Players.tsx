@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit2, X, Activity, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { createPlayer } from '../lib/api';
+import { createPlayer, deletePlayer } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import imageCompression from 'browser-image-compression';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ type Profile = {
   role: string;
   photo_url: string | null;
   total_goals?: number;
+  total_assists?: number;
   games_played?: number;
 };
 
@@ -54,6 +55,19 @@ export default function Players() {
   useEffect(() => {
     fetchPlayers();
   }, []);
+
+  const handleDeletePlayer = async (player: Profile) => {
+    if (window.confirm(`Are you sure you want to delete ${player.username}?`)) {
+      try {
+        await deletePlayer(player.id);
+        setPlayers(players.filter(p => p.id !== player.id));
+        setSelectedPlayer(null);
+      } catch (error) {
+        console.error('Error deleting player:', error);
+        alert('Failed to delete player');
+      }
+    }
+  };
 
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,14 +236,32 @@ export default function Players() {
 
               {/* Stats List */}
               <div className="mt-auto space-y-3 w-full">
-                <div className="flex items-center justify-between">
+                 <div className="flex items-center justify-between">
                    <div className="flex items-center gap-2 text-neutral-300">
                      <Target className="w-4 h-4 text-primary-500/80" />
                      <span className="text-[10px] font-bold uppercase tracking-widest">Goals</span>
                    </div>
                    <span className="text-base font-black text-white">{player.total_goals || 0}</span>
                 </div>
+
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-2 text-neutral-300">
+                     <Target className="w-4 h-4 text-green-500/80" />
+                     <span className="text-[10px] font-bold uppercase tracking-widest">Goals/Game</span>
+                   </div>
+                   <span className="text-base font-black text-white">
+                     {player.games_played ? ((player.total_goals || 0) / player.games_played).toFixed(2) : "0.00"}
+                   </span>
+                </div>
                 
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-2 text-neutral-300">
+                     <Target className="w-4 h-4 text-blue-500/80" />
+                     <span className="text-[10px] font-bold uppercase tracking-widest">Assists</span>
+                   </div>
+                   <span className="text-base font-black text-white">{player.total_assists || 0}</span>
+                </div>
+
                 <div className="flex items-center justify-between">
                    <div className="flex items-center gap-2 text-neutral-300">
                      <Activity className="w-4 h-4 text-primary-500/80" />
@@ -304,16 +336,28 @@ export default function Players() {
 
                   {/* Stats Section */}
                   <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-6 overflow-y-auto w-full">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl min-w-[110px]">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
                         <Activity className="w-4 h-4 text-primary-400 mb-1" />
                         <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.games_played || 0}</div>
-                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Games Played</div>
+                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Played</div>
                       </div>
-                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl min-w-[110px]">
+                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
                         <Target className="w-4 h-4 text-primary-400 mb-1" />
                         <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.total_goals || 0}</div>
-                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Goals Scored</div>
+                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Goals</div>
+                      </div>
+                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
+                        <Target className="w-4 h-4 text-green-400 mb-1" />
+                        <div className="text-2xl font-black text-white drop-shadow-md">
+                          {selectedPlayer.games_played ? ((selectedPlayer.total_goals || 0) / selectedPlayer.games_played).toFixed(2) : "0.00"}
+                        </div>
+                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Goals/Game</div>
+                      </div>
+                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
+                        <Target className="w-4 h-4 text-blue-400 mb-1" />
+                        <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.total_assists || 0}</div>
+                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Assists</div>
                       </div>
                     </div>
 
@@ -328,7 +372,10 @@ export default function Players() {
                           Edit Profile
                         </button>
                         {isAdmin && (
-                          <button className="flex items-center gap-2 px-5 py-2.5 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md text-red-100 rounded-xl transition-all font-medium text-sm border border-red-500/30 hover:border-red-500/50">
+                          <button 
+                            onClick={() => handleDeletePlayer(selectedPlayer)}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md text-red-100 rounded-xl transition-all font-medium text-sm border border-red-500/30 hover:border-red-500/50"
+                          >
                             <Trash2 className="w-4 h-4" />
                             Delete
                           </button>

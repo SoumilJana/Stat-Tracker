@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function Login() {
@@ -42,7 +41,7 @@ export default function Login() {
           Weekly Football Stats Tracker
         </h2>
         <p className="mt-2 text-center text-sm text-neutral-400">
-          Sign in to your account, or <Link to="/signup" className="text-primary-500 hover:text-primary-400">create one</Link>
+          Sign in to your account to continue
         </p>
       </div>
 
