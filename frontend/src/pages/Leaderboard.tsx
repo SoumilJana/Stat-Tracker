@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, type Variants } from 'framer-motion';
+import { enrichPlayersWithRatings, type PlayerWithRating } from '../lib/playerRating';
+import PlayerRatingBadge from '../components/PlayerRatingBadge';
 
 export default function Leaderboard() {
-  const [stats, setStats] = useState<any[]>([]);
+  const [stats, setStats] = useState<PlayerWithRating[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,7 +18,7 @@ export default function Leaderboard() {
         .order('games_played', { ascending: false })
         .order('username', { ascending: true });
       
-      if (data) setStats(data);
+      if (data) setStats(enrichPlayersWithRatings(data));
       setLoading(false);
     };
 
@@ -88,9 +90,10 @@ export default function Leaderboard() {
                    
                    {/* Player Info */}
                    <div>
-                     <h3 className="text-xl sm:text-3xl font-black text-white uppercase tracking-wider drop-shadow-md">
-                       {player.username}
-                     </h3>
+                     <h3 className="text-xl sm:text-3xl font-black text-white uppercase tracking-wider drop-shadow-md flex items-baseline gap-1">
+                        {player.username}
+                        <PlayerRatingBadge rating={player.rating} size="md" />
+                      </h3>
                      <div className="flex items-center gap-3 mt-1">
                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                          {player.games_played || 0} MATCHES

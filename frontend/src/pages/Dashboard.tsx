@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Activity, Users, PlayCircle, Calendar, ArrowRight, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { enrichPlayersWithRatings, type PlayerWithRating } from '../lib/playerRating';
+import PlayerRatingBadge from '../components/PlayerRatingBadge';
 
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
   const { profile } = useAuth();
-  const [topScorer, setTopScorer] = useState<any>(null);
-  const [topAssister, setTopAssister] = useState<any>(null);
+  const [topScorer, setTopScorer] = useState<PlayerWithRating | null>(null);
+  const [topAssister, setTopAssister] = useState<PlayerWithRating | null>(null);
   const [totalGoals, setTotalGoals] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
@@ -16,36 +18,25 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      // Fetch Leaderboard (Golden Boot)
-      const { data: stats } = await supabase
+      // Fetch all player stats and enrich with ratings
+      const { data: allStats } = await supabase
         .from('player_stats')
-        .select('*')
-        .order('total_goals', { ascending: false })
-        .order('total_assists', { ascending: false })
-        .order('games_played', { ascending: false })
-        .order('username', { ascending: true })
-        .limit(1);
+        .select('*');
       
-      if (stats && stats.length > 0) {
-        setTopScorer(stats[0]);
-      }
-
-      // Fetch Top Assister (Playmaker)
-      const { data: assistStats } = await supabase
-        .from('player_stats')
-        .select('*')
-        .order('total_assists', { ascending: false })
-        .order('total_goals', { ascending: false })
-        .order('games_played', { ascending: false })
-        .order('username', { ascending: true })
-        .limit(1);
-      
-      if (assistStats && assistStats.length > 0) {
-        setTopAssister(assistStats[0]);
-      }
-      
-      if (stats && stats.length > 0) {
-        setTopScorer(stats[0]);
+      if (allStats && allStats.length > 0) {
+        const enriched = enrichPlayersWithRatings(allStats);
+        
+        // Golden Boot: top scorer
+        const sortedByGoals = [...enriched].sort((a, b) =>
+          b.total_goals - a.total_goals || b.total_assists - a.total_assists || b.games_played - a.games_played || a.username.localeCompare(b.username)
+        );
+        setTopScorer(sortedByGoals[0]);
+        
+        // Playmaker: top assister
+        const sortedByAssists = [...enriched].sort((a, b) =>
+          b.total_assists - a.total_assists || b.total_goals - a.total_goals || b.games_played - a.games_played || a.username.localeCompare(b.username)
+        );
+        setTopAssister(sortedByAssists[0]);
       }
 
       // Fetch Total Goals directly from events to be accurate
@@ -110,7 +101,7 @@ export default function Dashboard() {
             {topScorer ? (
               <div className="flex items-end justify-between gap-6 mt-auto">
                 <div>
-                  <h4 className="text-4xl sm:text-5xl font-black text-white tracking-tight mb-0 drop-shadow-lg">{topScorer.username}</h4>
+                  <h4 className="text-4xl sm:text-5xl font-black text-white tracking-tight mb-0 drop-shadow-lg flex items-baseline gap-1">{topScorer.username}<PlayerRatingBadge rating={topScorer.rating} size="md" /></h4>
                 </div>
                 <div className="text-right">
                   <div className="text-5xl sm:text-6xl font-black text-primary-500 tracking-tighter drop-shadow-[0_0_15px_rgba(16,185,129,0.3)] leading-none">
@@ -144,7 +135,7 @@ export default function Dashboard() {
             {topAssister ? (
               <div className="flex items-end justify-between gap-4 mt-auto">
                 <div>
-                  <h4 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-0 drop-shadow-lg">{topAssister.username}</h4>
+                  <h4 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-0 drop-shadow-lg flex items-baseline gap-1">{topAssister.username}<PlayerRatingBadge rating={topAssister.rating} size="sm" /></h4>
                 </div>
                 <div className="text-right">
                   <div className="text-4xl sm:text-5xl font-black text-blue-500 tracking-tighter drop-shadow-[0_0_15px_rgba(59,130,246,0.3)] leading-none">

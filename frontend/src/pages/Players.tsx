@@ -5,16 +5,20 @@ import { createPlayer, deletePlayer, updatePlayer } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import imageCompression from 'browser-image-compression';
 import { motion, AnimatePresence } from 'framer-motion';
+import { enrichPlayersWithRatings } from '../lib/playerRating';
+import PlayerRatingBadge from '../components/PlayerRatingBadge';
+import { formatRating } from '../lib/playerRating';
 
 type Profile = {
   id: string;
   username: string;
-  full_name: string | null;
-  role: string;
-  photo_url: string | null;
+  full_name?: string | null;
+  role?: string;
+  photo_url?: string | null;
   total_goals?: number;
   total_assists?: number;
   games_played?: number;
+  rating?: number;
 };
 
 export default function Players() {
@@ -44,9 +48,10 @@ export default function Players() {
   const fetchPlayers = async () => {
     const { data } = await supabase.from('player_stats').select('*').order('username');
     if (data) {
-      setPlayers(data.map(p => ({
+      const enriched = enrichPlayersWithRatings(data);
+      setPlayers(enriched.map(p => ({
         ...p,
-        id: p.id || p.player_id
+        id: (p as any).id || (p as any).player_id
       })));
     }
     setLoading(false);
@@ -202,14 +207,18 @@ export default function Players() {
             {/* Content Container */}
             <div className="absolute inset-0 p-5 flex flex-col pointer-events-none">
               
-              {/* Badge */}
-              {player.role && (
-                <div className="mb-2 w-fit">
+              {/* Top Row: Role & Rating */}
+              <div className="mb-2 flex items-start justify-between">
+                {player.role ? (
                   <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                     {player.role}
                   </span>
-                </div>
-              )}
+                ) : <div />}
+                
+                {player.rating !== undefined && (
+                  <PlayerRatingBadge rating={player.rating} variant="boxed" />
+                )}
+              </div>
 
               {/* Name & Subtitle */}
               <div>
@@ -298,8 +307,9 @@ export default function Players() {
                   )}
                 </motion.div>
                 
-                {/* Dark Gradient Overlay for entire modal */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+                {/* Dark Overlay for entire modal for legibility */}
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
                 
                 <button 
                   onClick={() => setSelectedPlayer(null)}
@@ -313,8 +323,9 @@ export default function Players() {
                   
                   {/* Header / Name Section */}
                   <div className="pt-32 px-6 sm:px-8 pb-4 mt-auto">
-                    <motion.h3 layoutId={`username-${selectedPlayer.id}`} className="text-4xl sm:text-5xl font-black text-white truncate drop-shadow-xl">
+                    <motion.h3 layoutId={`username-${selectedPlayer.id}`} className="text-4xl sm:text-5xl font-black text-white truncate drop-shadow-xl flex items-baseline gap-2">
                       {selectedPlayer.username}
+                      {selectedPlayer.rating !== undefined && <PlayerRatingBadge rating={selectedPlayer.rating} size="lg" />}
                     </motion.h3>
                     {selectedPlayer.full_name && (
                       <motion.p layoutId={`fullname-${selectedPlayer.id}`} className="text-xl text-primary-400 font-medium truncate drop-shadow-md mt-1">
@@ -348,6 +359,13 @@ export default function Players() {
                         <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.total_assists || 0}</div>
                         <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Assists</div>
                       </div>
+                      {selectedPlayer.rating !== undefined && (
+                        <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
+                          <Activity className="w-4 h-4 text-amber-400 mb-1" />
+                          <div className="text-2xl font-black text-white drop-shadow-md">{formatRating(selectedPlayer.rating)}</div>
+                          <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Rating</div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}

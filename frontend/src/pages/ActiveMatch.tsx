@@ -17,6 +17,7 @@ export default function ActiveMatch() {
   const [waiting, setWaiting] = useState<any[]>([]); // Any waiting teams
   const [teamScores, setTeamScores] = useState<Record<string, number>>({});
   const [teamPlayers, setTeamPlayers] = useState<Record<string, any[]>>({});
+  const [goalAnim, setGoalAnim] = useState<{teamId: string, id: number} | null>(null);
   
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +117,22 @@ export default function ActiveMatch() {
 
       setOnPitch(currentPitch);
       setWaiting(currentWaiting);
-      setTeamScores(scores);
+      
+      setTeamScores(prev => {
+        let newGoalTeam = null;
+        if (Object.keys(prev).length > 0) {
+          Object.entries(scores).forEach(([tId, score]) => {
+            if (prev[tId] !== undefined && score > prev[tId]) {
+              newGoalTeam = tId;
+            }
+          });
+        }
+        if (newGoalTeam) {
+          setGoalAnim({ teamId: newGoalTeam, id: Date.now() });
+          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+        return scores;
+      });
     }
     
     setLoading(false);
@@ -247,10 +263,13 @@ export default function ActiveMatch() {
         ) : (
           <div className="flex flex-row items-center justify-between relative z-10 gap-2 md:gap-8">
             {/* Team A Score */}
-            <div className="flex flex-col items-center flex-1 w-full overflow-hidden">
+            <div className="flex flex-col items-center flex-1 w-full overflow-hidden relative">
               <h3 className="text-lg md:text-2xl font-bold text-primary-400 mb-2 truncate max-w-full px-2 text-center tracking-widest uppercase">{teamA?.name}</h3>
-              <div className="text-6xl md:text-8xl font-black text-white tracking-tighter tabular-nums drop-shadow-lg">
+              <div className="text-6xl md:text-8xl font-black text-white tracking-tighter tabular-nums drop-shadow-lg relative">
                 {teamScores[teamA.id] || 0}
+                {goalAnim?.teamId === teamA.id && (
+                  <span key={goalAnim?.id} className="absolute -top-4 -right-12 md:-right-16 text-3xl md:text-5xl font-black text-primary-400 animate-float-up pointer-events-none drop-shadow-[0_0_15px_rgba(16,185,129,0.8)] z-50">+1</span>
+                )}
               </div>
             </div>
             
@@ -267,10 +286,13 @@ export default function ActiveMatch() {
             </div>
             
             {/* Team B Score */}
-            <div className="flex flex-col items-center flex-1 w-full overflow-hidden">
+            <div className="flex flex-col items-center flex-1 w-full overflow-hidden relative">
               <h3 className="text-lg md:text-2xl font-bold text-blue-400 mb-2 truncate max-w-full px-2 text-center tracking-widest uppercase">{teamB?.name}</h3>
-              <div className="text-6xl md:text-8xl font-black text-white tracking-tighter tabular-nums drop-shadow-lg">
+              <div className="text-6xl md:text-8xl font-black text-white tracking-tighter tabular-nums drop-shadow-lg relative">
                 {teamScores[teamB.id] || 0}
+                {goalAnim?.teamId === teamB.id && (
+                  <span key={goalAnim?.id} className="absolute -top-4 -right-12 md:-right-16 text-3xl md:text-5xl font-black text-blue-400 animate-float-up pointer-events-none drop-shadow-[0_0_15px_rgba(96,165,250,0.8)] z-50">+1</span>
+                )}
               </div>
             </div>
           </div>
