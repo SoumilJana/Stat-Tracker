@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Activity, Users, PlayCircle, Calendar, ArrowRight } from 'lucide-react';
+import { Trophy, Activity, Users, PlayCircle, Calendar, ArrowRight, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 export default function Dashboard() {
   const { profile } = useAuth();
   const [topScorer, setTopScorer] = useState<any>(null);
+  const [topAssister, setTopAssister] = useState<any>(null);
   const [totalGoals, setTotalGoals] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
   const [recentMatches, setRecentMatches] = useState<any[]>([]);
@@ -20,7 +21,28 @@ export default function Dashboard() {
         .from('player_stats')
         .select('*')
         .order('total_goals', { ascending: false })
+        .order('total_assists', { ascending: false })
+        .order('games_played', { ascending: false })
+        .order('username', { ascending: true })
         .limit(1);
+      
+      if (stats && stats.length > 0) {
+        setTopScorer(stats[0]);
+      }
+
+      // Fetch Top Assister (Playmaker)
+      const { data: assistStats } = await supabase
+        .from('player_stats')
+        .select('*')
+        .order('total_assists', { ascending: false })
+        .order('total_goals', { ascending: false })
+        .order('games_played', { ascending: false })
+        .order('username', { ascending: true })
+        .limit(1);
+      
+      if (assistStats && assistStats.length > 0) {
+        setTopAssister(assistStats[0]);
+      }
       
       if (stats && stats.length > 0) {
         setTopScorer(stats[0]);
@@ -70,9 +92,9 @@ export default function Dashboard() {
         <p className="mt-1 text-sm text-neutral-400">Here's the latest from the pitch.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Golden Boot Card */}
-        <div className="md:col-span-2 bg-black border border-white/5 rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-2xl group flex flex-col justify-end min-h-[240px]">
+        <div className="lg:col-span-2 bg-black border border-white/5 rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-2xl group flex flex-col justify-end min-h-[240px]">
           {topScorer?.photo_url && (
             <div className="absolute inset-0 z-0">
               <img src={topScorer.photo_url} alt="Top Scorer" className="w-full h-full object-cover opacity-40 group-hover:opacity-50 group-hover:scale-105 transition-all duration-700" />
@@ -105,8 +127,42 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Playmaker Card */}
+        <div className="lg:col-span-1 bg-black border border-white/5 rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-2xl group flex flex-col justify-end min-h-[240px]">
+          {topAssister?.photo_url && (
+            <div className="absolute inset-0 z-0">
+              <img src={topAssister.photo_url} alt="Top Assister" className="w-full h-full object-cover opacity-40 group-hover:opacity-50 group-hover:scale-105 transition-all duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+            </div>
+          )}
+          
+          <div className="relative z-10 flex flex-col h-full justify-between">
+            <h3 className="text-blue-500 font-bold uppercase tracking-widest text-xs mb-8 flex items-center gap-2 drop-shadow-md">
+              <Target className="w-4 h-4" /> Playmaker
+            </h3>
+            
+            {topAssister ? (
+              <div className="flex items-end justify-between gap-4 mt-auto">
+                <div>
+                  <h4 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-0 drop-shadow-lg">{topAssister.username}</h4>
+                </div>
+                <div className="text-right">
+                  <div className="text-4xl sm:text-5xl font-black text-blue-500 tracking-tighter drop-shadow-[0_0_15px_rgba(59,130,246,0.3)] leading-none">
+                    {topAssister.total_assists}
+                  </div>
+                  <div className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mt-2">
+                    Assists
+                  </div>
+                </div>
+              </div>
+            ) : (
+               <p className="text-neutral-500 font-medium text-sm">No assists yet.</p>
+            )}
+          </div>
+        </div>
+
         {/* Quick Stats */}
-        <div className="flex flex-col gap-4 sm:gap-6">
+        <div className="lg:col-span-1 flex flex-col gap-4 sm:gap-6">
           <div className="bg-black border border-white/5 rounded-2xl p-6 flex-1 flex flex-col justify-center relative overflow-hidden shadow-xl hover:border-white/10 transition-colors">
             <div className="absolute right-0 top-0 opacity-[0.03] transform translate-x-1/4 -translate-y-1/4 pointer-events-none">
               <Activity className="w-32 h-32 text-primary-500" />
@@ -114,7 +170,7 @@ export default function Dashboard() {
             <h3 className="text-primary-500/70 font-bold uppercase tracking-widest text-[10px] mb-2 flex items-center gap-2">
               <Activity className="w-3 h-3" /> Matches
             </h3>
-            <p className="text-5xl font-black text-white drop-shadow-md">{totalMatches}</p>
+            <p className="text-4xl sm:text-5xl font-black text-white drop-shadow-md">{totalMatches}</p>
           </div>
           <div className="bg-black border border-white/5 rounded-2xl p-6 flex-1 flex flex-col justify-center relative overflow-hidden shadow-xl hover:border-white/10 transition-colors">
             <div className="absolute right-0 top-0 opacity-[0.03] transform translate-x-1/4 -translate-y-1/4 pointer-events-none">
@@ -123,7 +179,7 @@ export default function Dashboard() {
             <h3 className="text-primary-500/70 font-bold uppercase tracking-widest text-[10px] mb-2 flex items-center gap-2">
               <Users className="w-3 h-3" /> Goals
             </h3>
-            <p className="text-5xl font-black text-white drop-shadow-md">{totalGoals}</p>
+            <p className="text-4xl sm:text-5xl font-black text-white drop-shadow-md">{totalGoals}</p>
           </div>
         </div>
       </div>

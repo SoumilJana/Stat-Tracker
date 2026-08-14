@@ -13,7 +13,8 @@ export default function Leaderboard() {
         .select('*')
         .order('total_goals', { ascending: false })
         .order('total_assists', { ascending: false })
-        .order('games_played', { ascending: true });
+        .order('games_played', { ascending: false })
+        .order('username', { ascending: true });
       
       if (data) setStats(data);
       setLoading(false);

@@ -29,3 +29,20 @@ export async function deletePlayer(userId: string) {
   
   return response.json();
 }
+
+export async function updatePlayer(userId: string, data: any) {
+  const response = await fetch(`${API_URL}/api/players/${userId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to update player');
+  }
+  
+  return response.json();
+}

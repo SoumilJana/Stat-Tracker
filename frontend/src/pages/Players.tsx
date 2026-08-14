@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit2, X, Activity, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { createPlayer, deletePlayer } from '../lib/api';
+import { createPlayer, deletePlayer, updatePlayer } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import imageCompression from 'browser-image-compression';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -100,7 +100,7 @@ export default function Players() {
     setError('');
     
     try {
-      let finalPhotoUrl = editPhotoUrl;
+      let base64String = null;
 
       // Handle image upload and compression
       if (editPhotoFile) {
@@ -111,32 +111,21 @@ export default function Players() {
         };
         
         const compressedFile = await imageCompression(editPhotoFile, options);
-        const fileName = `${editingPlayer.id}-${Date.now()}.jpg`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, compressedFile, { upsert: true });
-          
-        if (uploadError) throw uploadError;
-        
-        const { data: publicUrlData } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(fileName);
-          
-        finalPhotoUrl = publicUrlData.publicUrl;
+        base64String = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(compressedFile);
+        });
       }
 
-      // Update the base profiles table
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          username: editUsername,
-          full_name: editFullName || null,
-          photo_url: finalPhotoUrl || null
-        })
-        .eq('id', editingPlayer.id);
+      const response = await updatePlayer(editingPlayer.id, {
+        username: editUsername,
+        full_name: editFullName || null,
+        photo_url: editPhotoUrl || null,
+        photo_base64: base64String
+      });
 
-      if (updateError) throw updateError;
+      const finalPhotoUrl = response.photo_url;
       
       setIsEditModalOpen(false);
       setEditPhotoFile(null);

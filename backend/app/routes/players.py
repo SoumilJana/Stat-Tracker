@@ -73,3 +73,47 @@ def delete_player(user_id: str):
         return {"message": "Player deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+class UpdatePlayerRequest(BaseModel):
+    username: str
+    full_name: str | None = None
+    photo_url: str | None = None
+    photo_base64: str | None = None
+
+@router.put("/{user_id}")
+def update_player(user_id: str, request: UpdatePlayerRequest):
+    supabase = get_supabase_admin()
+    
+    try:
+        final_photo_url = request.photo_url
+        
+        if request.photo_base64:
+            import base64
+            import time
+            b64_data = request.photo_base64
+            if "," in b64_data:
+                b64_data = b64_data.split(",")[1]
+                
+            file_data = base64.b64decode(b64_data)
+            file_name = f"{user_id}-{int(time.time() * 1000)}.jpg"
+            
+            supabase.storage.from_("avatars").upload(
+                path=file_name,
+                file=file_data,
+                file_options={"content-type": "image/jpeg", "upsert": "true"}
+            )
+            
+            public_url = supabase.storage.from_("avatars").get_public_url(file_name)
+            final_photo_url = public_url
+            
+        profile_data = {
+            "username": request.username,
+            "full_name": request.full_name,
+            "photo_url": final_photo_url
+        }
+            
+        supabase.table("profiles").update(profile_data).eq("id", user_id).execute()
+        
+        return {"message": "Player updated successfully", "photo_url": final_photo_url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

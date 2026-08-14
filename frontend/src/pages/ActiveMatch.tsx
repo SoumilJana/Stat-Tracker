@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Activity, Undo2, SkipForward } from 'lucide-react';
+import { ArrowLeft, Clock, Activity, Undo2, SkipForward, Share2, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,6 +10,7 @@ export default function ActiveMatch() {
   const navigate = useNavigate();
   const [session, setSession] = useState<any>(null);
   const [pendingGoal, setPendingGoal] = useState<{playerId: string, teamId: string, teamPlayers: any[]} | null>(null);
+  const [copied, setCopied] = useState(false);
   
   // Engine State
   const [onPitch, setOnPitch] = useState<any[]>([]); // Up to 2 teams
@@ -190,12 +191,25 @@ export default function ActiveMatch() {
           <ArrowLeft className="w-5 h-5" />
           <span className="hidden sm:inline">Back to Matches</span>
         </Link>
-        <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
-          session.status === 'IN_PROGRESS' ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20' : 
-          session.status === 'SCHEDULED' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-          'bg-neutral-800 text-neutral-400 border border-neutral-700'
-        }`}>
-          {session.status.replace('_', ' ')}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-colors"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-primary-500" /> : <Share2 className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
+          </button>
+          <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${
+            session.status === 'IN_PROGRESS' ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20' : 
+            session.status === 'SCHEDULED' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+            'bg-neutral-800 text-neutral-400 border border-neutral-700'
+          }`}>
+            {session.status.replace('_', ' ')}
+          </div>
         </div>
       </div>
 
