@@ -118,6 +118,16 @@ export function calculatePlayerRating(
   const assists = player.total_assists ?? 0;
   const matches = player.games_played ?? 0;
 
+  if (matches <= 0 || (goals <= 0 && assists <= 0)) {
+    return {
+      rating: 0.0,
+      goalScore: 0.0,
+      assistScore: 0.0,
+      contributionScore: 0.0,
+      reliabilityScore: 0.0,
+    };
+  }
+
   const {
     GOAL_BENCHMARK,
     ASSIST_BENCHMARK,
