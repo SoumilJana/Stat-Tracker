@@ -33,9 +33,7 @@ export default function Login() {
     <div className="min-h-screen bg-neutral-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
-            <span className="text-3xl font-black text-black">ST</span>
-          </div>
+          <img src="/pwa-192x192.png" alt="StatTracker Logo" className="w-16 h-16 rounded-2xl shadow-lg shadow-primary-500/20 object-contain bg-neutral-900 border border-neutral-800" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
           Weekly Football Stats Tracker

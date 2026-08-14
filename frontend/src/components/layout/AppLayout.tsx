@@ -134,7 +134,7 @@ export default function AppLayout() {
       <nav className="hidden md:flex flex-col w-64 bg-neutral-900 border-r border-neutral-800 shrink-0">
         <div className="p-6">
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <span className="w-8 h-8 rounded bg-primary-500 flex items-center justify-center text-black">ST</span>
+            <img src="/pwa-192x192.png" alt="StatTracker Logo" className="w-8 h-8 rounded" />
             StatTracker
           </h1>
         </div>
@@ -173,7 +173,7 @@ export default function AppLayout() {
         {/* Unified Header (Mobile + Desktop Top Right) */}
         <header className="h-14 shrink-0 flex items-center justify-between md:justify-end px-4 md:px-8 mt-0 md:mt-4 sticky top-0 z-40 bg-neutral-900/80 backdrop-blur-sm border-b border-neutral-800 md:bg-transparent md:border-none md:backdrop-blur-none">
           <h1 className="md:hidden text-lg font-bold text-white flex items-center gap-2">
-            <span className="w-6 h-6 rounded bg-primary-500 flex items-center justify-center text-black text-xs">ST</span>
+            <img src="/pwa-192x192.png" alt="StatTracker Logo" className="w-6 h-6 rounded" />
             StatTracker
           </h1>
           
