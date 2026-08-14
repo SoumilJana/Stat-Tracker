@@ -63,7 +63,7 @@ export interface RatingBreakdown {
   reliabilityScore: number;
 }
 
-export type PlayerWithRating = PlayerStats & { rating: number };
+export type PlayerWithRating = PlayerStats & { rating: number; onFire?: boolean };
 
 // ---------------------------------------------------------------------------
 // Tournament-Wide Averages
@@ -201,12 +201,15 @@ export function formatRating(rating: number): string {
  * Returns a new array (does not mutate the input).
  */
 export function enrichPlayersWithRatings(
-  allPlayers: PlayerStats[]
+  allPlayers: PlayerStats[],
+  onFirePlayers?: Set<string>
 ): PlayerWithRating[] {
   const averages = calculateTournamentAverages(allPlayers);
 
   return allPlayers.map((player) => {
     const { rating } = calculatePlayerRating(player, averages);
-    return { ...player, rating };
+    const playerId = player.id || player.player_id || '';
+    const onFire = onFirePlayers ? onFirePlayers.has(playerId) : false;
+    return { ...player, rating, onFire };
   });
 }

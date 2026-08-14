@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { motion, type Variants } from 'framer-motion';
 import { enrichPlayersWithRatings, type PlayerWithRating } from '../lib/playerRating';
 import PlayerRatingBadge from '../components/PlayerRatingBadge';
+import { getOnFirePlayers } from '../lib/streaks';
 
 export default function Leaderboard() {
   const [stats, setStats] = useState<PlayerWithRating[]>([]);
@@ -18,7 +19,9 @@ export default function Leaderboard() {
         .order('games_played', { ascending: false })
         .order('username', { ascending: true });
       
-      if (data) setStats(enrichPlayersWithRatings(data));
+      const firePlayers = await getOnFirePlayers();
+      
+      if (data) setStats(enrichPlayersWithRatings(data, firePlayers));
       setLoading(false);
     };
 
@@ -70,7 +73,11 @@ export default function Leaderboard() {
             <motion.div 
               variants={itemVariants}
               key={player.player_id} 
-              className="relative overflow-hidden rounded-2xl bg-neutral-950 border border-white/5 group transition-all duration-500 hover:border-white/20"
+              className={`relative overflow-hidden rounded-2xl bg-neutral-950 border group transition-all duration-500 ${
+                player.onFire 
+                  ? 'border-orange-500/80 shadow-[0_0_15px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)]' 
+                  : 'border-white/5 hover:border-white/20'
+              }`}
             >
               {/* Row Background Image */}
               {player.photo_url && (

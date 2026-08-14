@@ -1,0 +1,25 @@
+# Convert StatTracker into a PWA (Progressive Web App)
+
+Adding PWA support will allow you and your players to "install" the StatTracker website to your mobile phones or desktop as if it were a native application. 
+
+## 1. Setup and Configuration
+- **Install Dependency**: Install `vite-plugin-pwa` as a development dependency (`npm install vite-plugin-pwa -D`).
+- **Update Vite Config**: Modify `vite.config.ts` to include the `VitePWA` plugin. You will need to configure the manifest with:
+  - App Name: "StatTracker"
+  - Short Name: "StatTracker"
+  - Theme Color: `#0a0a0a`
+  - Background Color: `#0a0a0a`
+  - Display mode: `standalone`
+
+## 2. Asset Generation
+- **Generate Icons**: Create the required PWA icons (`pwa-192x192.png` and `pwa-512x512.png`) and place them inside the `public/` directory. These are necessary for mobile devices to have a high-resolution icon on the home screen.
+
+## 3. HTML Updates
+- **Update index.html**: Add the PWA metadata tags to `index.html`.
+  ```html
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="apple-touch-icon" href="/pwa-192x192.png">
+  ```
+
+## 4. Register Service Worker
+- **Add Register Script**: `vite-plugin-pwa` handles service worker generation automatically. Depending on how you want to handle app updates (auto-update vs prompt to update), you can configure the `registerType` to `autoUpdate` or `prompt` in `vite.config.ts`.

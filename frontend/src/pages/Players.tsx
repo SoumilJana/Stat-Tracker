@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { enrichPlayersWithRatings } from '../lib/playerRating';
 import PlayerRatingBadge from '../components/PlayerRatingBadge';
 import { formatRating } from '../lib/playerRating';
+import { getOnFirePlayers } from '../lib/streaks';
 
 type Profile = {
   id: string;
@@ -19,6 +20,7 @@ type Profile = {
   total_assists?: number;
   games_played?: number;
   rating?: number;
+  onFire?: boolean;
 };
 
 export default function Players() {
@@ -47,8 +49,10 @@ export default function Players() {
 
   const fetchPlayers = async () => {
     const { data } = await supabase.from('player_stats').select('*').order('username');
+    const firePlayers = await getOnFirePlayers();
+
     if (data) {
-      const enriched = enrichPlayersWithRatings(data);
+      const enriched = enrichPlayersWithRatings(data, firePlayers);
       setPlayers(enriched.map(p => ({
         ...p,
         id: (p as any).id || (p as any).player_id
@@ -188,7 +192,11 @@ export default function Players() {
             layoutId={`card-${player.id}`}
             key={player.id} 
             onClick={() => setSelectedPlayer(player)}
-            className="group relative bg-black border border-white/5 rounded-2xl overflow-hidden cursor-pointer shadow-xl hover:shadow-primary-500/20 hover:border-primary-500/30 transition-all duration-300 aspect-[3/4]"
+            className={`group relative bg-black border rounded-2xl overflow-hidden cursor-pointer shadow-xl transition-all duration-300 aspect-[3/4] ${
+              player.onFire 
+                ? 'border-orange-500/80 shadow-[0_0_15px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)]' 
+                : 'border-white/5 hover:shadow-primary-500/20 hover:border-primary-500/30'
+            }`}
           >
             {/* Background Image */}
             <motion.div layoutId={`avatar-${player.id}`} className="absolute inset-0">
@@ -294,7 +302,9 @@ export default function Players() {
               <motion.div
                 layoutId={`card-${selectedPlayer.id}`}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-neutral-950 border border-neutral-800 rounded-3xl overflow-hidden w-full max-w-lg shadow-2xl pointer-events-auto relative flex flex-col min-h-[60vh] max-h-[90vh]"
+                className={`bg-neutral-950 border rounded-3xl overflow-hidden w-full max-w-lg shadow-2xl pointer-events-auto relative flex flex-col min-h-[60vh] max-h-[90vh] ${
+                  selectedPlayer.onFire ? 'border-orange-500/80 shadow-[0_0_25px_rgba(249,115,22,0.5)]' : 'border-neutral-800'
+                }`}
               >
                 {/* Full Background Image */}
                 <motion.div layoutId={`avatar-${selectedPlayer.id}`} className="absolute inset-0 overflow-hidden pointer-events-none">
