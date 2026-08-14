@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../lib/utils';
 
 export default function AppLayout() {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: Home },
@@ -62,13 +62,23 @@ export default function AppLayout() {
           ))}
         </div>
         <div className="p-4 border-t border-neutral-800">
-          <button
-            onClick={signOut}
-            className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Sign Out
-          </button>
+          {user ? (
+            <button
+              onClick={signOut}
+              className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              Sign Out
+            </button>
+          ) : (
+            <NavLink
+              to="/login"
+              className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-primary-400 bg-primary-900/20 hover:bg-primary-900/40 transition-colors"
+            >
+              <Users className="w-5 h-5" />
+              Sign In
+            </NavLink>
+          )}
         </div>
       </nav>
 
@@ -80,9 +90,15 @@ export default function AppLayout() {
             <span className="w-6 h-6 rounded bg-primary-500 flex items-center justify-center text-black text-xs">ST</span>
             StatTracker
           </h1>
-          <button onClick={signOut} className="text-neutral-400 hover:text-white">
-            <LogOut className="w-5 h-5" />
-          </button>
+          {user ? (
+            <button onClick={signOut} className="text-neutral-400 hover:text-white">
+              <LogOut className="w-5 h-5" />
+            </button>
+          ) : (
+            <NavLink to="/login" className="text-primary-400 text-sm font-medium">
+              Sign In
+            </NavLink>
+          )}
         </header>
 
         <div className="p-4 md:p-8 max-w-7xl mx-auto">

@@ -32,19 +32,16 @@ function AppRoutes() {
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
       <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/" />} />
       
-      <Route path="/" element={
-        <ProtectedRoute>
-          <AppLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Dashboard />} />
-        <Route path="matches">
-          <Route index element={<Matches />} />
-          <Route path="new" element={<NewMatch />} />
-          <Route path=":id" element={<ActiveMatch />} />
-        </Route>
-        <Route path="players" element={<Players />} />
-        <Route path="leaderboard" element={<Leaderboard />} />
+      <Route path="/" element={<AppLayout />}>
+        {/* Public Routes */}
+        <Route path="matches/:id" element={<ActiveMatch />} />
+        
+        {/* Protected Routes */}
+        <Route index element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
+        <Route path="matches/new" element={<ProtectedRoute><NewMatch /></ProtectedRoute>} />
+        <Route path="players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
+        <Route path="leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
       </Route>
     </Routes>
   );
