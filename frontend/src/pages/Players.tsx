@@ -9,7 +9,6 @@ import { enrichPlayersWithRatings } from '../lib/playerRating';
 import PlayerRatingBadge from '../components/PlayerRatingBadge';
 import { formatRating } from '../lib/playerRating';
 import { getOnFirePlayers } from '../lib/streaks';
-
 type Profile = {
   id: string;
   username: string;
@@ -21,6 +20,8 @@ type Profile = {
   games_played?: number;
   rating?: number;
   onFire?: boolean;
+  leaderboardRank?: number;
+  isTopAssister?: boolean;
 };
 
 export default function Players() {
@@ -215,13 +216,20 @@ export default function Players() {
             {/* Content Container */}
             <div className="absolute inset-0 p-5 flex flex-col pointer-events-none">
               
-              {/* Top Row: Role & Rating */}
+              {/* Top Row: Tags & Rating */}
               <div className="mb-2 flex items-start justify-between">
-                {player.role ? (
-                  <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
-                    {player.role}
-                  </span>
-                ) : <div />}
+                <div className="flex flex-row items-center gap-2">
+                  {player.leaderboardRank && player.leaderboardRank <= 3 && (
+                    <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
+                      {player.leaderboardRank === 1 ? '🥇 #1' : player.leaderboardRank === 2 ? '🥈 #2' : '🥉 #3'}
+                    </span>
+                  )}
+                  {player.isTopAssister && (
+                    <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
+                      🎯 TOP ASSIST
+                    </span>
+                  )}
+                </div>
                 
                 {player.rating !== undefined && (
                   <PlayerRatingBadge rating={player.rating} variant="boxed" />
@@ -252,6 +260,14 @@ export default function Players() {
 
                 <div className="flex items-center justify-between">
                    <div className="flex items-center gap-2 text-neutral-300">
+                     <Target className="w-4 h-4 text-blue-500/80" />
+                     <span className="text-[10px] font-bold uppercase tracking-widest">Assists</span>
+                   </div>
+                   <span className="text-base font-black text-white">{player.total_assists || 0}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-2 text-neutral-300">
                      <Target className="w-4 h-4 text-green-500/80" />
                      <span className="text-[10px] font-bold uppercase tracking-widest">Goals/Game</span>
                    </div>
@@ -260,14 +276,6 @@ export default function Players() {
                    </span>
                 </div>
                 
-                <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-2 text-neutral-300">
-                     <Target className="w-4 h-4 text-blue-500/80" />
-                     <span className="text-[10px] font-bold uppercase tracking-widest">Assists</span>
-                   </div>
-                   <span className="text-base font-black text-white">{player.total_assists || 0}</span>
-                </div>
-
                 <div className="flex items-center justify-between">
                    <div className="flex items-center gap-2 text-neutral-300">
                      <Activity className="w-4 h-4 text-primary-500/80" />
@@ -332,7 +340,19 @@ export default function Players() {
                 <div className="relative z-10 flex flex-col h-full flex-1">
                   
                   {/* Header / Name Section */}
-                  <div className="pt-32 px-6 sm:px-8 pb-4 mt-auto">
+                  <div className="pt-24 px-6 sm:px-8 pb-4 mt-auto">
+                    <div className="flex flex-row items-center gap-2 mb-3">
+                      {selectedPlayer.leaderboardRank && selectedPlayer.leaderboardRank <= 3 && (
+                        <span className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-[10px] font-bold text-neutral-200 uppercase tracking-widest">
+                          {selectedPlayer.leaderboardRank === 1 ? '🥇 #1' : selectedPlayer.leaderboardRank === 2 ? '🥈 #2' : '🥉 #3'}
+                        </span>
+                      )}
+                      {selectedPlayer.isTopAssister && (
+                        <span className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-[10px] font-bold text-neutral-200 uppercase tracking-widest">
+                          🎯 TOP ASSIST
+                        </span>
+                      )}
+                    </div>
                     <motion.h3 layoutId={`username-${selectedPlayer.id}`} className="text-4xl sm:text-5xl font-black text-white truncate drop-shadow-xl flex items-baseline gap-2">
                       {selectedPlayer.username}
                       {selectedPlayer.rating !== undefined && <PlayerRatingBadge rating={selectedPlayer.rating} size="lg" />}
@@ -348,14 +368,14 @@ export default function Players() {
                   <div className="px-6 sm:px-8 pb-6 sm:pb-8 space-y-6 overflow-y-auto w-full">
                     <div className="flex items-center gap-3 flex-wrap">
                       <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
-                        <Activity className="w-4 h-4 text-primary-400 mb-1" />
-                        <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.games_played || 0}</div>
-                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Played</div>
-                      </div>
-                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
                         <Target className="w-4 h-4 text-primary-400 mb-1" />
                         <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.total_goals || 0}</div>
                         <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Goals</div>
+                      </div>
+                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
+                        <Target className="w-4 h-4 text-blue-400 mb-1" />
+                        <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.total_assists || 0}</div>
+                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Assists</div>
                       </div>
                       <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
                         <Target className="w-4 h-4 text-green-400 mb-1" />
@@ -365,9 +385,9 @@ export default function Players() {
                         <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Goals/Game</div>
                       </div>
                       <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
-                        <Target className="w-4 h-4 text-blue-400 mb-1" />
-                        <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.total_assists || 0}</div>
-                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Assists</div>
+                        <Activity className="w-4 h-4 text-primary-400 mb-1" />
+                        <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.games_played || 0}</div>
+                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Played</div>
                       </div>
                       {selectedPlayer.rating !== undefined && (
                         <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">

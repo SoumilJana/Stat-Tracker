@@ -63,7 +63,12 @@ export interface RatingBreakdown {
   reliabilityScore: number;
 }
 
-export type PlayerWithRating = PlayerStats & { rating: number; onFire?: boolean };
+export type PlayerWithRating = PlayerStats & { 
+  rating: number; 
+  onFire?: boolean;
+  leaderboardRank?: number;
+  isTopAssister?: boolean;
+};
 
 // ---------------------------------------------------------------------------
 // Tournament-Wide Averages
@@ -206,10 +211,48 @@ export function enrichPlayersWithRatings(
 ): PlayerWithRating[] {
   const averages = calculateTournamentAverages(allPlayers);
 
-  return allPlayers.map((player) => {
+  // 1. Map base ratings and onFire
+  let enriched = allPlayers.map((player) => {
     const { rating } = calculatePlayerRating(player, averages);
     const playerId = player.id || player.player_id || '';
     const onFire = onFirePlayers ? onFirePlayers.has(playerId) : false;
-    return { ...player, rating, onFire };
+    return { ...player, rating, onFire } as PlayerWithRating;
   });
+
+  // 2. Sort using standard leaderboard logic (Goals DESC -> Assists DESC -> Matches DESC -> Name ASC)
+  enriched.sort((a, b) => {
+    const aGoals = a.total_goals || 0;
+    const bGoals = b.total_goals || 0;
+    if (bGoals !== aGoals) return bGoals - aGoals;
+
+    const aAssists = a.total_assists || 0;
+    const bAssists = b.total_assists || 0;
+    if (bAssists !== aAssists) return bAssists - aAssists;
+
+    const aMatches = a.games_played || 0;
+    const bMatches = b.games_played || 0;
+    if (bMatches !== aMatches) return bMatches - aMatches;
+
+    return a.username.localeCompare(b.username);
+  });
+
+  // 3. Assign Rankings
+  enriched.forEach((p, index) => {
+    p.leaderboardRank = index + 1;
+  });
+
+  // 4. Assign Top Assist
+  let maxAssists = -1;
+  enriched.forEach(p => {
+    const a = p.total_assists || 0;
+    if (a > maxAssists) maxAssists = a;
+  });
+
+  if (maxAssists > 0) {
+    enriched.forEach(p => {
+      p.isTopAssister = (p.total_assists || 0) === maxAssists;
+    });
+  }
+
+  return enriched;
 }
