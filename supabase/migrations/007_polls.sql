@@ -39,40 +39,6 @@ WHERE rank = 1;
 DROP VIEW IF EXISTS player_stats;
 
 CREATE OR REPLACE VIEW player_stats AS
-WITH session_counts AS (
-  SELECT tp.player_id, COUNT(DISTINCT t.session_id) as games_played
-  FROM team_players tp
-  JOIN teams t ON tp.team_id = t.id
-  JOIN sessions s ON t.session_id = s.id
-  WHERE s.status = 'COMPLETED'
-  GROUP BY tp.player_id
-),
-goal_counts AS (
-  SELECT e.player_id, COUNT(e.id) as total_goals 
-  FROM events e
-  JOIN sessions s ON e.session_id = s.id
-  WHERE e.event_type = 'GOAL' AND s.status = 'COMPLETED'
-  GROUP BY e.player_id
-),
-assist_counts AS (
-  SELECT e.assisted_by as player_id, COUNT(e.id) as total_assists 
-  FROM events e
-  JOIN sessions s ON e.session_id = s.id
-  WHERE e.event_type = 'GOAL' AND e.assisted_by IS NOT NULL AND s.status = 'COMPLETED'
-  GROUP BY e.assisted_by
-),
-defender_counts AS (
-  SELECT candidate_id as player_id, COUNT(*) as best_defender_awards
-  FROM match_awards_view
-  WHERE award_type = 'BEST_DEFENDER'
-  GROUP BY candidate_id
-),
-gk_counts AS (
-  SELECT candidate_id as player_id, COUNT(*) as best_gk_awards
-  FROM match_awards_view
-  WHERE award_type = 'BEST_GK'
-  GROUP BY candidate_id
-)
 SELECT 
   p.id AS player_id,
   p.username,
@@ -86,11 +52,40 @@ SELECT
   COALESCE(gk.best_gk_awards, 0) AS best_gk_awards
 FROM 
   profiles p
-LEFT JOIN session_counts sc ON p.id = sc.player_id
-LEFT JOIN goal_counts g ON p.id = g.player_id
-LEFT JOIN assist_counts a ON p.id = a.player_id
-LEFT JOIN defender_counts d ON p.id = d.player_id
-LEFT JOIN gk_counts gk ON p.id = gk.player_id;
+LEFT JOIN (
+  SELECT tp.player_id, COUNT(DISTINCT t.session_id) as games_played
+  FROM team_players tp
+  JOIN teams t ON tp.team_id = t.id
+  JOIN sessions s ON t.session_id = s.id
+  WHERE s.status = 'COMPLETED'
+  GROUP BY tp.player_id
+) sc ON p.id = sc.player_id
+LEFT JOIN (
+  SELECT e.player_id, COUNT(e.id) as total_goals 
+  FROM events e
+  JOIN sessions s ON e.session_id = s.id
+  WHERE e.event_type = 'GOAL' AND s.status = 'COMPLETED'
+  GROUP BY e.player_id
+) g ON p.id = g.player_id
+LEFT JOIN (
+  SELECT e.assisted_by as player_id, COUNT(e.id) as total_assists 
+  FROM events e
+  JOIN sessions s ON e.session_id = s.id
+  WHERE e.event_type = 'GOAL' AND e.assisted_by IS NOT NULL AND s.status = 'COMPLETED'
+  GROUP BY e.assisted_by
+) a ON p.id = a.player_id
+LEFT JOIN (
+  SELECT candidate_id as player_id, COUNT(*) as best_defender_awards
+  FROM match_awards_view
+  WHERE award_type = 'BEST_DEFENDER'
+  GROUP BY candidate_id
+) d ON p.id = d.player_id
+LEFT JOIN (
+  SELECT candidate_id as player_id, COUNT(*) as best_gk_awards
+  FROM match_awards_view
+  WHERE award_type = 'BEST_GK'
+  GROUP BY candidate_id
+) gk ON p.id = gk.player_id;
 
 GRANT SELECT ON match_awards_view TO authenticated;
 GRANT SELECT ON match_awards_view TO anon;
