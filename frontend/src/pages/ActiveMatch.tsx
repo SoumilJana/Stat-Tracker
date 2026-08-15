@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Activity, Undo2, SkipForward, Share2, Check } from 'lucide-react';
+import { ArrowLeft, Clock, Activity, Undo2, SkipForward, Share2, Check, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -11,7 +11,7 @@ export default function ActiveMatch() {
   const [session, setSession] = useState<any>(null);
   const [pendingGoal, setPendingGoal] = useState<{playerId: string, teamId: string, teamPlayers: any[]} | null>(null);
   const [copied, setCopied] = useState(false);
-  
+  const [statsCopied, setStatsCopied] = useState(false);  
   // Engine State
   const [onPitch, setOnPitch] = useState<any[]>([]); // Up to 2 teams
   const [waiting, setWaiting] = useState<any[]>([]); // Any waiting teams
@@ -180,6 +180,49 @@ export default function ActiveMatch() {
     }
   };
 
+  const copyStats = () => {
+    if (!session) return;
+    let text = `Match Day Stats - ${new Date(session.date).toLocaleDateString()}\n`;
+    if (session.location) text += `Location: ${session.location}\n`;
+    text += `\n--- Match Day Tally ---\n`;
+    
+    Object.entries(teamScores).forEach(([tId, score]) => {
+      const t = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
+      if (t) {
+        text += `${t.name.replace('Team ', '')}: ${score}\n`;
+      }
+    });
+
+    text += `\n--- Player Stats ---\n`;
+    Object.entries(teamPlayers).forEach(([tId, players]) => {
+      const team = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
+      if (!team) return;
+      
+      let hasStats = false;
+      let teamText = `\n${team.name}:\n`;
+      players.forEach(player => {
+        const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
+        const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
+        
+        if (pGoals > 0 || pAssists > 0) {
+          hasStats = true;
+          teamText += `- ${player.username}: `;
+          const stats = [];
+          if (pGoals > 0) stats.push(`${pGoals} G`);
+          if (pAssists > 0) stats.push(`${pAssists} A`);
+          teamText += stats.join(', ') + '\n';
+        }
+      });
+      if (hasStats) {
+        text += teamText;
+      }
+    });
+
+    navigator.clipboard.writeText(text);
+    setStatsCopied(true);
+    setTimeout(() => setStatsCopied(false), 2000);
+  };
+
   if (loading) return <div className="text-primary-500 p-8 flex justify-center"><Activity className="w-8 h-8 animate-spin" /></div>;
   if (!session || onPitch.length < 2) return <div className="text-red-400 p-8 text-center">Match not found or invalid teams.</div>;
 
@@ -208,6 +251,14 @@ export default function ActiveMatch() {
           <span className="hidden sm:inline">Back to Matches</span>
         </Link>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={copyStats}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 border border-primary-500/20 transition-colors"
+            title="Copy Match Stats"
+          >
+            {statsCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{statsCopied ? 'Copied!' : 'Copy Stats'}</span>
+          </button>
           <button 
             onClick={() => {
               navigator.clipboard.writeText(window.location.href);
