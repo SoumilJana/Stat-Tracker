@@ -477,7 +477,7 @@ export default function ActiveMatch() {
                   voteCounts[v.candidate_id] = (voteCounts[v.candidate_id] || 0) + 1;
                 });
                 
-                let leadingCandidateId = null;
+                let leadingCandidateId: string | null = null;
                 let maxVotes = 0;
                 Object.entries(voteCounts).forEach(([cId, count]) => {
                   if (count > maxVotes) {
