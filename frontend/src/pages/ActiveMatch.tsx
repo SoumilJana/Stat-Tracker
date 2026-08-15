@@ -23,6 +23,8 @@ export default function ActiveMatch() {
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [pollVotes, setPollVotes] = useState<any[]>([]);
+  const [votingAward, setVotingAward] = useState<'BEST_DEFENDER' | 'BEST_GK' | null>(null);
 
   const syncOfflineEvents = async () => {
     if (!navigator.onLine) return;
@@ -80,6 +82,10 @@ export default function ActiveMatch() {
         console.log('Event received', payload);
         fetchMatchData();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes', filter: `session_id=eq.${id}` }, (payload) => {
+        console.log('Vote received', payload);
+        fetchPollVotes();
+      })
       .subscribe();
 
     return () => {
@@ -89,10 +95,17 @@ export default function ActiveMatch() {
     };
   }, [id]);
 
+  const fetchPollVotes = async () => {
+    const { data } = await supabase.from('poll_votes').select('*').eq('session_id', id);
+    if (data) setPollVotes(data);
+  };
+
   const fetchMatchData = async () => {
     // Fetch session
     const { data: sData } = await supabase.from('sessions').select('*').eq('id', id).single();
     if (sData) setSession(sData);
+    
+    fetchPollVotes();
 
     // Fetch teams
     const { data: tData } = await supabase.from('teams').select('*').eq('session_id', id).order('name');
@@ -289,6 +302,26 @@ export default function ActiveMatch() {
     }
   };
 
+  const castPollVote = async (awardType: 'BEST_DEFENDER' | 'BEST_GK', candidateId: string) => {
+    if (!profile?.id) return alert("You must be logged in to vote.");
+    
+    // Check if user already voted
+    const existingVote = pollVotes.find(v => v.voter_id === profile.id && v.award_type === awardType);
+    
+    if (existingVote) {
+      await supabase.from('poll_votes').update({ candidate_id: candidateId }).eq('id', existingVote.id);
+    } else {
+      await supabase.from('poll_votes').insert({
+        session_id: id,
+        award_type: awardType,
+        voter_id: profile.id,
+        candidate_id: candidateId
+      });
+    }
+    setVotingAward(null);
+    fetchPollVotes();
+  };
+
   const copyStats = () => {
     if (!session) return;
     let text = `Match Day Stats - ${new Date(session.date).toLocaleDateString()}\n`;
@@ -430,8 +463,57 @@ export default function ActiveMatch() {
             <div className="text-5xl md:text-7xl font-black text-primary-400 tracking-tighter drop-shadow-lg mb-4 uppercase text-center">
               {winnerOfTheDay?.name}
             </div>
-            <div className="text-lg text-white font-bold bg-neutral-800 px-6 py-2 rounded-full border border-neutral-700">
+            <div className="text-lg text-white font-bold bg-neutral-800 px-6 py-2 rounded-full border border-neutral-700 mb-8">
               {maxScore} {session.mode === 'WINNER_STAYS' ? 'Wins' : 'Goals'}
+            </div>
+
+            {/* Poll Results */}
+            <div className="w-full mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {['BEST_DEFENDER', 'BEST_GK'].map(award => {
+                const awardName = award === 'BEST_DEFENDER' ? '🛡️ Best Defender' : '🧤 Best Goalkeeper';
+                const votesForAward = pollVotes.filter(v => v.award_type === award);
+                const voteCounts: Record<string, number> = {};
+                votesForAward.forEach(v => {
+                  voteCounts[v.candidate_id] = (voteCounts[v.candidate_id] || 0) + 1;
+                });
+                
+                let leadingCandidateId = null;
+                let maxVotes = 0;
+                Object.entries(voteCounts).forEach(([cId, count]) => {
+                  if (count > maxVotes) {
+                    maxVotes = count;
+                    leadingCandidateId = cId;
+                  }
+                });
+
+                const leadingPlayer = leadingCandidateId ? Object.values(teamPlayers).flat().find(p => p.id === leadingCandidateId) : null;
+                const hasVoted = pollVotes.some(v => v.voter_id === profile?.id && v.award_type === award);
+
+                return (
+                  <div key={award} className="bg-neutral-900/80 border border-white/10 rounded-2xl p-5 text-left relative overflow-hidden">
+                    <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+                      {awardName}
+                      {hasVoted && <span className="bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded text-[10px]">VOTED</span>}
+                    </h3>
+                    
+                    {leadingPlayer ? (
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="text-2xl font-black text-white">{leadingPlayer.username}</div>
+                        <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-full text-white">{maxVotes} {maxVotes === 1 ? 'vote' : 'votes'}</div>
+                      </div>
+                    ) : (
+                      <div className="text-neutral-500 italic mb-4">No votes yet</div>
+                    )}
+                    
+                    <button 
+                      onClick={() => setVotingAward(award as 'BEST_DEFENDER' | 'BEST_GK')}
+                      className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-white transition-colors"
+                    >
+                      {hasVoted ? 'Change Vote' : 'Cast Vote'}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -691,6 +773,52 @@ export default function ActiveMatch() {
             <button
               onClick={() => setPendingGoal(null)}
               className="mt-6 w-full py-3 text-neutral-500 hover:text-white text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Cast Poll Vote Modal */}
+      {votingAward && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative overflow-hidden flex flex-col max-h-[80vh]">
+            <h3 className="text-xl font-bold text-white mb-2 text-center">
+              {votingAward === 'BEST_DEFENDER' ? '🛡️ Best Defender' : '🧤 Best Goalkeeper'}
+            </h3>
+            <p className="text-neutral-400 text-sm mb-6 text-center">
+              Vote for a player from this matchday
+            </p>
+            
+            <div className="space-y-2 overflow-y-auto pr-2 flex-1">
+              {Object.values(teamPlayers).flat()
+                // Ensure distinct players (as they might appear multiple times if they played for multiple teams, though unlikely)
+                .filter((p, i, self) => i === self.findIndex(t => t.id === p.id))
+                .sort((a, b) => a.username.localeCompare(b.username))
+                .map(player => {
+                  const isCurrentVote = pollVotes.some(v => v.voter_id === profile?.id && v.award_type === votingAward && v.candidate_id === player.id);
+                  return (
+                    <button
+                      key={player.id}
+                      onClick={() => castPollVote(votingAward, player.id)}
+                      className={`w-full py-3 px-4 font-bold rounded-xl border transition-colors flex justify-between items-center ${
+                        isCurrentVote 
+                          ? 'bg-primary-500/20 text-primary-400 border-primary-500/30' 
+                          : 'bg-neutral-800 hover:bg-neutral-700 text-white border-white/5'
+                      }`}
+                    >
+                      <span>{player.username}</span>
+                      {isCurrentVote && <Check className="w-4 h-4" />}
+                    </button>
+                  );
+                })
+              }
+            </div>
+
+            <button
+              onClick={() => setVotingAward(null)}
+              className="mt-6 w-full py-3 text-neutral-500 hover:text-white text-sm font-medium transition-colors border-t border-neutral-800 pt-4"
             >
               Cancel
             </button>

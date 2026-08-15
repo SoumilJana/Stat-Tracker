@@ -22,6 +22,8 @@ type Profile = {
   onFire?: boolean;
   leaderboardRank?: number;
   isTopAssister?: boolean;
+  best_defender_awards?: number;
+  best_gk_awards?: number;
 };
 
 export default function Players() {
@@ -229,6 +231,16 @@ export default function Players() {
                       🎯 TOP ASSIST
                     </span>
                   )}
+                  {player.best_defender_awards && player.best_defender_awards > 0 && (
+                    <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
+                      🛡️ {player.best_defender_awards}
+                    </span>
+                  )}
+                  {player.best_gk_awards && player.best_gk_awards > 0 && (
+                    <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
+                      🧤 {player.best_gk_awards}
+                    </span>
+                  )}
                 </div>
                 
                 {player.rating !== undefined && (
@@ -389,6 +401,20 @@ export default function Players() {
                         <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.games_played || 0}</div>
                         <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Played</div>
                       </div>
+                      {selectedPlayer.best_defender_awards ? (
+                        <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
+                          <span className="text-xl mb-1 drop-shadow-md">🛡️</span>
+                          <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.best_defender_awards}</div>
+                          <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Best Def</div>
+                        </div>
+                      ) : null}
+                      {selectedPlayer.best_gk_awards ? (
+                        <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
+                          <span className="text-xl mb-1 drop-shadow-md">🧤</span>
+                          <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.best_gk_awards}</div>
+                          <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Best GK</div>
+                        </div>
+                      ) : null}
                       {selectedPlayer.rating !== undefined && (
                         <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
                           <Activity className="w-4 h-4 text-amber-400 mb-1" />

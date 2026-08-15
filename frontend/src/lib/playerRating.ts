@@ -48,6 +48,8 @@ export interface PlayerStats {
   total_goals: number;
   total_assists: number;
   games_played: number;
+  best_defender_awards?: number;
+  best_gk_awards?: number;
 }
 
 export interface TournamentAverages {
@@ -219,7 +221,7 @@ export function enrichPlayersWithRatings(
     return { ...player, rating, onFire } as PlayerWithRating;
   });
 
-  // 2. Sort using standard leaderboard logic (Goals DESC -> Assists DESC -> Matches DESC -> Name ASC)
+  // 2. Sort using standard leaderboard logic (Goals DESC -> Assists DESC -> Matches DESC -> Defender DESC -> GK DESC -> Name ASC)
   enriched.sort((a, b) => {
     const aGoals = a.total_goals || 0;
     const bGoals = b.total_goals || 0;
@@ -232,6 +234,14 @@ export function enrichPlayersWithRatings(
     const aMatches = a.games_played || 0;
     const bMatches = b.games_played || 0;
     if (bMatches !== aMatches) return bMatches - aMatches;
+
+    const aDef = a.best_defender_awards || 0;
+    const bDef = b.best_defender_awards || 0;
+    if (bDef !== aDef) return bDef - aDef;
+
+    const aGK = a.best_gk_awards || 0;
+    const bGK = b.best_gk_awards || 0;
+    if (bGK !== aGK) return bGK - aGK;
 
     return a.username.localeCompare(b.username);
   });

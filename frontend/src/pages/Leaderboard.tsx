@@ -109,25 +109,47 @@ export default function Leaderboard() {
                    </div>
                 </div>
 
-                {/* Goals & Assists */}
-                <div className="flex gap-4 sm:gap-6 text-right pr-2 sm:pr-4">
-                  <div className="flex flex-col items-end justify-center">
-                    <span className="text-3xl sm:text-5xl font-black text-blue-400 tabular-nums leading-none tracking-tighter drop-shadow-lg">
-                      {player.total_assists || 0}
-                    </span>
-                    <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
-                      Assists
-                    </span>
+                  {/* Goals, Assists & Defensive Awards */}
+                  <div className="flex gap-4 sm:gap-6 text-right pr-2 sm:pr-4">
+                    {player.best_defender_awards && player.best_defender_awards > 0 ? (
+                      <div className="flex flex-col items-end justify-center">
+                        <span className="text-3xl sm:text-5xl font-black text-amber-500 tabular-nums leading-none tracking-tighter drop-shadow-lg flex items-center gap-1">
+                          <span className="text-2xl sm:text-3xl">🛡️</span> {player.best_defender_awards}
+                        </span>
+                        <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
+                          Best Def
+                        </span>
+                      </div>
+                    ) : null}
+                    
+                    {player.best_gk_awards && player.best_gk_awards > 0 ? (
+                      <div className="flex flex-col items-end justify-center">
+                        <span className="text-3xl sm:text-5xl font-black text-purple-400 tabular-nums leading-none tracking-tighter drop-shadow-lg flex items-center gap-1">
+                          <span className="text-2xl sm:text-3xl">🧤</span> {player.best_gk_awards}
+                        </span>
+                        <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
+                          Best GK
+                        </span>
+                      </div>
+                    ) : null}
+
+                    <div className="flex flex-col items-end justify-center">
+                      <span className="text-3xl sm:text-5xl font-black text-blue-400 tabular-nums leading-none tracking-tighter drop-shadow-lg">
+                        {player.total_assists || 0}
+                      </span>
+                      <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
+                        Assists
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end justify-center">
+                      <span className="text-4xl sm:text-6xl font-black text-white tabular-nums leading-none tracking-tighter drop-shadow-lg">
+                        {player.total_goals}
+                      </span>
+                      <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
+                        Goals
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end justify-center">
-                    <span className="text-4xl sm:text-6xl font-black text-white tabular-nums leading-none tracking-tighter drop-shadow-lg">
-                      {player.total_goals}
-                    </span>
-                    <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
-                      Goals
-                    </span>
-                  </div>
-                </div>
               </div>
             </motion.div>
           ))}
