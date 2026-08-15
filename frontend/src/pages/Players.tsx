@@ -231,16 +231,16 @@ export default function Players() {
                       🎯 TOP ASSIST
                     </span>
                   )}
-                  {player.best_defender_awards && player.best_defender_awards > 0 && (
+                  {(player.best_defender_awards || 0) > 0 ? (
                     <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                       🛡️ {player.best_defender_awards}
                     </span>
-                  )}
-                  {player.best_gk_awards && player.best_gk_awards > 0 && (
+                  ) : null}
+                  {(player.best_gk_awards || 0) > 0 ? (
                     <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                       🧤 {player.best_gk_awards}
                     </span>
-                  )}
+                  ) : null}
                 </div>
                 
                 {player.rating !== undefined && (
