@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Activity, Undo2, SkipForward, Share2, Check, Copy } from 'lucide-react';
+import { ArrowLeft, Clock, Activity, Undo2, SkipForward, Share2, Check, Copy, CloudOff, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -21,8 +21,56 @@ export default function ActiveMatch() {
   
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const syncOfflineEvents = async () => {
+    if (!navigator.onLine) return;
+    const queue = JSON.parse(localStorage.getItem(`offline_events_${id}`) || '[]');
+    if (queue.length === 0) return;
+    
+    setIsSyncing(true);
+    let remainingQueue = [...queue];
+    
+    for (let i = 0; i < queue.length; i++) {
+      const action = queue[i];
+      let error = null;
+      if (action.type === 'INSERT') {
+        const { tempId, ...eventData } = action.payload;
+        const { error: err } = await supabase.from('events').insert(eventData);
+        error = err;
+      } else if (action.type === 'DELETE') {
+        const { error: err } = await supabase.from('events').delete().eq('id', action.payload);
+        error = err;
+      }
+      
+      if (!error) {
+        remainingQueue = remainingQueue.filter(a => a.tempId !== action.tempId);
+      }
+    }
+    
+    if (remainingQueue.length === 0) {
+      localStorage.removeItem(`offline_events_${id}`);
+    } else {
+      localStorage.setItem(`offline_events_${id}`, JSON.stringify(remainingQueue));
+    }
+    
+    fetchMatchData();
+    setIsSyncing(false);
+  };
 
   useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      syncOfflineEvents();
+    };
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    if (navigator.onLine) syncOfflineEvents();
+
     fetchMatchData();
     
     // Set up realtime subscription for events
@@ -35,6 +83,8 @@ export default function ActiveMatch() {
       .subscribe();
 
     return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
       supabase.removeChannel(subscription);
     };
   }, [id]);
@@ -70,7 +120,26 @@ export default function ActiveMatch() {
         .eq('session_id', id)
         .order('timestamp', { ascending: false });
       
-      if (eData) setEvents(eData);
+      const offlineQueue = JSON.parse(localStorage.getItem(`offline_events_${id}`) || '[]');
+      const offlineInserts = offlineQueue
+        .filter((a: any) => a.type === 'INSERT')
+        .map((a: any) => {
+          const tPlayers = tpMap[a.payload.team_id] || [];
+          return {
+            ...a.payload,
+            id: a.tempId,
+            player: { username: tPlayers.find((p: any) => p.id === a.payload.player_id)?.username },
+            assister: a.payload.assisted_by ? { username: Object.values(tpMap).flat().find((p: any) => p.id === a.payload.assisted_by)?.username } : null
+          };
+        });
+      
+      const deletedIds = offlineQueue.filter((a: any) => a.type === 'DELETE').map((a: any) => a.payload);
+      
+      let allEvents = (eData || []).filter(e => !deletedIds.includes(e.id));
+      allEvents = [...offlineInserts, ...allEvents];
+      allEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      
+      setEvents(allEvents);
 
       // --- RUN STATE ENGINE ---
       let currentPitch = [tData[0], tData[1]].filter(Boolean);
@@ -81,7 +150,7 @@ export default function ActiveMatch() {
       tData.forEach(t => { scores[t.id] = 0; timeOnPitch[t.id] = 1; });
       if (currentWaiting.length > 0) timeOnPitch[currentWaiting[0].id] = 0;
 
-      const sortedEvents = eData ? [...eData].reverse() : [];
+      const sortedEvents = [...allEvents].reverse();
 
       sortedEvents.forEach(ev => {
         if (ev.event_type === 'GOAL') {
@@ -145,29 +214,69 @@ export default function ActiveMatch() {
   const confirmGoal = async (assistedBy: string | null) => {
     if (!pendingGoal) return;
     
-    const { error } = await supabase.from('events').insert({
+    const eventData = {
       session_id: id,
       event_type: 'GOAL',
       player_id: pendingGoal.playerId,
       team_id: pendingGoal.teamId,
-      assisted_by: assistedBy
-    });
+      assisted_by: assistedBy,
+      timestamp: new Date().toISOString()
+    };
     
     setPendingGoal(null);
+
+    if (!navigator.onLine) {
+      const queue = JSON.parse(localStorage.getItem(`offline_events_${id}`) || '[]');
+      const tempId = `temp_${Date.now()}`;
+      queue.push({ type: 'INSERT', tempId, payload: { ...eventData, tempId } });
+      localStorage.setItem(`offline_events_${id}`, JSON.stringify(queue));
+      fetchMatchData();
+      return;
+    }
+    
+    const { error } = await supabase.from('events').insert(eventData);
     if (error) console.error("Error recording goal:", error);
     else fetchMatchData();
   };
 
   const recordTimeUp = async () => {
-    const { error } = await supabase.from('events').insert({
+    const eventData = {
       session_id: id,
-      event_type: 'NO_GOAL_TIME_UP'
-    });
+      event_type: 'NO_GOAL_TIME_UP',
+      timestamp: new Date().toISOString()
+    };
+    
+    if (!navigator.onLine) {
+      const queue = JSON.parse(localStorage.getItem(`offline_events_${id}`) || '[]');
+      const tempId = `temp_${Date.now()}`;
+      queue.push({ type: 'INSERT', tempId, payload: { ...eventData, tempId } });
+      localStorage.setItem(`offline_events_${id}`, JSON.stringify(queue));
+      fetchMatchData();
+      return;
+    }
+
+    const { error } = await supabase.from('events').insert(eventData);
     if (error) console.error("Error recording time up:", error);
     else fetchMatchData();
   };
 
   const undoEvent = async (eventId: string) => {
+    if (eventId.toString().startsWith('temp_')) {
+      const queue = JSON.parse(localStorage.getItem(`offline_events_${id}`) || '[]');
+      const newQueue = queue.filter((a: any) => a.tempId !== eventId);
+      localStorage.setItem(`offline_events_${id}`, JSON.stringify(newQueue));
+      fetchMatchData();
+      return;
+    }
+
+    if (!navigator.onLine) {
+      const queue = JSON.parse(localStorage.getItem(`offline_events_${id}`) || '[]');
+      queue.push({ type: 'DELETE', tempId: `temp_del_${Date.now()}`, payload: eventId });
+      localStorage.setItem(`offline_events_${id}`, JSON.stringify(queue));
+      fetchMatchData();
+      return;
+    }
+
     const { error } = await supabase.from('events').delete().eq('id', eventId);
     if (error) console.error("Error undoing event:", error);
     else fetchMatchData();
@@ -244,6 +353,20 @@ export default function ActiveMatch() {
 
   return (
     <div className="max-w-5xl mx-auto pb-24 md:pb-8">
+      {/* Offline Indicators */}
+      {isOffline && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 mb-6 animate-pulse">
+          <CloudOff className="w-5 h-5" />
+          Offline Mode. Goals will be saved locally and synced later.
+        </div>
+      )}
+      {isSyncing && (
+        <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 mb-6">
+          <RefreshCw className="w-5 h-5 animate-spin" />
+          Syncing offline goals to database...
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <Link to="/matches" className="text-neutral-400 hover:text-white flex items-center gap-2 transition-colors">
