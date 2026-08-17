@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { InstallPrompt } from './components/InstallPrompt';
 import AppLayout from './components/layout/AppLayout';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
@@ -52,6 +53,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <InstallPrompt />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>
