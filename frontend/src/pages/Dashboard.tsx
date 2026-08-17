@@ -4,6 +4,7 @@ import { Trophy, Activity, Users, Plus, Calendar, ArrowRight, Target } from 'luc
 import { supabase } from '../lib/supabase';
 import { enrichPlayersWithRatings, type PlayerWithRating } from '../lib/playerRating';
 import PlayerRatingBadge from '../components/PlayerRatingBadge';
+import NotificationsSetup from '../components/NotificationsSetup';
 
 import { useAuth } from '../contexts/AuthContext';
 
@@ -98,6 +99,10 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold leading-7 text-white sm:text-3xl sm:truncate">Welcome back!</h2>
         <p className="mt-1 text-sm text-neutral-400">Here's the latest from the pitch.</p>
       </div>
+
+      {profile?.role === 'admin' && (
+        <NotificationsSetup />
+      )}
 
       {/* Hero Performers */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
