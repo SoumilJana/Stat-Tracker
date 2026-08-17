@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Home, Users, LogOut, Activity, Trophy, User as UserIcon } from 'lucide-react';
+import { Home, Users, LogOut, Activity, Trophy, User as UserIcon, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../lib/utils';
 import { useState, useEffect } from 'react';
@@ -92,6 +92,7 @@ export default function AppLayout() {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: Home },
     { name: 'Matches', path: '/matches', icon: Activity },
+    { name: 'Drafts', path: '/drafts', icon: ClipboardList },
     { name: 'Players', path: '/players', icon: Users },
     { name: 'Leaderboard', path: '/leaderboard', icon: Trophy },
   ];

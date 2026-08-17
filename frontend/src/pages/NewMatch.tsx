@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { Copy, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function NewMatch() {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<any[]>([]);
   const [location, setLocation] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [time, setTime] = useState('19:00');
   const [mode, setMode] = useState('STANDARD');
   
   const [teamA, setTeamA] = useState<string[]>([]);
   const [teamB, setTeamB] = useState<string[]>([]);
   const [teamC, setTeamC] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [matchCreated, setMatchCreated] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     supabase.from('profiles').select('*').order('username').then(({ data }) => {
@@ -72,7 +76,7 @@ export default function NewMatch() {
           location, 
           mode: mode, 
           status: 'SCHEDULED',
-          date: new Date(date).toISOString() 
+          date: new Date(`${date}T${time}:00`).toISOString() 
         })
         .select()
         .single();
@@ -113,8 +117,8 @@ export default function NewMatch() {
       const { error: tpError } = await supabase.from('team_players').insert(teamPlayersData);
       if (tpError) throw tpError;
 
-      // Navigate to matches list
-      navigate(`/matches`);
+      // Show success view
+      setMatchCreated(true);
 
     } catch (e: any) {
       console.error(e);
@@ -122,6 +126,72 @@ export default function NewMatch() {
       setSubmitting(false);
     }
   };
+
+  const getFormattedMatchDetails = () => {
+    const formatTeam = (teamName: string, teamIds: string[]) => {
+      const playerNames = teamIds.map(id => {
+        const player = players.find(p => p.id === id);
+        return player ? `• ${player.username}` : '';
+      }).join('\n');
+      return `**${teamName}**\n${playerNames}`;
+    };
+
+    let text = `🏆 *New Match Scheduled!* 🏆\n\n`;
+    text += `📅 Date: ${date}\n`;
+    text += `⏰ Time: ${time}\n`;
+    text += `📍 Location: ${location || 'TBD'}\n`;
+    text += `🎯 Mode: ${mode === 'STANDARD' ? 'Standard Match' : 'Winner Stays'}\n\n`;
+    
+    text += `${formatTeam('Team A', teamA)}\n\n`;
+    text += `${formatTeam('Team B', teamB)}`;
+    
+    if (mode === 'WINNER_STAYS') {
+      text += `\n\n${formatTeam('Team C', teamC)}`;
+    }
+
+    return text;
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(getFormattedMatchDetails());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (matchCreated) {
+    return (
+      <div className="space-y-6 max-w-2xl mx-auto pb-24 text-center">
+        <div className="bg-black border border-primary-500/30 rounded-3xl p-8 sm:p-12 space-y-8 shadow-2xl">
+          <div className="w-20 h-20 bg-primary-500/20 text-primary-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+          <h2 className="text-3xl font-black text-white uppercase tracking-widest">Match Scheduled!</h2>
+          <p className="text-neutral-400">Your match has been successfully created. Share the details with your players.</p>
+          
+          <div className="bg-neutral-900/50 p-6 rounded-2xl text-left border border-white/5 whitespace-pre-wrap font-mono text-sm text-neutral-300">
+            {getFormattedMatchDetails()}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <button 
+              onClick={handleCopy}
+              className="bg-primary-500 text-black px-8 py-4 rounded-full font-black text-sm tracking-widest uppercase hover:bg-primary-400 transition-all flex items-center justify-center gap-2"
+            >
+              {copied ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+              {copied ? 'Copied!' : 'Copy Details'}
+            </button>
+            <button 
+              onClick={() => navigate('/matches')}
+              className="bg-white/5 text-white border border-white/10 px-8 py-4 rounded-full font-black text-sm tracking-widest uppercase hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+            >
+              Go to Matches
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-24">
@@ -131,13 +201,22 @@ export default function NewMatch() {
       </div>
 
       <div className="bg-black border border-white/5 rounded-3xl p-6 sm:p-10 space-y-8 shadow-2xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           <div>
             <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">Date</label>
             <input 
               type="date" 
               value={date}
               onChange={e => setDate(e.target.value)}
+              className="w-full bg-neutral-900/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all [color-scheme:dark]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">Time</label>
+            <input 
+              type="time" 
+              value={time}
+              onChange={e => setTime(e.target.value)}
               className="w-full bg-neutral-900/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all [color-scheme:dark]"
             />
           </div>

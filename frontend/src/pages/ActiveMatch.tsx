@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Activity, Undo2, SkipForward, Share2, Check, Copy, CloudOff, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Clock, Activity, Undo2, SkipForward, Share2, Check, Copy, CloudOff, RefreshCw, Trash2, Edit } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -12,6 +12,11 @@ export default function ActiveMatch() {
   const [pendingGoal, setPendingGoal] = useState<{playerId: string, teamId: string, teamPlayers: any[]} | null>(null);
   const [copied, setCopied] = useState(false);
   const [statsCopied, setStatsCopied] = useState(false);  
+
+  const [isEditingMatch, setIsEditingMatch] = useState(false);
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editLocation, setEditLocation] = useState('');
   // Engine State
   const [onPitch, setOnPitch] = useState<any[]>([]); // Up to 2 teams
   const [waiting, setWaiting] = useState<any[]>([]); // Any waiting teams
@@ -324,6 +329,33 @@ export default function ActiveMatch() {
 
   const copyStats = () => {
     if (!session) return;
+    
+    if (session.status !== 'COMPLETED') {
+      let text = `Match - ${new Date(session.date).toLocaleDateString()}\n`;
+      if (session.location) text += `Location: ${session.location}\n`;
+      text += `Time: ${new Date(session.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\n`;
+      
+      const allTeams = [...Object.values(onPitch), ...waiting];
+      
+      allTeams.sort((a, b) => a.name.localeCompare(b.name)).forEach(team => {
+        const players = teamPlayers[team.id];
+        if (!players || players.length === 0) return;
+        
+        text += `\n${team.name}\n`;
+        text += `Captain: ${players[0].username}\n`;
+        if (players.length > 1) {
+          players.slice(1).forEach((p, index) => {
+            text += `${index + 1}. ${p.username}\n`;
+          });
+        }
+      });
+
+      navigator.clipboard.writeText(text);
+      setStatsCopied(true);
+      setTimeout(() => setStatsCopied(false), 2000);
+      return;
+    }
+
     let text = `Match Day Stats - ${new Date(session.date).toLocaleDateString()}\n`;
     if (session.location) text += `Location: ${session.location}\n`;
     text += `\n--- Match Day Tally ---\n`;
@@ -360,9 +392,85 @@ export default function ActiveMatch() {
       }
     });
 
+    let topScorerName = 'N/A';
+    let topScorerGoals = 0;
+    let topAssisterName = 'N/A';
+    let topAssisterAssists = 0;
+
+    Object.values(teamPlayers).flat().forEach(player => {
+      const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
+      const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
+      if (pGoals > topScorerGoals) {
+        topScorerGoals = pGoals;
+        topScorerName = player.username;
+      }
+      if (pAssists > topAssisterAssists) {
+        topAssisterAssists = pAssists;
+        topAssisterName = player.username;
+      }
+    });
+
+    const getAwardWinner = (awardType: string) => {
+      const votes = pollVotes.filter(v => v.award_type === awardType);
+      const counts: Record<string, number> = {};
+      votes.forEach(v => counts[v.candidate_id] = (counts[v.candidate_id] || 0) + 1);
+      let maxId: string | null = null;
+      let maxVotes = 0;
+      Object.entries(counts).forEach(([id, c]) => {
+        if (c > maxVotes) { maxVotes = c; maxId = id; }
+      });
+      if (!maxId) return null;
+      return Object.values(teamPlayers).flat().find(p => p.id === maxId)?.username;
+    };
+
+    const bestGk = getAwardWinner('BEST_GK');
+    const bestDef = getAwardWinner('BEST_DEFENDER');
+
+    text += `\n--- Highlights ---\n`;
+    if (topScorerGoals > 0) text += `Top Scorer: ${topScorerName} (${topScorerGoals}G)\n`;
+    if (topAssisterAssists > 0) text += `Top Assister: ${topAssisterName} (${topAssisterAssists}A)\n`;
+    if (bestGk) text += `Best GK: ${bestGk}\n`;
+    if (bestDef) text += `Best Defender: ${bestDef}\n`;
+
     navigator.clipboard.writeText(text);
     setStatsCopied(true);
     setTimeout(() => setStatsCopied(false), 2000);
+  };
+
+  const openEditModal = () => {
+    if (session?.date) {
+      const dateObj = new Date(session.date);
+      const localDate = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
+      setEditDate(localDate.toISOString().split('T')[0]);
+      setEditTime(localDate.toISOString().split('T')[1].slice(0, 5));
+    }
+    setEditLocation(session?.location || '');
+    setIsEditingMatch(true);
+  };
+
+  const saveMatchDetails = async () => {
+    try {
+      const d = new Date(`${editDate}T${editTime}`);
+      const { error } = await supabase.from('sessions').update({ 
+        date: d.toISOString(), 
+        location: editLocation 
+      }).eq('id', session?.id);
+      if (error) throw error;
+      setIsEditingMatch(false);
+      fetchMatchData();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const deleteMatch = async () => {
+    if (!window.confirm("Are you sure you want to delete this match completely? This cannot be undone.")) return;
+    const { error } = await supabase.from('sessions').delete().eq('id', id);
+    if (!error) {
+      navigate('/matches');
+    } else {
+      alert(error.message);
+    }
   };
 
   if (loading) return <div className="text-primary-500 p-8 flex justify-center"><Activity className="w-8 h-8 animate-spin" /></div>;
@@ -407,13 +515,35 @@ export default function ActiveMatch() {
           <span className="hidden sm:inline">Back to Matches</span>
         </Link>
         <div className="flex items-center gap-3">
+          {profile?.role === 'admin' && (
+            <>
+              <button 
+                onClick={openEditModal}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-neutral-500/10 text-neutral-400 hover:bg-neutral-500/20 border border-neutral-500/20 transition-colors"
+                title="Edit Match"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Edit</span>
+              </button>
+              <button 
+                onClick={deleteMatch}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+                title="Delete Match"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Delete</span>
+              </button>
+            </>
+          )}
           <button 
             onClick={copyStats}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 border border-primary-500/20 transition-colors"
-            title="Copy Match Stats"
+            title={session?.status === 'COMPLETED' ? "Copy Match Stats" : "Copy Teams"}
           >
             {statsCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{statsCopied ? 'Copied!' : 'Copy Stats'}</span>
+            <span className="hidden sm:inline">
+              {statsCopied ? 'Copied!' : (session?.status === 'COMPLETED' ? 'Copy Stats' : 'Copy Teams')}
+            </span>
           </button>
           <button 
             onClick={() => {
@@ -822,6 +952,47 @@ export default function ActiveMatch() {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Match Modal */}
+      {isEditingMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col max-h-[90vh]">
+            <h3 className="text-xl font-black text-white uppercase tracking-widest mb-6">
+              Edit Match Details
+            </h3>
+            
+            <div className="space-y-4 mb-8 flex-1 overflow-y-auto">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Date</label>
+                <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 text-white focus:border-primary-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Time</label>
+                <input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 text-white focus:border-primary-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Location</label>
+                <input type="text" value={editLocation} onChange={e => setEditLocation(e.target.value)} placeholder="e.g. Turf 1" className="w-full bg-black border border-white/5 rounded-xl px-4 py-3 text-white focus:border-primary-500 outline-none" />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsEditingMatch(false)}
+                className="flex-1 py-3 text-neutral-400 hover:text-white font-bold transition-colors bg-neutral-800 hover:bg-neutral-700 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveMatchDetails}
+                className="flex-1 py-3 bg-primary-500 text-black font-black uppercase tracking-widest hover:bg-primary-400 transition-all rounded-xl"
+              >
+                Save
+              </button>
+            </div>
           </div>
         </div>
       )}
