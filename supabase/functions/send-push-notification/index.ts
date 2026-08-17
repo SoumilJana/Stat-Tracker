@@ -37,10 +37,10 @@ serve(async (req) => {
       throw new Error("VAPID keys not configured in Edge Function environment");
     }
 
-    // Determine payload based on notification type
-    let payload = { title: "StatTracker", body: "You have a new notification." };
-    
-    if (notificationType === 'PAST_STATS') {
+    let globalPayload: any = null;
+    let targetSessionId = sessionId;
+
+    if (notificationType === 'PAST_STATS' || notificationType === 'POST_MATCH') {
       // Fetch latest completed session
       const { data: latestSession } = await supabase
         .from('sessions')
@@ -88,29 +88,23 @@ serve(async (req) => {
         const topScorer = Object.entries(playerGoals).sort((a, b) => b[1] - a[1])[0];
         const topScorerText = topScorer ? ` | Top Scorer: ${topScorer[0]} (${topScorer[1]}⚽)` : '';
 
-        payload = {
-          title: "📊 Last Match Stats",
+        // If POST_MATCH, maybe tweak the title slightly, but user said "same notif"
+        // Let's keep the title appropriate for context, but the exact same stats body.
+        globalPayload = {
+          title: notificationType === 'POST_MATCH' ? "🏁 Match Completed!" : "📊 Last Match Stats",
           body: `${scoreText}${topScorerText}`,
         };
       } else {
-        payload = {
-          title: "📊 Last Match Stats",
+        globalPayload = {
+          title: notificationType === 'POST_MATCH' ? "🏁 Match Completed!" : "📊 Last Match Stats",
           body: "No past games found yet!",
         };
       }
-    } else if (notificationType === 'UPCOMING_INFO') {
-      payload = {
-        title: "📅 Upcoming Match Scheduled!",
-        body: "Tap to view your team and match details for tomorrow.",
-      };
-    } else if (notificationType === 'POST_MATCH') {
-      payload = {
-        title: "🏁 Match Completed!",
-        body: "The final scores and awards are in. See how your team did!",
-      };
+    } else if (notificationType === 'UPCOMING_INFO' || notificationType === 'MATCH_CREATED') {
+      // Will be processed per user
     } else {
       // Fallback or custom push test
-      payload = { title: "Test Notification", body: "This is a test web push." };
+      globalPayload = { title: "Test Notification", body: "This is a test web push." };
     }
 
     // For testing, we only want to send to Admins if no specific targetUserIds are passed
@@ -126,7 +120,75 @@ serve(async (req) => {
 
     console.log(`Found ${subscriptions?.length || 0} subscriptions to notify.`);
 
+    // Fetch the scheduled session details if needed for personalized notifications
+    let scheduledSession: any = null;
+    if (notificationType === 'UPCOMING_INFO' || notificationType === 'MATCH_CREATED') {
+      let sessionQuery = supabase
+        .from('sessions')
+        .select(`
+          id,
+          date,
+          location,
+          teams (
+            id,
+            name,
+            team_players (
+              player_id,
+              profiles:profiles!team_players_player_id_fkey(username)
+            )
+          )
+        `);
+      
+      if (targetSessionId) {
+        sessionQuery = sessionQuery.eq('id', targetSessionId);
+      } else {
+        sessionQuery = sessionQuery.eq('status', 'SCHEDULED').order('date', { ascending: false }).limit(1);
+      }
+      
+      const { data } = await sessionQuery.single();
+      scheduledSession = data;
+    }
+
     const sendPromises = subscriptions.map(async (sub) => {
+      let personalizedPayload = globalPayload;
+
+      // Generate personalized payload for UPCOMING_INFO and MATCH_CREATED
+      if (!globalPayload && scheduledSession) {
+        // Format date: e.g., "22 August, 7:00 AM"
+        const d = new Date(scheduledSession.date);
+        const dateStr = d.toLocaleString('en-US', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true });
+        const locationStr = scheduledSession.location ? `\n📍 ${scheduledSession.location}` : "";
+        
+        let teamInfo = "\n\nYou haven't been assigned to a team yet.";
+        
+        // Find which team this user is on
+        let userTeam = null;
+        for (const team of scheduledSession.teams) {
+          const isPlayerInTeam = team.team_players.some((tp: any) => tp.player_id === sub.user_id);
+          if (isPlayerInTeam) {
+            userTeam = team;
+            break;
+          }
+        }
+
+        if (userTeam) {
+          const playerNames = userTeam.team_players.map((tp: any) => tp.profiles?.username || 'Unknown').join(' · ');
+          teamInfo = `\n\nYour Team (${userTeam.name}):\n${playerNames}`;
+        }
+
+        const titleStr = notificationType === 'MATCH_CREATED' ? "✅ Match Finalized & Scheduled!" : "📅 Upcoming Match Scheduled!";
+
+        personalizedPayload = {
+          title: titleStr,
+          body: `📅 ${dateStr}${locationStr}${teamInfo}`,
+        };
+      } else if (!globalPayload && !scheduledSession) {
+        personalizedPayload = {
+          title: "📅 Upcoming Match",
+          body: "No scheduled matches found.",
+        };
+      }
+
       const pushSubscription = {
         endpoint: sub.endpoint,
         keys: {
@@ -136,7 +198,7 @@ serve(async (req) => {
       };
 
       try {
-        await webpush.sendNotification(pushSubscription, JSON.stringify(payload));
+        await webpush.sendNotification(pushSubscription, JSON.stringify(personalizedPayload));
         return { success: true, endpoint: sub.endpoint };
       } catch (err: any) {
         console.error("Error sending push to endpoint", sub.endpoint, err);
@@ -150,7 +212,7 @@ serve(async (req) => {
 
     const results = await Promise.all(sendPromises);
 
-    return new Response(JSON.stringify({ success: true, payload, results }), {
+    return new Response(JSON.stringify({ success: true, globalPayload, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

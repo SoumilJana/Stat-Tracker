@@ -117,6 +117,18 @@ export default function NewMatch() {
       const { error: tpError } = await supabase.from('team_players').insert(teamPlayersData);
       if (tpError) throw tpError;
 
+      // Trigger push notification
+      try {
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            notificationType: 'MATCH_CREATED',
+            sessionId: session.id
+          }
+        });
+      } catch (err) {
+        console.error("Failed to send match created notification", err);
+      }
+
       // Show success view
       setMatchCreated(true);
 
