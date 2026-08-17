@@ -41,10 +41,63 @@ serve(async (req) => {
     let payload = { title: "StatTracker", body: "You have a new notification." };
     
     if (notificationType === 'PAST_STATS') {
-      payload = {
-        title: "📊 Last Week's Stats",
-        body: "Check out the top performers and scores from our last game!",
-      };
+      // Fetch latest completed session
+      const { data: latestSession } = await supabase
+        .from('sessions')
+        .select(`
+          id,
+          date,
+          teams (
+            id,
+            name
+          )
+        `)
+        .eq('status', 'COMPLETED')
+        .order('date', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (latestSession) {
+        // Fetch goals for this session
+        const { data: events } = await supabase
+          .from('events')
+          .select('team_id, player_id, profiles!events_player_id_fkey(username)')
+          .eq('session_id', latestSession.id)
+          .eq('event_type', 'GOAL');
+        
+        let teamScores: Record<string, number> = {};
+        latestSession.teams.forEach((t: any) => teamScores[t.name] = 0);
+        
+        let playerGoals: Record<string, number> = {};
+        
+        if (events) {
+          events.forEach((e: any) => {
+            const team = latestSession.teams.find((t: any) => t.id === e.team_id);
+            if (team) {
+              teamScores[team.name]++;
+            }
+            if (e.profiles?.username) {
+              playerGoals[e.profiles.username] = (playerGoals[e.profiles.username] || 0) + 1;
+            }
+          });
+        }
+        
+        const scoreText = Object.entries(teamScores).map(([name, score]) => `${name}: ${score}`).join(' vs ');
+        
+        // Find top scorer
+        const topScorer = Object.entries(playerGoals).sort((a, b) => b[1] - a[1])[0];
+        const topScorerText = topScorer ? ` | Top Scorer: ${topScorer[0]} (${topScorer[1]}⚽)` : '';
+
+        payload = {
+          title: "📊 Last Match Stats",
+          body: `${scoreText}${topScorerText}`,
+        };
+      } else {
+        payload = {
+          title: "📊 Last Match Stats",
+          body: "No past games found yet!",
+        };
+      }
     } else if (notificationType === 'UPCOMING_INFO') {
       payload = {
         title: "📅 Upcoming Match Scheduled!",
@@ -97,7 +150,7 @@ serve(async (req) => {
 
     const results = await Promise.all(sendPromises);
 
-    return new Response(JSON.stringify({ success: true, results }), {
+    return new Response(JSON.stringify({ success: true, payload, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
