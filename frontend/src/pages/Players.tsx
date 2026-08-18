@@ -51,14 +51,20 @@ export default function Players() {
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
 
   const fetchPlayers = async () => {
-    const { data } = await supabase.from('player_stats').select('*').order('username');
-    const firePlayers = await getOnFirePlayers();
+    const [statsResponse, firePlayers] = await Promise.all([
+      supabase.from('player_stats').select('*').order('username'),
+      getOnFirePlayers()
+    ]);
+
+    const { data } = statsResponse;
 
     if (data) {
       const enriched = enrichPlayersWithRatings(data, firePlayers);
       setPlayers(enriched.map(p => ({
         ...p,
-        id: (p as any).id || (p as any).player_id
+        id: (p as any).id || (p as any).player_id,
+        total_goals: p.total_goals || 0,
+        games_played: p.games_played || 0
       })));
     }
     setLoading(false);

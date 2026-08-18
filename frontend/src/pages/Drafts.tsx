@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, Shuffle, PlayCircle, CheckCircle2, Clock, X, Plus } from 'lucide-react';
+import { Users, Shuffle, PlayCircle, CheckCircle2, Clock, X, Plus, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Profile = { id: string; username: string; photo_url: string; role: string; jersey_number: number };
@@ -75,8 +75,12 @@ export default function Drafts() {
     
     if (data) {
       setDraft(data);
-      fetchCaptains(data.id);
-      fetchPicks(data.id);
+      const capPromise = supabase.from('draft_captains').select('*, profile:profiles(*)').eq('draft_id', data.id).order('pick_order');
+      const pickPromise = supabase.from('draft_picks').select('*, profile:profiles(*)').eq('draft_id', data.id).order('pick_number');
+      const [capRes, pickRes] = await Promise.all([capPromise, pickPromise]);
+      
+      if (capRes.data) setCaptains(capRes.data);
+      if (pickRes.data) setPicks(pickRes.data);
     }
   };
 
@@ -402,43 +406,116 @@ export default function Drafts() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto pb-24 space-y-8 h-full flex flex-col">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-black p-6 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_3s_infinite]" />
-        <div className="flex items-center gap-6 relative z-10">
-          <div className="relative">
-            {activeCaptain?.profile?.photo_url ? (
-              <img src={activeCaptain.profile.photo_url} alt="Active" className="w-16 h-16 rounded-full object-cover border-2 border-white ring-4 ring-white/10" />
-            ) : (
-              <div className="w-16 h-16 rounded-full bg-neutral-800 border-2 border-white flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-            )}
-            <div className="absolute -bottom-2 -right-2 bg-white text-black text-[10px] font-black px-2 py-1 rounded-md tracking-widest uppercase">
+    <div className="max-w-6xl mx-auto pb-24 space-y-6 h-full flex flex-col">
+      {/* TOP ACTIVE CAPTAIN SECTION */}
+      <div className="flex items-center justify-between bg-[#111111] p-3 md:p-4 rounded-2xl border border-white/5 relative overflow-hidden">
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="relative flex flex-col items-center">
+            <div className="relative">
+              {activeCaptain?.profile?.photo_url ? (
+                <img src={activeCaptain.profile.photo_url} alt="Active" className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover border-2 border-black ring-2 ring-orange-500" />
+              ) : (
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-neutral-800 border-2 border-black ring-2 ring-orange-500 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+              )}
+            </div>
+            <div className="absolute -bottom-2 bg-orange-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded uppercase whitespace-nowrap tracking-wider">
               Pick {pickNumber + 1}
             </div>
           </div>
-          <div>
-            <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">On The Clock</p>
-            <h2 className="text-2xl font-black text-white">
+          <div className="flex flex-col justify-center">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary-500"></div>
+              <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest leading-none">On The Clock</p>
+            </div>
+            <h2 className="text-lg md:text-xl font-bold text-white leading-tight">
               {activeCaptain?.profile?.username || 'Loading...'}
             </h2>
-            {isMyTurn && (
-              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="text-primary-400 text-sm font-bold uppercase tracking-widest mt-1 flex items-center gap-1.5">
-                <PlayCircle className="w-4 h-4" /> It's your turn to pick!
-              </motion.div>
-            )}
+            <p className="text-neutral-500 text-[10px] mt-1.5 leading-none">
+              Team {['A','B','C'][captains.findIndex(c => c.id === activeCaptain?.id)]}
+            </p>
           </div>
         </div>
 
         {profile?.role === 'admin' && (
-          <button onClick={finishDraft} className="relative z-10 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> Finish Draft
-          </button>
+          <div className="flex flex-col gap-1.5 items-end relative z-10 shrink-0">
+            <button onClick={finishDraft} className="bg-transparent border border-white/10 hover:bg-white/5 text-white px-2.5 py-1.5 rounded-lg text-[11px] md:text-xs transition-colors flex items-center justify-center gap-1.5 w-full">
+              <CheckCircle2 className="w-3.5 h-3.5" /> <span className="font-bold whitespace-nowrap">Finish Draft</span>
+            </button>
+            <button onClick={cancelDraft} className="bg-transparent border border-red-500/20 hover:bg-red-500/10 text-red-400 px-2.5 py-1.5 rounded-lg text-[10px] md:text-[11px] transition-colors flex items-center justify-center gap-1.5 w-full">
+              <RotateCcw className="w-3 h-3" /> <span className="font-bold whitespace-nowrap">Reset Draft</span>
+            </button>
+          </div>
         )}
       </div>
+
+      {/* PROGRESS BAR */}
+      <div className="px-1 lg:hidden">
+        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2">
+          <span className="text-primary-500">Pick {pickNumber + 1} of {numCaptains * 5}</span>
+          <span>{numCaptains * 5 - pickNumber} Picks Left</span>
+        </div>
+        <div className="flex gap-1 h-1">
+          {Array.from({ length: numCaptains * 5 }).map((_, i) => (
+            <div key={i} className={`flex-1 rounded-full ${i < pickNumber ? 'bg-primary-500' : 'bg-neutral-800'}`} />
+          ))}
+        </div>
+      </div>
+
+      {/* TEAMS GRID (MOBILE ONLY) */}
+      <div className="grid grid-cols-3 lg:hidden gap-2 pb-2">
+        {captains.map((cap, index) => {
+          const teamPicks = picks.filter(p => p.captain_id === cap.id);
+          const isActive = activeCaptain?.id === cap.id;
+          const letter = ['A','B','C'][index];
+          
+          let titleColor = '';
+          if (letter === 'A') titleColor = 'text-primary-500';
+          else if (letter === 'B') titleColor = 'text-blue-500';
+          else if (letter === 'C') titleColor = 'text-orange-500';
+
+          return (
+            <div key={cap.id} className={`bg-[#0a0a0a] rounded-xl flex flex-col border transition-all ${isActive ? 'border-orange-500/50 bg-orange-500/5 shadow-[0_0_15px_rgba(249,115,22,0.1)]' : 'border-white/5'}`}>
+              <div className="p-2 sm:p-3 flex flex-col items-center">
+                <div className="relative mb-2">
+                   <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center overflow-hidden border border-white/5">
+                     {cap.profile?.photo_url ? <img src={cap.profile.photo_url} className="w-full h-full object-cover" /> : <Users className="w-5 h-5 text-neutral-500" />}
+                   </div>
+                </div>
+                <span className={`text-[10px] font-bold tracking-widest uppercase mb-0.5 ${titleColor}`}>Team {letter}</span>
+                <p className="text-white text-xs font-bold flex items-center gap-1">
+                  {cap.profile?.username}
+                  {isActive && <span className="text-primary-500 text-[8px] font-bold tracking-wider uppercase ml-0.5">- Active</span>}
+                </p>
+              </div>
+              
+              <div className="h-px bg-white/5 w-full"></div>
+              
+              <div className="p-2 space-y-1.5 flex-1 bg-black/20 rounded-b-xl min-h-[120px]">
+                {teamPicks.map((pick, pIndex) => (
+                  <div key={pick.id} className="flex items-center justify-between gap-1.5 p-1.5 px-2.5 bg-[#1a1a1a] rounded-lg">
+                    <span className="text-[11px] text-neutral-300 font-medium truncate flex-1">{pick.profile?.username}</span>
+                    {profile?.role === 'admin' && (
+                      <button 
+                        onClick={() => removePick(pick.id, pick.pick_number)}
+                        className="p-1 -m-1 text-neutral-600 hover:text-red-400 rounded-md transition-colors shrink-0"
+                        title="Remove Pick"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-1 space-y-6 overflow-y-auto p-4 -m-4 custom-scrollbar">
+        {/* DESKTOP DRAFT ROOM SIDEBAR */}
+        <div className="hidden lg:block lg:col-span-1 space-y-6 overflow-y-auto p-4 -m-4 custom-scrollbar">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-white mb-1">Draft Room</h1>
@@ -515,56 +592,64 @@ export default function Drafts() {
         </div>
 
         {/* Players Pool */}
-        <div className="lg:col-span-3 bg-neutral-900 rounded-2xl p-3 sm:p-4 lg:p-6 border border-neutral-800 flex flex-col">
-          <div className="flex items-center justify-between mb-4 lg:mb-6">
-            <h2 className="text-lg lg:text-xl font-bold text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-neutral-400" /> Available Players
+        <div className="lg:col-span-3 bg-transparent lg:bg-neutral-900 rounded-none lg:rounded-2xl p-0 lg:p-6 border-0 lg:border lg:border-neutral-800 flex flex-col">
+          <div className="flex items-center justify-between mb-4 bg-[#111111] lg:bg-transparent p-3 lg:p-0 rounded-xl">
+            <h2 className="text-sm lg:text-xl font-bold text-white flex items-center gap-2 uppercase tracking-wider">
+              <Users className="w-4 h-4 lg:w-5 lg:h-5 text-neutral-400" /> Available Players
             </h2>
-            <span className="bg-neutral-800 text-neutral-300 px-3 py-1 rounded-full text-xs font-bold">
-              {availablePlayers.length} remaining
+            <span className="bg-neutral-800 text-neutral-300 px-3 py-1 rounded-full text-[10px] lg:text-xs font-bold">
+              <span className="text-primary-500">{availablePlayers.length}</span> remaining
             </span>
           </div>
 
           <div className="flex-1 overflow-y-auto p-1 custom-scrollbar">
             {!isDraftComplete && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 gap-2 lg:gap-4 pb-10">
               {availablePlayers.map(player => (
                 <div
                   key={player.id}
                   onClick={() => makePick(player.id)}
-                  className={`p-2 lg:p-4 rounded-xl border flex flex-col items-center gap-2 lg:gap-3 text-center transition-all cursor-pointer ${
+                  className={`bg-[#111111] lg:bg-black p-3 lg:p-4 rounded-xl border flex flex-col items-center gap-3 text-center transition-all cursor-pointer relative ${
                     pendingPickId === player.id 
                     ? 'border-primary-500 bg-primary-500/10 scale-95 opacity-50' 
                     : isMyTurn 
-                      ? 'border-neutral-800 bg-black hover:border-primary-500/50 hover:bg-primary-500/5 hover:-translate-y-1' 
-                      : 'border-neutral-800 bg-black opacity-50 cursor-not-allowed'
+                      ? 'border-white/5 hover:border-primary-500/50 hover:bg-primary-500/5 hover:-translate-y-1' 
+                      : 'border-white/5 opacity-50 cursor-not-allowed'
                   }`}
                 >
-                  <div className="relative">
-                    <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center overflow-hidden">
-                      {player.photo_url ? (
-                        <img src={player.photo_url} className="w-full h-full object-cover" />
-                      ) : (
-                        <Users className="w-6 h-6 lg:w-8 lg:h-8 text-neutral-600" />
-                      )}
+                  <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center overflow-hidden">
+                    {player.photo_url ? (
+                      <img src={player.photo_url} className="w-full h-full object-cover" />
+                    ) : (
+                      <Users className="w-5 h-5 lg:w-8 lg:h-8 text-neutral-600" />
+                    )}
+                  </div>
+                  {player.jersey_number && (
+                    <div className="absolute top-2 right-2 bg-primary-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                      {player.jersey_number}
                     </div>
-                    {player.jersey_number && (
-                      <div className="absolute -bottom-1 -right-1 bg-primary-500 text-black text-[9px] lg:text-[10px] font-black w-5 h-5 lg:w-6 lg:h-6 rounded-full flex items-center justify-center border-2 border-black">
-                        {player.jersey_number}
-                      </div>
-                    )}
-                    {pendingPickId === player.id && (
-                      <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                        <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="w-full flex items-center justify-center gap-1">
-                    <p className="text-xs lg:text-sm font-bold text-white truncate max-w-[80%]">{player.username}</p>
-                    {isMyTurn && !pendingPickId && <Plus className="w-3 h-3 lg:w-4 lg:h-4 text-primary-500 shrink-0 pointer-events-none" />}
-                  </div>
+                  )}
+                  {pendingPickId === player.id && (
+                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  <p className="text-[11px] lg:text-sm font-medium text-white truncate w-full px-1">{player.username}</p>
+                  
+                  {isMyTurn && !pendingPickId && (
+                    <div className="absolute bottom-2 right-2 w-5 h-5 lg:w-6 lg:h-6 rounded-full border border-primary-500 text-primary-500 flex items-center justify-center bg-[#111111] lg:bg-black group-hover:bg-primary-500 group-hover:text-black transition-colors">
+                      <Plus className="w-3 h-3" />
+                    </div>
+                  )}
                 </div>
               ))}
+              </div>
+            )}
+
+            {!isDraftComplete && isMyTurn && (
+              <div className="flex items-center justify-center gap-2 mt-2 mb-6 text-neutral-500 text-xs">
+                <span className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-[10px] text-neutral-400">i</span>
+                Tap a player to add them to <span className="text-orange-500 ml-1">Team {['A','B','C'][captains.findIndex(c => c.id === activeCaptain?.id)]}</span>
               </div>
             )}
             
