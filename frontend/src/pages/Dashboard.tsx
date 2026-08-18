@@ -100,9 +100,7 @@ export default function Dashboard() {
         <p className="mt-1 text-sm text-neutral-400">Here's the latest from the pitch.</p>
       </div>
 
-      {profile?.role === 'admin' && (
-        <NotificationsSetup />
-      )}
+      <NotificationsSetup />
 
       {/* Hero Performers */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
