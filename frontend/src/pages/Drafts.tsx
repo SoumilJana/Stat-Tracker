@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, Shuffle, PlayCircle, CheckCircle2, Clock, X, Plus, RotateCcw } from 'lucide-react';
+import { Users, Shuffle, CheckCircle2, Clock, X, Plus, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Profile = { id: string; username: string; photo_url: string; role: string; jersey_number: number };
@@ -493,7 +493,7 @@ export default function Drafts() {
               <div className="h-px bg-white/5 w-full"></div>
               
               <div className="p-2 space-y-1.5 flex-1 bg-black/20 rounded-b-xl min-h-[120px]">
-                {teamPicks.map((pick, pIndex) => (
+                {teamPicks.map((pick) => (
                   <div key={pick.id} className="flex items-center justify-between gap-1.5 p-1.5 px-2.5 bg-[#1a1a1a] rounded-lg">
                     <span className="text-[11px] text-neutral-300 font-medium truncate flex-1">{pick.profile?.username}</span>
                     {profile?.role === 'admin' && (
