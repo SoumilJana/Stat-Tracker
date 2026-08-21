@@ -13,7 +13,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body || 'You have a new notification.',
     icon: '/pwa-192x192.png',
-    badge: '/favicon.svg',
+    badge: '/pwa-192x192.png',
     data: data.url || '/'
   };
   event.waitUntil(self.registration.showNotification(title, options));

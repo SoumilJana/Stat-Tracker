@@ -118,7 +118,7 @@ export default function Players() {
     setError('');
     
     try {
-      let base64String = null;
+      let imageFile = null;
 
       // Handle image upload and compression
       if (editPhotoFile) {
@@ -128,19 +128,14 @@ export default function Players() {
           useWebWorker: true,
         };
         
-        const compressedFile = await imageCompression(editPhotoFile, options);
-        base64String = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(compressedFile);
-        });
+        imageFile = await imageCompression(editPhotoFile, options);
       }
 
       const response = await updatePlayer(editingPlayer.id, {
         username: editUsername,
         full_name: editFullName || null,
         photo_url: editPhotoUrl || null,
-        photo_base64: base64String
+        image_file: imageFile
       });
 
       const finalPhotoUrl = response.photo_url;
@@ -489,17 +484,7 @@ export default function Players() {
                   />
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-300 mb-1">Role</label>
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="player">Player</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
+                  {/* Role is hardcoded to 'player' automatically */}
                 </div>
                 
                 {error && <p className="text-red-400 text-sm bg-red-400/10 p-2 rounded">{error}</p>}
