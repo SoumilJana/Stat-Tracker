@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, Shuffle, CheckCircle2, Clock, X, Plus, RotateCcw } from 'lucide-react';
+import { Users, Shuffle, CheckCircle2, Clock, X, Plus, RotateCcw, EyeOff, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Profile = { id: string; username: string; photo_url: string; role: string; jersey_number: number };
@@ -36,6 +36,7 @@ export default function Drafts() {
   const [singleDeviceMode, setSingleDeviceMode] = useState(false);
   const [pendingPickId, setPendingPickId] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [hiddenPlayerIds, setHiddenPlayerIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchActiveDraft();
@@ -308,7 +309,8 @@ export default function Drafts() {
   };
 
   const draftedPlayerIds = [...captains.map(c => c.player_id), ...picks.map(p => p.player_id)];
-  const availablePlayers = players.filter(p => !draftedPlayerIds.includes(p.id));
+  const availablePlayers = players.filter(p => !draftedPlayerIds.includes(p.id) && !hiddenPlayerIds.includes(p.id));
+  const hiddenPlayers = players.filter(p => !draftedPlayerIds.includes(p.id) && hiddenPlayerIds.includes(p.id));
   const isDraftComplete = availablePlayers.length === 0 || (numCaptains > 0 && picks.length >= numCaptains * 4);
 
   if (!draft) {
@@ -634,6 +636,18 @@ export default function Drafts() {
                       <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
+                  {profile?.role === 'admin' && !pendingPickId && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHiddenPlayerIds(prev => [...prev, player.id]);
+                      }}
+                      className="absolute top-2 left-2 w-5 h-5 lg:w-6 lg:h-6 rounded-full border border-neutral-600 text-neutral-400 flex items-center justify-center bg-neutral-900 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 transition-colors z-10"
+                      title="Hide Player"
+                    >
+                      <EyeOff className="w-3 h-3 lg:w-3.5 lg:h-3.5" />
+                    </button>
+                  )}
                   <p className="text-[11px] lg:text-sm font-medium text-white truncate w-full px-1">{player.username}</p>
                   
                   {isMyTurn && !pendingPickId && (
@@ -650,6 +664,31 @@ export default function Drafts() {
               <div className="flex items-center justify-center gap-2 mt-2 mb-6 text-neutral-500 text-xs">
                 <span className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-[10px] text-neutral-400">i</span>
                 Tap a player to add them to <span className="text-orange-500 ml-1">Team {['A','B','C'][captains.findIndex(c => c.id === activeCaptain?.id)]}</span>
+              </div>
+            )}
+            
+            {profile?.role === 'admin' && hiddenPlayers.length > 0 && (
+              <div className="mt-8 border-t border-white/5 pt-6 pb-6 px-2">
+                <h3 className="text-[10px] lg:text-xs font-bold text-neutral-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <EyeOff className="w-4 h-4" /> Hidden Players ({hiddenPlayers.length})
+                </h3>
+                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 opacity-60 hover:opacity-100 transition-opacity">
+                  {hiddenPlayers.map(player => (
+                    <div key={player.id} className="bg-neutral-900 border border-neutral-800 p-2 rounded-xl flex flex-col items-center gap-2 relative">
+                      <div className="w-8 h-8 rounded-full bg-black overflow-hidden border border-white/5">
+                        {player.photo_url ? <img src={player.photo_url} className="w-full h-full object-cover" /> : <Users className="w-4 h-4 m-2 text-neutral-600" />}
+                      </div>
+                      <p className="text-[9px] text-neutral-400 truncate w-full text-center">{player.username}</p>
+                      <button
+                        onClick={() => setHiddenPlayerIds(prev => prev.filter(id => id !== player.id))}
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-neutral-800 border border-neutral-500 rounded-full flex items-center justify-center text-neutral-300 hover:bg-primary-500/20 hover:text-primary-500 hover:border-primary-500 transition-colors z-10"
+                        title="Unhide Player"
+                      >
+                        <Eye className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             
