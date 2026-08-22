@@ -44,8 +44,16 @@ export default function Matches() {
   const startMatch = async (e: any, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    await supabase.from('sessions').update({ status: 'IN_PROGRESS' }).eq('id', id);
-    navigate(`/matches/${id}`);
+    try {
+      const { error } = await supabase.from('sessions').update({ status: 'IN_PROGRESS' }).eq('id', id);
+      if (error) {
+        alert("Failed to start match: " + error.message);
+        return;
+      }
+      navigate(`/matches/${id}`);
+    } catch (err: any) {
+      alert("Error starting match: " + err.message);
+    }
   };
 
   if (loading) return <div className="text-primary-500">Loading matches...</div>;
@@ -73,7 +81,11 @@ export default function Matches() {
     const scores = sortedTeams.map((t: any) => teamScores[t.id]);
 
     return (
-      <Link key={session.id} to={`/matches/${session.id}`} className="bg-black border border-white/5 rounded-2xl p-6 hover:border-primary-500/30 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] shadow-xl transition-all duration-300 block group relative">
+      <div 
+        key={session.id} 
+        onClick={() => navigate(`/matches/${session.id}`)} 
+        className="bg-black border border-white/5 rounded-2xl p-6 hover:border-primary-500/30 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] shadow-xl transition-all duration-300 block group relative cursor-pointer"
+      >
         <div className="flex justify-between items-start mb-6">
           <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
             session.status === 'IN_PROGRESS' ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20' : 
@@ -145,7 +157,7 @@ export default function Matches() {
             )}
           </div>
         </div>
-      </Link>
+      </div>
     );
   };
 

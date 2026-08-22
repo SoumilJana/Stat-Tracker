@@ -1,0 +1,1 @@
+const { createClient } = require('@supabase/supabase-js'); const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY); supabase.from('sessions').update({ status: 'IN_PROGRESS' }).eq('id', '123').then(res => console.log('ERROR:', res.error));
