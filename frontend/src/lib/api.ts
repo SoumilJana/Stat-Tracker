@@ -44,12 +44,9 @@ export async function createPlayer(data: any) {
 }
 
 export async function deletePlayer(userId: string) {
-  // Note: Only deleting the profile here. The auth user will remain
-  // unless deleted via the Supabase dashboard or an admin Edge Function.
-  const { error } = await supabase
-    .from('profiles')
-    .delete()
-    .eq('id', userId);
+  const { error } = await supabase.rpc('delete_profile_data', {
+    p_user_id: userId
+  });
     
   if (error) throw new Error(error.message);
   
@@ -78,16 +75,17 @@ export async function updatePlayer(userId: string, data: any) {
     final_photo_url = publicUrlData.publicUrl;
   }
   
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      username: data.username,
-      full_name: data.full_name,
-      photo_url: final_photo_url
-    })
-    .eq('id', userId);
+  const { error } = await supabase.rpc('update_profile_data', {
+    p_user_id: userId,
+    p_username: data.username,
+    p_full_name: data.full_name || null,
+    p_photo_url: final_photo_url || null
+  });
     
   if (error) throw new Error(error.message);
   
-  return { message: "Player updated successfully", photo_url: final_photo_url };
+  return { 
+    message: "Player updated successfully", 
+    photo_url: final_photo_url 
+  };
 }
