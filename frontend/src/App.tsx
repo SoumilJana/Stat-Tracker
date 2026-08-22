@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { InstallPrompt } from './components/InstallPrompt';
 import AppLayout from './components/layout/AppLayout';
 import Login from './pages/Login';
-import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
 import Players from './pages/Players';
 import Matches from './pages/Matches';
@@ -31,7 +30,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
-      <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/" />} />
       
       <Route path="/" element={<AppLayout />}>
         {/* Public Routes */}

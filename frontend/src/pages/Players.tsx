@@ -128,7 +128,16 @@ export default function Players() {
           useWebWorker: true,
         };
         
-        imageFile = await imageCompression(editPhotoFile, options);
+        try {
+          imageFile = await imageCompression(editPhotoFile, options);
+        } catch (compErr: any) {
+          if (compErr.message === 'Failed to fetch' || compErr.message.includes('Worker')) {
+            options.useWebWorker = false;
+            imageFile = await imageCompression(editPhotoFile, options);
+          } else {
+            throw compErr;
+          }
+        }
       }
 
       const response = await updatePlayer(editingPlayer.id, {

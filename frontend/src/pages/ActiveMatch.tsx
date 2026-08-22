@@ -199,6 +199,23 @@ export default function ActiveMatch() {
             timeOnPitch[currentPitch[1].id] = 1;
             timeOnPitch[loser.id] = 0;
           }
+        } else if (ev.event_type === 'UNDO') {
+          // We use 'UNDO' as a MANUAL_SWAP event to avoid schema changes
+          if (currentWaiting.length > 0) {
+            const teamOutId = ev.team_id;
+            const teamOutIndex = currentPitch.findIndex(t => t.id === teamOutId);
+            if (teamOutIndex !== -1) {
+              const teamOut = currentPitch[teamOutIndex];
+              const teamIn = currentWaiting[0];
+              currentPitch[teamOutIndex] = teamIn;
+              
+              // Add the old team to the end of the waiting list
+              currentWaiting = [...currentWaiting.slice(1), teamOut];
+              
+              timeOnPitch[teamIn.id] = 1;
+              timeOnPitch[teamOut.id] = 0;
+            }
+          }
         }
       });
 
@@ -254,6 +271,28 @@ export default function ActiveMatch() {
     
     const { error } = await supabase.from('events').insert(eventData);
     if (error) console.error("Error recording goal:", error);
+    else fetchMatchData();
+    };
+
+  const swapTeam = async (teamId: string) => {
+    const eventData = {
+      session_id: id,
+      event_type: 'UNDO', // Re-using UNDO for manual swap
+      team_id: teamId,
+      timestamp: new Date().toISOString()
+    };
+    
+    if (!navigator.onLine) {
+      const queue = JSON.parse(localStorage.getItem(`offline_events_${id}`) || '[]');
+      const tempId = `temp_${Date.now()}`;
+      queue.push({ type: 'INSERT', tempId, payload: { ...eventData, tempId } });
+      localStorage.setItem(`offline_events_${id}`, JSON.stringify(queue));
+      fetchMatchData();
+      return;
+    }
+
+    const { error } = await supabase.from('events').insert(eventData);
+    if (error) console.error("Error swapping team:", error);
     else fetchMatchData();
   };
 
@@ -743,8 +782,19 @@ export default function ActiveMatch() {
               {/* Team A Players */}
               <div className="bg-black border border-primary-500/20 rounded-2xl p-5 shadow-lg shadow-primary-900/10 relative overflow-hidden">
                 <h4 className="text-primary-400 font-bold mb-4 uppercase tracking-wider text-sm flex items-center justify-between">
-                  <span>{teamA?.name} Goal</span>
-                  <span className="bg-primary-500/20 px-2 py-0.5 rounded text-xs">Active</span>
+                  <div className="flex items-center gap-2">
+                    <span>{teamA?.name} Goal</span>
+                    <span className="bg-primary-500/20 px-2 py-0.5 rounded text-xs">Active</span>
+                  </div>
+                  {waiting.length > 0 && profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
+                    <button 
+                      onClick={() => swapTeam(teamA.id)}
+                      className="text-xs bg-neutral-800 hover:bg-neutral-700 text-white px-2 py-1 rounded transition-colors"
+                      title="Swap this team out for the next waiting team"
+                    >
+                      Swap Out
+                    </button>
+                  )}
                 </h4>
                 <div className="space-y-3 relative z-10">
                   {teamAPlayersList.map(player => (
@@ -768,8 +818,19 @@ export default function ActiveMatch() {
               {/* Team B Players */}
               <div className="bg-black border border-blue-500/20 rounded-2xl p-5 shadow-lg shadow-blue-900/10 relative overflow-hidden">
                 <h4 className="text-blue-400 font-bold mb-4 uppercase tracking-wider text-sm flex items-center justify-between">
-                  <span>{teamB?.name} Goal</span>
-                  <span className="bg-blue-500/20 px-2 py-0.5 rounded text-xs">Active</span>
+                  <div className="flex items-center gap-2">
+                    <span>{teamB?.name} Goal</span>
+                    <span className="bg-blue-500/20 px-2 py-0.5 rounded text-xs">Active</span>
+                  </div>
+                  {waiting.length > 0 && profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
+                    <button 
+                      onClick={() => swapTeam(teamB.id)}
+                      className="text-xs bg-neutral-800 hover:bg-neutral-700 text-white px-2 py-1 rounded transition-colors"
+                      title="Swap this team out for the next waiting team"
+                    >
+                      Swap Out
+                    </button>
+                  )}
                 </h4>
                 <div className="space-y-3 relative z-10">
                   {teamBPlayersList.map(player => (
