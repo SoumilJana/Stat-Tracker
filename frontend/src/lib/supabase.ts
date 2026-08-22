@@ -12,7 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     fetch: async (url, options) => {
       // Adblockers (like uBlock Origin/EasyPrivacy) often block PATCH requests to endpoints containing "/profiles".
       // We convert PATCH to POST and use X-HTTP-Method-Override to bypass this restriction safely.
-      if (options?.method === 'PATCH') {
+      if (options?.method === 'PATCH' && url.toString().includes('/profiles')) {
         options.method = 'POST';
         if (options.headers && typeof (options.headers as any).set === 'function') {
           (options.headers as any).set('X-HTTP-Method-Override', 'PATCH');

@@ -30,6 +30,7 @@ export default function Matches() {
 
   const deleteMatch = async (e: any, id: string) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this match completely? This cannot be undone.")) return;
     
     const { error } = await supabase.from('sessions').delete().eq('id', id);
@@ -42,6 +43,7 @@ export default function Matches() {
 
   const startMatch = async (e: any, id: string) => {
     e.preventDefault();
+    e.stopPropagation();
     await supabase.from('sessions').update({ status: 'IN_PROGRESS' }).eq('id', id);
     navigate(`/matches/${id}`);
   };

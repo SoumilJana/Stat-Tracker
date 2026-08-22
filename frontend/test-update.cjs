@@ -1,0 +1,1 @@
+const { createClient } = require('@supabase/supabase-js'); const supabase = createClient('http://localhost:54321', 'eyJhb...', { global: { fetch: (url, options) => { console.log('Headers:', options.headers); return Promise.resolve(new Response('{}', {status: 200})); } } }); supabase.from('sessions').update({ status: 'IN_PROGRESS' }).eq('id', '123').then(console.log);
