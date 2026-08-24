@@ -29,6 +29,7 @@ export default function Drafts() {
   
   // Setup state
   const [setupMode, setSetupMode] = useState('STANDARD');
+  const [setupNumTeams, setSetupNumTeams] = useState(3);
   const [setupLocation, setSetupLocation] = useState('');
   const [setupDate, setSetupDate] = useState(new Date().toISOString().split('T')[0]);
   const [setupTime, setSetupTime] = useState('19:00');
@@ -42,6 +43,13 @@ export default function Drafts() {
     fetchActiveDraft();
     fetchPlayers();
   }, []);
+
+  useEffect(() => {
+    const maxCaptains = setupMode === 'WINNER_STAYS' ? setupNumTeams : 2;
+    if (selectedCaptainIds.length > maxCaptains) {
+      setSelectedCaptainIds(prev => prev.slice(0, maxCaptains));
+    }
+  }, [setupMode, setupNumTeams]);
 
   useEffect(() => {
     if (!draft?.id) return;
@@ -99,8 +107,9 @@ export default function Drafts() {
     if (selectedCaptainIds.includes(playerId)) {
       setSelectedCaptainIds(prev => prev.filter(id => id !== playerId));
     } else {
-      if (selectedCaptainIds.length >= (setupMode === 'WINNER_STAYS' ? 3 : 2)) {
-        alert(`You can only select ${setupMode === 'WINNER_STAYS' ? 3 : 2} captains for this mode.`);
+      const maxCaptains = setupMode === 'WINNER_STAYS' ? setupNumTeams : 2;
+      if (selectedCaptainIds.length >= maxCaptains) {
+        alert(`You can only select ${maxCaptains} captains for this mode.`);
         return;
       }
       setSelectedCaptainIds(prev => [...prev, playerId]);
@@ -108,8 +117,8 @@ export default function Drafts() {
   };
 
   const startDraft = async () => {
-    if (selectedCaptainIds.length < 2) return alert("Select at least 2 captains.");
-    if (setupMode === 'WINNER_STAYS' && selectedCaptainIds.length !== 3) return alert("Select exactly 3 captains for Winner Stays.");
+    const maxCaptains = setupMode === 'WINNER_STAYS' ? setupNumTeams : 2;
+    if (selectedCaptainIds.length !== maxCaptains) return alert(`Select exactly ${maxCaptains} captains.`);
     
     setIsStarting(true);
     
@@ -279,10 +288,10 @@ export default function Drafts() {
       
       if (sessionError) throw sessionError;
 
-      const teamNames = ['Team A', 'Team B', 'Team C'];
+      const teamNames = ['Team A', 'Team B', 'Team C', 'Team D', 'Team E'];
       const teamsToInsert = captains.map((_, index) => ({
         session_id: session.id,
-        name: teamNames[index]
+        name: teamNames[index] || `Team ${String.fromCharCode(65 + index)}`
       }));
 
       const { data: teams, error: teamsError } = await supabase.from('teams').insert(teamsToInsert).select();
@@ -354,6 +363,16 @@ export default function Drafts() {
                 <option value="WINNER_STAYS">Winner Stays</option>
               </select>
             </div>
+            {setupMode === 'WINNER_STAYS' && (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">Number of Teams</label>
+                <select value={setupNumTeams} onChange={e => setSetupNumTeams(parseInt(e.target.value))} className="w-full bg-neutral-900/50 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:border-primary-500">
+                  <option value={3}>3 Teams</option>
+                  <option value={4}>4 Teams</option>
+                  <option value={5}>5 Teams</option>
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="pt-6 border-t border-white/5">
@@ -404,7 +423,9 @@ export default function Drafts() {
   const teamColors = [
     { border: 'border-primary-500', bg: 'bg-primary-500/10', text: 'text-primary-400', shadow: 'shadow-primary-500/20' },
     { border: 'border-blue-500', bg: 'bg-blue-500/10', text: 'text-blue-400', shadow: 'shadow-blue-500/20' },
-    { border: 'border-orange-500', bg: 'bg-orange-500/10', text: 'text-orange-400', shadow: 'shadow-orange-500/20' }
+    { border: 'border-orange-500', bg: 'bg-orange-500/10', text: 'text-orange-400', shadow: 'shadow-orange-500/20' },
+    { border: 'border-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-400', shadow: 'shadow-purple-500/20' },
+    { border: 'border-pink-500', bg: 'bg-pink-500/10', text: 'text-pink-400', shadow: 'shadow-pink-500/20' }
   ];
 
   return (
@@ -435,7 +456,7 @@ export default function Drafts() {
               {activeCaptain?.profile?.username || 'Loading...'}
             </h2>
             <p className="text-neutral-500 text-[10px] mt-1.5 leading-none">
-              Team {['A','B','C'][captains.findIndex(c => c.id === activeCaptain?.id)]}
+              Team {['A','B','C','D','E'][captains.findIndex(c => c.id === activeCaptain?.id)]}
             </p>
           </div>
         </div>
@@ -455,28 +476,29 @@ export default function Drafts() {
       {/* PROGRESS BAR */}
       <div className="px-1 lg:hidden">
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2">
-          <span className="text-primary-500">Pick {pickNumber + 1} of {numCaptains * 5}</span>
-          <span>{numCaptains * 5 - pickNumber} Picks Left</span>
+          <span className="text-primary-500">Pick {pickNumber + 1} of {numCaptains * 4}</span>
+          <span>{numCaptains * 4 - pickNumber} Picks Left</span>
         </div>
         <div className="flex gap-1 h-1">
-          {Array.from({ length: numCaptains * 5 }).map((_, i) => (
+          {Array.from({ length: numCaptains * 4 }).map((_, i) => (
             <div key={i} className={`flex-1 rounded-full ${i < pickNumber ? 'bg-primary-500' : 'bg-neutral-800'}`} />
           ))}
         </div>
       </div>
 
       {/* TEAMS GRID (MOBILE ONLY) */}
-      <div className="grid grid-cols-3 lg:hidden gap-2 pb-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:hidden gap-2 pb-2">
         {captains.map((cap, index) => {
           const teamPicks = picks.filter(p => p.captain_id === cap.id);
           const isActive = activeCaptain?.id === cap.id;
-          const letter = ['A','B','C'][index];
+          const letter = ['A','B','C','D','E'][index];
           
           let titleColor = '';
           if (letter === 'A') titleColor = 'text-primary-500';
           else if (letter === 'B') titleColor = 'text-blue-500';
           else if (letter === 'C') titleColor = 'text-orange-500';
-
+          else if (letter === 'D') titleColor = 'text-purple-500';
+          else if (letter === 'E') titleColor = 'text-pink-500';
           return (
             <div key={cap.id} className={`bg-[#0a0a0a] rounded-xl flex flex-col border transition-all ${isActive ? 'border-orange-500/50 bg-orange-500/5 shadow-[0_0_15px_rgba(249,115,22,0.1)]' : 'border-white/5'}`}>
               <div className="p-2 sm:p-3 flex flex-col items-center">
@@ -552,7 +574,7 @@ export default function Drafts() {
                       {cap.profile?.photo_url ? <img src={cap.profile.photo_url} className="w-full h-full object-cover" /> : <Users className="w-4 h-4 lg:w-5 lg:h-5 m-2 lg:m-2.5 text-neutral-500" />}
                     </div>
                     <div className="truncate w-full">
-                      <p className={`text-[10px] lg:text-xs font-bold uppercase tracking-widest ${color.text}`}>Team {['A','B','C'][index]}</p>
+                      <p className={`text-[10px] lg:text-xs font-bold uppercase tracking-widest ${color.text}`}>Team {['A','B','C','D','E'][index]}</p>
                       <p className="text-sm lg:text-base text-white font-bold truncate">{cap.profile?.username} <span className="text-neutral-500 text-[10px] lg:text-xs font-normal">(C)</span></p>
                     </div>
                   </div>
@@ -663,7 +685,7 @@ export default function Drafts() {
             {!isDraftComplete && isMyTurn && (
               <div className="flex items-center justify-center gap-2 mt-2 mb-6 text-neutral-500 text-xs">
                 <span className="w-4 h-4 rounded-full border border-neutral-600 flex items-center justify-center text-[10px] text-neutral-400">i</span>
-                Tap a player to add them to <span className="text-orange-500 ml-1">Team {['A','B','C'][captains.findIndex(c => c.id === activeCaptain?.id)]}</span>
+                Tap a player to add them to <span className="text-orange-500 ml-1">Team {['A','B','C','D','E'][captains.findIndex(c => c.id === activeCaptain?.id)]}</span>
               </div>
             )}
             

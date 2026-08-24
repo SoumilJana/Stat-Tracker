@@ -12,6 +12,7 @@ export default function ActiveMatch() {
   const [pendingGoal, setPendingGoal] = useState<{playerId: string, teamId: string, teamPlayers: any[]} | null>(null);
   const [copied, setCopied] = useState(false);
   const [statsCopied, setStatsCopied] = useState(false);  
+  const [bibColors, setBibColors] = useState<Record<string, string>>({});
 
   const [isEditingMatch, setIsEditingMatch] = useState(false);
   const [editDate, setEditDate] = useState('');
@@ -179,7 +180,7 @@ export default function ActiveMatch() {
             const loser = currentPitch.find(t => t.id !== winner.id) || currentPitch[1];
             
             currentPitch = [winner, currentWaiting[0]];
-            currentWaiting = [loser];
+            currentWaiting = [...currentWaiting.slice(1), loser];
             
             timeOnPitch[winner.id] += 1;
             timeOnPitch[currentPitch[1].id] = 1; // new team
@@ -193,7 +194,7 @@ export default function ActiveMatch() {
             const loser = currentPitch[1];
             
             currentPitch = [winner, currentWaiting[0]];
-            currentWaiting = [loser];
+            currentWaiting = [...currentWaiting.slice(1), loser];
             
             timeOnPitch[winner.id] += 1;
             timeOnPitch[currentPitch[1].id] = 1;
@@ -380,7 +381,8 @@ export default function ActiveMatch() {
         const players = teamPlayers[team.id];
         if (!players || players.length === 0) return;
         
-        text += `\n${team.name}\n`;
+        const bibColor = bibColors[team.id] ? ` (${bibColors[team.id]})` : '';
+        text += `\n${team.name}${bibColor}\n`;
         text += `Captain: ${players[0].username}\n`;
         if (players.length > 1) {
           players.slice(1).forEach((p, index) => {
@@ -728,7 +730,7 @@ export default function ActiveMatch() {
         <div className="flex justify-center mb-8">
           <div className="bg-orange-500/10 border border-orange-500/20 text-orange-400 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 animate-pulse">
             <Clock className="w-4 h-4" />
-            Waiting: {waiting[0]?.name}
+            Waiting: {waiting.map(t => t.name).join(', ')}
           </div>
         </div>
       )}
@@ -736,8 +738,8 @@ export default function ActiveMatch() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Action Area */}
         <div className="lg:col-span-2 space-y-8">
-          {session.status === 'COMPLETED' ? (
-            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 ${Object.keys(teamPlayers).length === 3 ? 'lg:grid-cols-3' : ''}`}>
+          {session.status !== 'IN_PROGRESS' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {Object.entries(teamPlayers).map(([tId, players]) => {
                 const team = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
                 if (!team) return null;
@@ -746,6 +748,20 @@ export default function ActiveMatch() {
                   <div key={tId} className="bg-black border border-white/5 rounded-2xl p-5 shadow-lg shadow-black/50">
                     <h4 className="text-white font-bold mb-4 uppercase tracking-wider text-sm flex items-center justify-between">
                       <span>{team.name}</span>
+                      {session.status === 'SCHEDULED' && profile?.role === 'admin' && (
+                        <select 
+                          className="bg-neutral-800 text-xs font-normal border border-white/10 rounded px-2 py-1 outline-none text-neutral-300 ml-2"
+                          value={bibColors[tId] || ''}
+                          onChange={(e) => setBibColors(prev => ({...prev, [tId]: e.target.value}))}
+                        >
+                          <option value="">No Color</option>
+                          <option value="Red">Red</option>
+                          <option value="Blue">Blue</option>
+                          <option value="Green">Green</option>
+                          <option value="Black">Black</option>
+                          <option value="White">White</option>
+                        </select>
+                      )}
                     </h4>
                     <div className="space-y-3">
                       {players.map(player => {

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, type Variants } from 'framer-motion';
 import { enrichPlayersWithRatings, type PlayerWithRating } from '../lib/playerRating';
-import PlayerRatingBadge from '../components/PlayerRatingBadge';
 import { getOnFirePlayers } from '../lib/streaks';
 
 export default function Leaderboard() {
@@ -88,8 +87,8 @@ export default function Leaderboard() {
               )}
 
               {/* Content */}
-              <div className="relative z-10 flex items-center justify-between p-5 sm:p-6">
-                <div className="flex items-center gap-5 sm:gap-8">
+              <div className="relative z-10 flex items-center justify-between py-5 sm:py-6 pl-3 sm:pl-4 pr-5 sm:pr-6">
+                <div className="flex items-center gap-3 sm:gap-4">
                    {/* Rank */}
                    <span className={`text-4xl sm:text-6xl font-black italic tracking-tighter w-12 sm:w-16 text-center transition-colors ${index === 0 ? 'text-white' : 'text-white/10 group-hover:text-white/30'}`}>
                      {index + 1}
@@ -99,7 +98,6 @@ export default function Leaderboard() {
                    <div>
                      <h3 className="text-xl sm:text-3xl font-black text-white uppercase tracking-wider drop-shadow-md flex items-baseline gap-1">
                         {player.username}
-                        <PlayerRatingBadge rating={player.rating} size="md" />
                       </h3>
                      <div className="flex items-center gap-3 mt-1">
                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
@@ -109,47 +107,44 @@ export default function Leaderboard() {
                    </div>
                 </div>
 
-                  {/* Goals, Assists & Defensive Awards */}
-                  <div className="flex gap-4 sm:gap-6 text-right pr-2 sm:pr-4">
+                {/* Goals, Assists & Defensive Awards */}
+                <div className="flex items-center text-right pr-2 sm:pr-4">
+                  
+                  {/* Awards Group */}
+                  <div className="flex items-center gap-3 sm:gap-4 mr-5 sm:mr-8">
                     {player.best_defender_awards && player.best_defender_awards > 0 ? (
-                      <div className="flex flex-col items-end justify-center">
-                        <span className="text-3xl sm:text-5xl font-black text-amber-500 tabular-nums leading-none tracking-tighter drop-shadow-lg flex items-center gap-1">
-                          <span className="text-2xl sm:text-3xl">🛡️</span> {player.best_defender_awards}
-                        </span>
-                        <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
-                          Best Def
+                      <div className="flex items-center justify-center">
+                        <span className="text-xl sm:text-3xl font-black text-amber-500 tabular-nums leading-none tracking-tighter drop-shadow-lg flex items-center">
+                          <span className="text-lg sm:text-2xl mr-0.5">🛡️</span>
+                          <span className="text-xs sm:text-lg text-amber-500/50">x</span>
+                          <span className="ml-0.5">{player.best_defender_awards}</span>
                         </span>
                       </div>
                     ) : null}
                     
                     {player.best_gk_awards && player.best_gk_awards > 0 ? (
-                      <div className="flex flex-col items-end justify-center">
-                        <span className="text-3xl sm:text-5xl font-black text-purple-400 tabular-nums leading-none tracking-tighter drop-shadow-lg flex items-center gap-1">
-                          <span className="text-2xl sm:text-3xl">🧤</span> {player.best_gk_awards}
-                        </span>
-                        <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
-                          Best GK
+                      <div className="flex items-center justify-center">
+                        <span className="text-xl sm:text-3xl font-black text-purple-400 tabular-nums leading-none tracking-tighter drop-shadow-lg flex items-center">
+                          <span className="text-lg sm:text-2xl mr-0.5">🧤</span>
+                          <span className="text-xs sm:text-lg text-purple-400/50">x</span>
+                          <span className="ml-0.5">{player.best_gk_awards}</span>
                         </span>
                       </div>
                     ) : null}
+                  </div>
 
-                    <div className="flex flex-col items-end justify-center">
-                      <span className="text-3xl sm:text-5xl font-black text-blue-400 tabular-nums leading-none tracking-tighter drop-shadow-lg">
-                        {player.total_assists || 0}
-                      </span>
-                      <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
-                        Assists
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end justify-center">
+                  <div className="flex flex-col items-end justify-center">
+                    <div className="flex items-baseline">
                       <span className="text-4xl sm:text-6xl font-black text-white tabular-nums leading-none tracking-tighter drop-shadow-lg">
                         {player.total_goals}
                       </span>
-                      <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
-                        Goals
+                      <span className="text-2xl sm:text-4xl text-neutral-600 font-black mx-1 sm:mx-2 leading-none">/</span>
+                      <span className="text-3xl sm:text-5xl font-black text-blue-400 tabular-nums leading-none tracking-tighter drop-shadow-lg">
+                        {player.total_assists || 0}
                       </span>
                     </div>
                   </div>
+                </div>
               </div>
             </motion.div>
           ))}

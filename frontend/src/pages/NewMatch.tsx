@@ -10,10 +10,13 @@ export default function NewMatch() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('19:00');
   const [mode, setMode] = useState('STANDARD');
+  const [numTeams, setNumTeams] = useState(3);
   
   const [teamA, setTeamA] = useState<string[]>([]);
   const [teamB, setTeamB] = useState<string[]>([]);
   const [teamC, setTeamC] = useState<string[]>([]);
+  const [teamD, setTeamD] = useState<string[]>([]);
+  const [teamE, setTeamE] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [matchCreated, setMatchCreated] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -24,35 +27,32 @@ export default function NewMatch() {
     });
   }, []);
 
-  // When mode changes to standard, clear team C
+  // When mode or numTeams changes, clear unused teams
   useEffect(() => {
     if (mode === 'STANDARD') {
       setTeamC([]);
+      setTeamD([]);
+      setTeamE([]);
+    } else {
+      if (numTeams < 4) setTeamD([]);
+      if (numTeams < 5) setTeamE([]);
     }
-  }, [mode]);
+  }, [mode, numTeams]);
 
-  const togglePlayer = (team: 'A' | 'B' | 'C', playerId: string) => {
-    if (team === 'A') {
-      if (teamA.includes(playerId)) setTeamA(prev => prev.filter(id => id !== playerId));
-      else {
-        setTeamA(prev => [...prev, playerId]);
-        setTeamB(prev => prev.filter(id => id !== playerId));
-        setTeamC(prev => prev.filter(id => id !== playerId));
-      }
-    } else if (team === 'B') {
-      if (teamB.includes(playerId)) setTeamB(prev => prev.filter(id => id !== playerId));
-      else {
-        setTeamB(prev => [...prev, playerId]);
-        setTeamA(prev => prev.filter(id => id !== playerId));
-        setTeamC(prev => prev.filter(id => id !== playerId));
-      }
-    } else if (team === 'C') {
-      if (teamC.includes(playerId)) setTeamC(prev => prev.filter(id => id !== playerId));
-      else {
-        setTeamC(prev => [...prev, playerId]);
-        setTeamA(prev => prev.filter(id => id !== playerId));
-        setTeamB(prev => prev.filter(id => id !== playerId));
-      }
+  const togglePlayer = (team: 'A' | 'B' | 'C' | 'D' | 'E', playerId: string) => {
+    const setters = { A: setTeamA, B: setTeamB, C: setTeamC, D: setTeamD, E: setTeamE };
+    const states = { A: teamA, B: teamB, C: teamC, D: teamD, E: teamE };
+    
+    if (states[team].includes(playerId)) {
+      setters[team](prev => prev.filter(id => id !== playerId));
+    } else {
+      setters[team](prev => [...prev, playerId]);
+      // Remove from others
+      Object.keys(setters).forEach(key => {
+        if (key !== team) {
+          setters[key as keyof typeof setters](prev => prev.filter(id => id !== playerId));
+        }
+      });
     }
   };
 
@@ -61,9 +61,19 @@ export default function NewMatch() {
       alert("Team A and Team B need at least 1 player");
       return;
     }
-    if (mode === 'WINNER_STAYS' && teamC.length === 0) {
-      alert("Team C needs at least 1 player for Winner Stays");
-      return;
+    if (mode === 'WINNER_STAYS') {
+      if (teamC.length === 0) {
+        alert("Team C needs at least 1 player for Winner Stays");
+        return;
+      }
+      if (numTeams >= 4 && teamD.length === 0) {
+        alert("Team D needs at least 1 player");
+        return;
+      }
+      if (numTeams === 5 && teamE.length === 0) {
+        alert("Team E needs at least 1 player");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -91,6 +101,8 @@ export default function NewMatch() {
       
       if (mode === 'WINNER_STAYS') {
         teamsToInsert.push({ session_id: session.id, name: 'Team C' });
+        if (numTeams >= 4) teamsToInsert.push({ session_id: session.id, name: 'Team D' });
+        if (numTeams === 5) teamsToInsert.push({ session_id: session.id, name: 'Team E' });
       }
 
       const { data: teams, error: teamsError } = await supabase
@@ -100,18 +112,20 @@ export default function NewMatch() {
 
       if (teamsError) throw teamsError;
 
-      const teamAId = teams[0].id;
-      const teamBId = teams[1].id;
-      const teamCId = mode === 'WINNER_STAYS' ? teams[2].id : null;
-
       // 3. Assign Players to Teams
       const teamPlayersData = [
-        ...teamA.map(playerId => ({ team_id: teamAId, player_id: playerId })),
-        ...teamB.map(playerId => ({ team_id: teamBId, player_id: playerId }))
+        ...teamA.map(playerId => ({ team_id: teams[0].id, player_id: playerId })),
+        ...teamB.map(playerId => ({ team_id: teams[1].id, player_id: playerId }))
       ];
       
-      if (mode === 'WINNER_STAYS' && teamCId) {
-        teamPlayersData.push(...teamC.map(playerId => ({ team_id: teamCId, player_id: playerId })));
+      if (mode === 'WINNER_STAYS') {
+        teamPlayersData.push(...teamC.map(playerId => ({ team_id: teams[2].id, player_id: playerId })));
+        if (numTeams >= 4) {
+          teamPlayersData.push(...teamD.map(playerId => ({ team_id: teams[3].id, player_id: playerId })));
+        }
+        if (numTeams === 5) {
+          teamPlayersData.push(...teamE.map(playerId => ({ team_id: teams[4].id, player_id: playerId })));
+        }
       }
 
       const { error: tpError } = await supabase.from('team_players').insert(teamPlayersData);
@@ -159,6 +173,8 @@ export default function NewMatch() {
     
     if (mode === 'WINNER_STAYS') {
       text += `\n\n${formatTeam('Team C', teamC)}`;
+      if (numTeams >= 4) text += `\n\n${formatTeam('Team D', teamD)}`;
+      if (numTeams === 5) text += `\n\n${formatTeam('Team E', teamE)}`;
     }
 
     return text;
@@ -253,98 +269,59 @@ export default function NewMatch() {
               <option value="WINNER_STAYS">Winner Stays</option>
             </select>
           </div>
+          {mode === 'WINNER_STAYS' && (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">Number of Teams</label>
+              <select 
+                value={numTeams}
+                onChange={e => setNumTeams(parseInt(e.target.value))}
+                className="w-full bg-neutral-900/50 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              >
+                <option value={3}>3 Teams</option>
+                <option value={4}>4 Teams</option>
+                <option value={5}>5 Teams</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="pt-6 border-t border-white/5">
           <h3 className="text-xl font-bold text-white mb-6 tracking-widest uppercase">Assign Teams</h3>
-          <div className={`grid grid-cols-1 gap-4 sm:gap-6 ${mode === 'WINNER_STAYS' ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
-            
-            {/* Team A */}
-            <div className="space-y-3 p-5 bg-black border border-primary-500/20 rounded-2xl shadow-lg shadow-primary-900/10">
-              <h4 className="font-bold text-primary-400 flex items-center justify-between uppercase tracking-widest text-sm mb-4">
-                Team A <span className="bg-primary-500/20 text-primary-400 px-3 py-1 rounded-full text-[10px]">{teamA.length} Players</span>
-              </h4>
-              <div className="space-y-2">
-                {players.map(p => {
-                  const isSelected = teamA.includes(p.id);
-                  const isAssignedElsewhere = teamB.includes(p.id) || teamC.includes(p.id);
-                  const isTeamFull = teamA.length >= 5;
-                  const isDisabled = isAssignedElsewhere || (isTeamFull && !isSelected);
-
-                  return (
-                    <label key={`A-${p.id}`} className={`flex items-center justify-between p-3 rounded-xl transition-all border border-transparent ${isDisabled ? 'opacity-40 cursor-not-allowed bg-black' : isSelected ? 'bg-primary-500/10 border-primary-500/30' : 'bg-neutral-900/50 border-white/5 hover:bg-primary-900/20 hover:border-primary-500/30 cursor-pointer'}`}>
-                      <span className={`font-medium text-sm ${isDisabled ? 'text-neutral-500' : isSelected ? 'text-white' : 'text-neutral-300'}`}>{p.username}</span>
-                      <input 
-                        type="checkbox" 
-                        checked={isSelected}
-                        disabled={isDisabled}
-                        onChange={() => togglePlayer('A', p.id)}
-                        className="w-5 h-5 rounded-md border-white/10 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 focus:ring-offset-transparent bg-black disabled:opacity-50"
-                      />
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Team B */}
-            <div className="space-y-3 p-5 bg-black border border-blue-500/20 rounded-2xl shadow-lg shadow-blue-900/10">
-              <h4 className="font-bold text-blue-400 flex items-center justify-between uppercase tracking-widest text-sm mb-4">
-                Team B <span className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-[10px]">{teamB.length} Players</span>
-              </h4>
-              <div className="space-y-2">
-                {players.map(p => {
-                  const isSelected = teamB.includes(p.id);
-                  const isAssignedElsewhere = teamA.includes(p.id) || teamC.includes(p.id);
-                  const isTeamFull = teamB.length >= 5;
-                  const isDisabled = isAssignedElsewhere || (isTeamFull && !isSelected);
-
-                  return (
-                    <label key={`B-${p.id}`} className={`flex items-center justify-between p-3 rounded-xl transition-all border border-transparent ${isDisabled ? 'opacity-40 cursor-not-allowed bg-black' : isSelected ? 'bg-blue-500/10 border-blue-500/30' : 'bg-neutral-900/50 border-white/5 hover:bg-blue-900/20 hover:border-blue-500/30 cursor-pointer'}`}>
-                      <span className={`font-medium text-sm ${isDisabled ? 'text-neutral-500' : isSelected ? 'text-white' : 'text-neutral-300'}`}>{p.username}</span>
-                      <input 
-                        type="checkbox" 
-                        checked={isSelected}
-                        disabled={isDisabled}
-                        onChange={() => togglePlayer('B', p.id)}
-                        className="w-5 h-5 rounded-md border-white/10 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-transparent bg-black disabled:opacity-50"
-                      />
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Team C */}
-            {mode === 'WINNER_STAYS' && (
-              <div className="space-y-3 p-5 bg-black border border-orange-500/20 rounded-2xl shadow-lg shadow-orange-900/10">
-                <h4 className="font-bold text-orange-400 flex items-center justify-between uppercase tracking-widest text-sm mb-4">
-                  Team C <span className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-[10px]">{teamC.length} Players</span>
+          <div className={`grid grid-cols-1 gap-4 sm:gap-6 ${mode === 'WINNER_STAYS' ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'}`}>
+            {[
+              { id: 'A', name: 'Team A', teamArr: teamA, colors: { border: 'border-primary-500/20', shadow: 'shadow-primary-900/10', text: 'text-primary-400', badge: 'bg-primary-500/20 text-primary-400', bgSel: 'bg-primary-500/10 border-primary-500/30', hover: 'hover:bg-primary-900/20 hover:border-primary-500/30', ring: 'text-primary-500 focus:ring-primary-500' } },
+              { id: 'B', name: 'Team B', teamArr: teamB, colors: { border: 'border-blue-500/20', shadow: 'shadow-blue-900/10', text: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-400', bgSel: 'bg-blue-500/10 border-blue-500/30', hover: 'hover:bg-blue-900/20 hover:border-blue-500/30', ring: 'text-blue-500 focus:ring-blue-500' } },
+              ...(mode === 'WINNER_STAYS' ? [{ id: 'C', name: 'Team C', teamArr: teamC, colors: { border: 'border-orange-500/20', shadow: 'shadow-orange-900/10', text: 'text-orange-400', badge: 'bg-orange-500/20 text-orange-400', bgSel: 'bg-orange-500/10 border-orange-500/30', hover: 'hover:bg-orange-900/20 hover:border-orange-500/30', ring: 'text-orange-500 focus:ring-orange-500' } }] : []),
+              ...(mode === 'WINNER_STAYS' && numTeams >= 4 ? [{ id: 'D', name: 'Team D', teamArr: teamD, colors: { border: 'border-purple-500/20', shadow: 'shadow-purple-900/10', text: 'text-purple-400', badge: 'bg-purple-500/20 text-purple-400', bgSel: 'bg-purple-500/10 border-purple-500/30', hover: 'hover:bg-purple-900/20 hover:border-purple-500/30', ring: 'text-purple-500 focus:ring-purple-500' } }] : []),
+              ...(mode === 'WINNER_STAYS' && numTeams === 5 ? [{ id: 'E', name: 'Team E', teamArr: teamE, colors: { border: 'border-pink-500/20', shadow: 'shadow-pink-900/10', text: 'text-pink-400', badge: 'bg-pink-500/20 text-pink-400', bgSel: 'bg-pink-500/10 border-pink-500/30', hover: 'hover:bg-pink-900/20 hover:border-pink-500/30', ring: 'text-pink-500 focus:ring-pink-500' } }] : [])
+            ].map((teamData) => (
+              <div key={teamData.id} className={`space-y-3 p-5 bg-black border ${teamData.colors.border} rounded-2xl shadow-lg ${teamData.colors.shadow}`}>
+                <h4 className={`font-bold ${teamData.colors.text} flex items-center justify-between uppercase tracking-widest text-sm mb-4`}>
+                  {teamData.name} <span className={`${teamData.colors.badge} px-3 py-1 rounded-full text-[10px]`}>{teamData.teamArr.length} Players</span>
                 </h4>
                 <div className="space-y-2">
                   {players.map(p => {
-                    const isSelected = teamC.includes(p.id);
-                    const isAssignedElsewhere = teamA.includes(p.id) || teamB.includes(p.id);
-                    const isTeamFull = teamC.length >= 5;
+                    const isSelected = teamData.teamArr.includes(p.id);
+                    const isAssignedElsewhere = [teamA, teamB, teamC, teamD, teamE].some(arr => arr !== teamData.teamArr && arr.includes(p.id));
+                    const isTeamFull = teamData.teamArr.length >= 5;
                     const isDisabled = isAssignedElsewhere || (isTeamFull && !isSelected);
 
                     return (
-                      <label key={`C-${p.id}`} className={`flex items-center justify-between p-3 rounded-xl transition-all border border-transparent ${isDisabled ? 'opacity-40 cursor-not-allowed bg-black' : isSelected ? 'bg-orange-500/10 border-orange-500/30' : 'bg-neutral-900/50 border-white/5 hover:bg-orange-900/20 hover:border-orange-500/30 cursor-pointer'}`}>
+                      <label key={`${teamData.id}-${p.id}`} className={`flex items-center justify-between p-3 rounded-xl transition-all border border-transparent ${isDisabled ? 'opacity-40 cursor-not-allowed bg-black' : isSelected ? teamData.colors.bgSel : `bg-neutral-900/50 border-white/5 ${teamData.colors.hover} cursor-pointer`}`}>
                         <span className={`font-medium text-sm ${isDisabled ? 'text-neutral-500' : isSelected ? 'text-white' : 'text-neutral-300'}`}>{p.username}</span>
                         <input 
                           type="checkbox" 
                           checked={isSelected}
                           disabled={isDisabled}
-                          onChange={() => togglePlayer('C', p.id)}
-                          className="w-5 h-5 rounded-md border-white/10 text-orange-500 focus:ring-orange-500 focus:ring-offset-0 focus:ring-offset-transparent bg-black disabled:opacity-50"
+                          onChange={() => togglePlayer(teamData.id as any, p.id)}
+                          className={`w-5 h-5 rounded-md border-white/10 ${teamData.colors.ring} focus:ring-offset-0 focus:ring-offset-transparent bg-black disabled:opacity-50`}
                         />
                       </label>
                     );
                   })}
                 </div>
               </div>
-            )}
-
+            ))}
           </div>
         </div>
       </div>
