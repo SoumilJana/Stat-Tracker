@@ -23,11 +23,11 @@ export const POSITIONS_CONFIG = {
     benchmarks: { GOAL: 1.5, ASSIST: 2.0, WIN_PCT: 0.60 }
   },
   DEF: {
-    weights: { GAA: 0.40, AWARD: 0.30, OFFENSE: 0.20, RELIABILITY: 0.10 },
+    weights: { GAA: 0.50, AWARD: 0.15, OFFENSE: 0.25, RELIABILITY: 0.10 },
     benchmarks: { GAA: 0.8, AWARD: 0.33, OFFENSE: 1.5 } // Offense = Goals + Assists
   },
   GK: {
-    weights: { GAA: 0.40, AWARD: 0.30, WIN: 0.20, RELIABILITY: 0.10 },
+    weights: { GAA: 0.50, AWARD: 0.10, WIN: 0.30, RELIABILITY: 0.10 },
     benchmarks: { GAA: 0.8, AWARD: 0.33, WIN_PCT: 0.60 }
   }
 } as const;
