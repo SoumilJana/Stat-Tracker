@@ -26,11 +26,16 @@ export default function ActiveMatch() {
   const [goalAnim, setGoalAnim] = useState<{teamId: string, id: number} | null>(null);
   
   const [events, setEvents] = useState<any[]>([]);
+  const [timeOnPitch, setTimeOnPitch] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pollVotes, setPollVotes] = useState<any[]>([]);
   const [votingAward, setVotingAward] = useState<'BEST_DEFENDER' | 'BEST_GK' | null>(null);
+
+  const [isManagingQueue, setIsManagingQueue] = useState(false);
+  const [managedPitch, setManagedPitch] = useState<any[]>([]);
+  const [managedWaiting, setManagedWaiting] = useState<any[]>([]);
 
   const syncOfflineEvents = async () => {
     if (!navigator.onLine) return;
@@ -164,15 +169,21 @@ export default function ActiveMatch() {
       let currentPitch = [tData[0], tData[1]].filter(Boolean);
       let currentWaiting = tData.slice(2);
       let scores: Record<string, number> = {};
-      let timeOnPitch: Record<string, number> = {};
+      let timeOnPitchLocal: Record<string, number> = {};
       
-      tData.forEach(t => { scores[t.id] = 0; timeOnPitch[t.id] = 1; });
-      if (currentWaiting.length > 0) timeOnPitch[currentWaiting[0].id] = 0;
+      tData.forEach(t => { scores[t.id] = 0; timeOnPitchLocal[t.id] = 0; });
+      currentPitch.forEach(t => timeOnPitchLocal[t.id] = 1);
 
       const sortedEvents = [...allEvents].reverse();
 
       sortedEvents.forEach(ev => {
-        if (ev.event_type === 'GOAL') {
+        if (ev.event_type === 'SET_PITCH_STATE' && ev.metadata) {
+          const { onPitch: pitchIds, waiting: waitingIds } = ev.metadata;
+          currentPitch = pitchIds.map((pid: string) => tData.find(t => t.id === pid)).filter(Boolean);
+          currentWaiting = waitingIds.map((wid: string) => tData.find(t => t.id === wid)).filter(Boolean);
+          // When a manual state override happens, we reset the time on pitch for current teams
+          currentPitch.forEach(t => timeOnPitchLocal[t.id] += 1);
+        } else if (ev.event_type === 'GOAL') {
           scores[ev.team_id] = (scores[ev.team_id] || 0) + 1;
           
           if (sData?.mode === 'WINNER_STAYS' && currentWaiting.length > 0) {
@@ -182,9 +193,8 @@ export default function ActiveMatch() {
             currentPitch = [winner, currentWaiting[0]];
             currentWaiting = [...currentWaiting.slice(1), loser];
             
-            timeOnPitch[winner.id] += 1;
-            timeOnPitch[currentPitch[1].id] = 1; // new team
-            timeOnPitch[loser.id] = 0;
+            timeOnPitchLocal[winner.id] += 1;
+            timeOnPitchLocal[currentPitch[1].id] = (timeOnPitchLocal[currentPitch[1].id] || 0) + 1; // new team
           }
         } else if (ev.event_type === 'NO_GOAL_TIME_UP') {
           if (sData?.mode === 'WINNER_STAYS' && currentWaiting.length > 0) {
@@ -196,9 +206,8 @@ export default function ActiveMatch() {
             currentPitch = [winner, currentWaiting[0]];
             currentWaiting = [...currentWaiting.slice(1), loser];
             
-            timeOnPitch[winner.id] += 1;
-            timeOnPitch[currentPitch[1].id] = 1;
-            timeOnPitch[loser.id] = 0;
+            timeOnPitchLocal[winner.id] += 1;
+            timeOnPitchLocal[currentPitch[1].id] = (timeOnPitchLocal[currentPitch[1].id] || 0) + 1;
           }
         } else if (ev.event_type === 'UNDO') {
           // We use 'UNDO' as a MANUAL_SWAP event to avoid schema changes
@@ -213,8 +222,7 @@ export default function ActiveMatch() {
               // Add the old team to the end of the waiting list
               currentWaiting = [...currentWaiting.slice(1), teamOut];
               
-              timeOnPitch[teamIn.id] = 1;
-              timeOnPitch[teamOut.id] = 0;
+              timeOnPitchLocal[teamIn.id] = (timeOnPitchLocal[teamIn.id] || 0) + 1;
             }
           }
         }
@@ -222,6 +230,7 @@ export default function ActiveMatch() {
 
       setOnPitch(currentPitch);
       setWaiting(currentWaiting);
+      setTimeOnPitch(timeOnPitchLocal);
       
       setTeamScores(prev => {
         let newGoalTeam = null;
@@ -274,6 +283,28 @@ export default function ActiveMatch() {
     if (error) console.error("Error recording goal:", error);
     else fetchMatchData();
     };
+
+  const saveQueueOrder = async (newPitch: any[], newWaiting: any[]) => {
+    const eventData = {
+      session_id: id,
+      event_type: 'SET_PITCH_STATE',
+      metadata: {
+        onPitch: newPitch.map(t => t.id),
+        waiting: newWaiting.map(t => t.id)
+      },
+      timestamp: new Date().toISOString()
+    };
+    
+    if (!navigator.onLine) {
+      alert("Queue ordering is currently only supported when online.");
+      return;
+    }
+    
+    setIsManagingQueue(false);
+    const { error } = await supabase.from('events').insert(eventData);
+    if (error) console.error("Error updating queue order:", error);
+    else fetchMatchData();
+  };
 
   const swapTeam = async (teamId: string) => {
     const eventData = {
@@ -727,11 +758,23 @@ export default function ActiveMatch() {
       </div>
 
       {session.status === 'IN_PROGRESS' && waiting.length > 0 && (
-        <div className="flex justify-center mb-8">
+        <div className="flex flex-col items-center justify-center mb-8 gap-3">
           <div className="bg-orange-500/10 border border-orange-500/20 text-orange-400 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 animate-pulse">
             <Clock className="w-4 h-4" />
             Waiting: {waiting.map(t => t.name).join(', ')}
           </div>
+          {profile?.role === 'admin' && Object.values(timeOnPitch).some(t => t === 0) && (
+            <button
+              onClick={() => {
+                setManagedPitch([...onPitch]);
+                setManagedWaiting([...waiting]);
+                setIsManagingQueue(true);
+              }}
+              className="text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-white transition-colors underline"
+            >
+              Manage Match Order
+            </button>
+          )}
         </div>
       )}
 
@@ -1068,6 +1111,112 @@ export default function ActiveMatch() {
                 className="flex-1 py-3 bg-primary-500 text-black font-black uppercase tracking-widest hover:bg-primary-400 transition-all rounded-xl"
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Queue Manager Modal */}
+      {isManagingQueue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col max-h-[90vh]">
+            <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">
+              Manage Match Order
+            </h3>
+            <p className="text-sm text-neutral-400 mb-6">Select the two teams playing right now, and order the waiting queue below.</p>
+            
+            <div className="space-y-6 mb-8 flex-1 overflow-y-auto pr-2">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">On Pitch (Select 2)</label>
+                <div className="space-y-2">
+                  {[...managedPitch, ...managedWaiting].map(team => {
+                    const isSelected = managedPitch.find(t => t.id === team.id);
+                    return (
+                      <button
+                        key={`pitch-${team.id}`}
+                        onClick={() => {
+                          if (isSelected) {
+                            if (managedPitch.length > 1) {
+                              setManagedPitch(managedPitch.filter(t => t.id !== team.id));
+                              setManagedWaiting([...managedWaiting, team]);
+                            }
+                          } else if (managedPitch.length < 2) {
+                            setManagedWaiting(managedWaiting.filter(t => t.id !== team.id));
+                            setManagedPitch([...managedPitch, team]);
+                          }
+                        }}
+                        className={`w-full py-3 px-4 font-bold rounded-xl border transition-colors flex justify-between items-center ${
+                          isSelected 
+                            ? 'bg-primary-500/20 text-primary-400 border-primary-500/30' 
+                            : 'bg-neutral-800 hover:bg-neutral-700 text-white border-white/5 opacity-50'
+                        } ${!isSelected && managedPitch.length >= 2 ? 'cursor-not-allowed opacity-30' : ''}`}
+                      >
+                        <span>{team.name}</span>
+                        {isSelected && <Check className="w-4 h-4" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {managedWaiting.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">Waiting Queue (Order matters)</label>
+                  <div className="space-y-2">
+                    {managedWaiting.map((team, idx) => (
+                      <div
+                        key={`waiting-${team.id}`}
+                        className="w-full py-3 px-4 font-bold rounded-xl border bg-neutral-800 text-white border-white/5 flex justify-between items-center"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-neutral-500 w-4">{idx + 1}.</span>
+                          <span>{team.name}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            disabled={idx === 0}
+                            onClick={() => {
+                              const newW = [...managedWaiting];
+                              [newW[idx - 1], newW[idx]] = [newW[idx], newW[idx - 1]];
+                              setManagedWaiting(newW);
+                            }}
+                            className="p-1 text-neutral-400 hover:text-white disabled:opacity-30"
+                          >
+                            ▲
+                          </button>
+                          <button 
+                            disabled={idx === managedWaiting.length - 1}
+                            onClick={() => {
+                              const newW = [...managedWaiting];
+                              [newW[idx + 1], newW[idx]] = [newW[idx], newW[idx + 1]];
+                              setManagedWaiting(newW);
+                            }}
+                            className="p-1 text-neutral-400 hover:text-white disabled:opacity-30"
+                          >
+                            ▼
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsManagingQueue(false)}
+                className="flex-1 py-3 text-neutral-400 hover:text-white font-bold transition-colors bg-neutral-800 hover:bg-neutral-700 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={managedPitch.length !== 2}
+                onClick={() => saveQueueOrder(managedPitch, managedWaiting)}
+                className="flex-1 py-3 bg-primary-500 text-black font-black uppercase tracking-widest hover:bg-primary-400 transition-all rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirm Order
               </button>
             </div>
           </div>
