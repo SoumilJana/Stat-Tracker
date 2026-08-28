@@ -15,20 +15,20 @@ export const RELIABILITY_DIVISOR = 3; // For matches (sessions) played
 
 export const POSITIONS_CONFIG = {
   FWD: {
-    weights: { GOAL: 0.60, ASSIST: 0.20, WIN: 0.10, RELIABILITY: 0.10 },
-    benchmarks: { GOAL: 5.0, ASSIST: 1.0, WIN_PCT: 0.60 }
+    weights: { GOAL: 0.40, ASSIST: 0.15, GAA: 0.20, AWARD: 0.15, RELIABILITY: 0.10 },
+    benchmarks: { GOAL: 4.0, ASSIST: 1.0, GAA: 0.8, AWARD: 0.33 }
   },
   MID: {
-    weights: { GOAL: 0.30, ASSIST: 0.40, WIN: 0.20, RELIABILITY: 0.10 },
-    benchmarks: { GOAL: 1.5, ASSIST: 2.0, WIN_PCT: 0.60 }
+    weights: { GOAL: 0.20, ASSIST: 0.30, GAA: 0.25, AWARD: 0.15, RELIABILITY: 0.10 },
+    benchmarks: { GOAL: 2.0, ASSIST: 2.0, GAA: 0.8, AWARD: 0.33 }
   },
   DEF: {
-    weights: { GAA: 0.50, AWARD: 0.15, OFFENSE: 0.25, RELIABILITY: 0.10 },
-    benchmarks: { GAA: 0.8, AWARD: 0.33, OFFENSE: 1.5 } // Offense = Goals + Assists
+    weights: { GOAL: 0.15, ASSIST: 0.15, GAA: 0.40, AWARD: 0.20, RELIABILITY: 0.10 },
+    benchmarks: { GOAL: 1.0, ASSIST: 1.0, GAA: 0.8, AWARD: 0.33 }
   },
   GK: {
-    weights: { GAA: 0.50, AWARD: 0.10, WIN: 0.30, RELIABILITY: 0.10 },
-    benchmarks: { GAA: 0.8, AWARD: 0.33, WIN_PCT: 0.60 }
+    weights: { GOAL: 0.05, ASSIST: 0.05, GAA: 0.50, AWARD: 0.30, RELIABILITY: 0.10 },
+    benchmarks: { GOAL: 0.5, ASSIST: 0.5, GAA: 0.8, AWARD: 0.33 }
   }
 } as const;
 
@@ -77,76 +77,39 @@ export function calculatePlayerRating(player: PlayerStats): { rating: number } {
   const defAwards = player.best_defender_awards ?? 0;
   const gkAwards = player.best_gk_awards ?? 0;
   
-  const wins = player.total_wins ?? 0;
   const miniMatches = player.total_mini_matches ?? 0;
   const conceded = player.total_goals_conceded ?? 0;
 
   // Compute per-session or per-mini-match averages
   const gpg = goals / matches;
   const apg = assists / matches;
-  const offPerGame = (goals + assists) / matches;
-  const defAwardsPerGame = defAwards / matches;
-  const gkAwardsPerGame = gkAwards / matches;
   
-  const winPct = miniMatches > 0 ? (wins / miniMatches) : 0.5; // default to 50% if no data
-  const gaa = miniMatches > 0 ? (conceded / miniMatches) : 1.0; // default to 1.0 if no data
+  // Combine all awards
+  const totalAwards = defAwards + gkAwards;
+  const awardsPerGame = totalAwards / matches;
+  
+  // Goals against average per mini-match
+  const gaa = miniMatches > 0 ? (conceded / miniMatches) : 1.0;
 
-  // Calculate Reliability
+  // Calculate Reliability Score
   const reliabilityScore = 1 - Math.exp(-matches / RELIABILITY_DIVISOR);
   
-  let performanceScore = 0;
+  // Calculate Universal Metric Scores
+  const goalScore = Math.min(1.0, gpg / config.benchmarks.GOAL);
+  const assistScore = Math.min(1.0, apg / config.benchmarks.ASSIST);
+  const awardScore = Math.min(1.0, awardsPerGame / config.benchmarks.AWARD);
+  
+  // For GAA, lower is better. 0 conceded = 1.0 score. If GAA > benchmark*2, score 0.
+  const maxGaaLimit = config.benchmarks.GAA * 2;
+  const gaaScore = Math.max(0, 1.0 - (gaa / maxGaaLimit));
 
-  if (position === 'FWD') {
-    const cfg = config as typeof POSITIONS_CONFIG.FWD;
-    const goalScore = Math.min(1.0, gpg / cfg.benchmarks.GOAL);
-    const assistScore = Math.min(1.0, apg / cfg.benchmarks.ASSIST);
-    const winScore = Math.min(1.0, winPct / cfg.benchmarks.WIN_PCT);
-    
-    performanceScore = 
-      goalScore * cfg.weights.GOAL +
-      assistScore * cfg.weights.ASSIST +
-      winScore * cfg.weights.WIN +
-      reliabilityScore * cfg.weights.RELIABILITY;
-  } 
-  else if (position === 'MID') {
-    const cfg = config as typeof POSITIONS_CONFIG.MID;
-    const goalScore = Math.min(1.0, gpg / cfg.benchmarks.GOAL);
-    const assistScore = Math.min(1.0, apg / cfg.benchmarks.ASSIST);
-    const winScore = Math.min(1.0, winPct / cfg.benchmarks.WIN_PCT);
-    
-    performanceScore = 
-      goalScore * cfg.weights.GOAL +
-      assistScore * cfg.weights.ASSIST +
-      winScore * cfg.weights.WIN +
-      reliabilityScore * cfg.weights.RELIABILITY;
-  }
-  else if (position === 'DEF') {
-    const cfg = config as typeof POSITIONS_CONFIG.DEF;
-    // For GAA, lower is better. 0 conceded = 1.0 score. If GAA > benchmark*2, score 0.
-    const maxGaaLimit = cfg.benchmarks.GAA * 2;
-    const gaaScore = Math.max(0, 1.0 - (gaa / maxGaaLimit));
-    const awardScore = Math.min(1.0, defAwardsPerGame / cfg.benchmarks.AWARD);
-    const offScore = Math.min(1.0, offPerGame / cfg.benchmarks.OFFENSE);
-    
-    performanceScore = 
-      gaaScore * cfg.weights.GAA +
-      awardScore * cfg.weights.AWARD +
-      offScore * cfg.weights.OFFENSE +
-      reliabilityScore * cfg.weights.RELIABILITY;
-  }
-  else if (position === 'GK') {
-    const cfg = config as typeof POSITIONS_CONFIG.GK;
-    const maxGaaLimit = cfg.benchmarks.GAA * 2;
-    const gaaScore = Math.max(0, 1.0 - (gaa / maxGaaLimit));
-    const awardScore = Math.min(1.0, gkAwardsPerGame / cfg.benchmarks.AWARD);
-    const winScore = Math.min(1.0, winPct / cfg.benchmarks.WIN_PCT);
-    
-    performanceScore = 
-      gaaScore * cfg.weights.GAA +
-      awardScore * cfg.weights.AWARD +
-      winScore * cfg.weights.WIN +
-      reliabilityScore * cfg.weights.RELIABILITY;
-  }
+  // Apply Positional Weights
+  const performanceScore = 
+    goalScore * config.weights.GOAL +
+    assistScore * config.weights.ASSIST +
+    gaaScore * config.weights.GAA +
+    awardScore * config.weights.AWARD +
+    reliabilityScore * config.weights.RELIABILITY;
 
   const earnablePoints = MAX_OVR - BASE_OVR;
   const rawRating = BASE_OVR + (earnablePoints * performanceScore);
