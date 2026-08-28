@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-dotenv.config({ path: './.env' });
+dotenv.config({ path: './.env.local' });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vftdtydohqfksxalctet.supabase.co';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -35,7 +35,7 @@ async function run() {
     teams.forEach(t => { scores[t.id] = 0; timeOnPitchLocal[t.id] = 0; goalsConcededLocal[t.id] = 0; });
     currentPitch.forEach(t => timeOnPitchLocal[t.id] = 1);
     
-    events.forEach(ev => {
+    (events || []).forEach(ev => {
       if (ev.event_type === 'SET_PITCH_STATE' && ev.metadata) {
         const { onPitch: pitchIds, waiting: waitingIds } = ev.metadata;
         currentPitch = pitchIds.map(pid => teams.find(t => t.id === pid)).filter(Boolean);
