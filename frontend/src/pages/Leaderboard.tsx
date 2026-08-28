@@ -55,7 +55,7 @@ export default function Leaderboard() {
         className="mb-10 text-center sm:text-left"
       >
         <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tighter uppercase">Leaderboard</h2>
-        <p className="mt-2 text-xs sm:text-sm font-bold text-neutral-500 tracking-widest uppercase">Top players by Overall Rating</p>
+        <p className="mt-2 text-xs sm:text-sm font-bold text-neutral-500 tracking-widest uppercase">Top scorers and playmakers</p>
       </motion.div>
 
       {stats.length === 0 ? (

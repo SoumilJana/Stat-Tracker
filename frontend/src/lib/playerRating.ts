@@ -178,10 +178,8 @@ export function enrichPlayersWithRatings(
     return { ...player, rating, onFire } as PlayerWithRating;
   });
 
-  // Sort using standard leaderboard logic
+  // Sort using standard leaderboard logic requested by user: goals - assists - matches played - awards won
   enriched.sort((a, b) => {
-    if (b.rating !== a.rating) return b.rating - a.rating;
-
     const aGoals = a.total_goals || 0;
     const bGoals = b.total_goals || 0;
     if (bGoals !== aGoals) return bGoals - aGoals;
@@ -193,6 +191,10 @@ export function enrichPlayersWithRatings(
     const aMatches = a.games_played || 0;
     const bMatches = b.games_played || 0;
     if (bMatches !== aMatches) return bMatches - aMatches;
+
+    const aAwards = (a.best_defender_awards || 0) + (a.best_gk_awards || 0);
+    const bAwards = (b.best_defender_awards || 0) + (b.best_gk_awards || 0);
+    if (bAwards !== aAwards) return bAwards - aAwards;
 
     return a.username.localeCompare(b.username);
   });
