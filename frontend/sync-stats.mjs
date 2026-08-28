@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-dotenv.config({ path: './frontend/.env' });
+dotenv.config({ path: './.env' });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vftdtydohqfksxalctet.supabase.co';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
