@@ -16,7 +16,7 @@ export const RELIABILITY_DIVISOR = 3; // For matches (sessions) played
 export const POSITIONS_CONFIG = {
   FWD: {
     weights: { GOAL: 0.60, ASSIST: 0.20, WIN: 0.10, RELIABILITY: 0.10 },
-    benchmarks: { GOAL: 3.0, ASSIST: 1.0, WIN_PCT: 0.60 }
+    benchmarks: { GOAL: 5.0, ASSIST: 1.0, WIN_PCT: 0.60 }
   },
   MID: {
     weights: { GOAL: 0.30, ASSIST: 0.40, WIN: 0.20, RELIABILITY: 0.10 },
