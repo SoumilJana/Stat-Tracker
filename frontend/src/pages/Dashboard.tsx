@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Activity, Users, Plus, Calendar, ArrowRight, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -244,13 +244,26 @@ export default function Dashboard() {
                     const sortedTeams = upcomingMatch.teams?.sort((a: any, b: any) => a.name.localeCompare(b.name)) || [];
                     return (
                       <>
-                        <span className="truncate flex-1 text-center text-primary-400 text-xl">{sortedTeams[0]?.name.replace('Team ', '') || 'A'}</span>
-                        <span className="text-neutral-700 px-4 text-sm font-black italic">VS</span>
-                        <span className="truncate flex-1 text-center text-blue-400 text-xl">{sortedTeams[1]?.name.replace('Team ', '') || 'B'}</span>
-                        {upcomingMatch.mode === 'WINNER_STAYS' && (
+                        {sortedTeams.length > 0 ? (
+                          sortedTeams.map((team: any, index: number) => {
+                            const colors = ['text-primary-400', 'text-blue-400', 'text-orange-400', 'text-purple-400', 'text-pink-400', 'text-yellow-400'];
+                            const colorClass = colors[index % colors.length];
+                            return (
+                              <React.Fragment key={team.id || index}>
+                                {index > 0 && (
+                                  <span className="text-neutral-700 px-2 sm:px-4 text-xs sm:text-sm font-black italic">VS</span>
+                                )}
+                                <span className={`truncate flex-1 text-center text-xl ${colorClass}`}>
+                                  {team.name.replace('Team ', '')}
+                                </span>
+                              </React.Fragment>
+                            );
+                          })
+                        ) : (
                           <>
+                            <span className="truncate flex-1 text-center text-primary-400 text-xl">A</span>
                             <span className="text-neutral-700 px-4 text-sm font-black italic">VS</span>
-                            <span className="truncate flex-1 text-center text-orange-400 text-xl">{sortedTeams[2]?.name.replace('Team ', '') || 'C'}</span>
+                            <span className="truncate flex-1 text-center text-blue-400 text-xl">B</span>
                           </>
                         )}
                       </>
@@ -306,7 +319,7 @@ export default function Dashboard() {
 
                     return (
                       <>
-                        <div className="text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-2">{teamNames.join(' | ')}</div>
+                        <div className="text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-2">{teamNames.join(' vs ')}</div>
                         <div className="text-4xl text-primary-500 tracking-widest font-black drop-shadow-md">{scores.join(' - ')}</div>
                       </>
                     );
