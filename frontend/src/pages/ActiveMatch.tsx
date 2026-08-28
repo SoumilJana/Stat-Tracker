@@ -27,6 +27,7 @@ export default function ActiveMatch() {
   
   const [events, setEvents] = useState<any[]>([]);
   const [timeOnPitch, setTimeOnPitch] = useState<Record<string, number>>({});
+  const [goalsConceded, setGoalsConceded] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -170,8 +171,9 @@ export default function ActiveMatch() {
       let currentWaiting = tData.slice(2);
       let scores: Record<string, number> = {};
       let timeOnPitchLocal: Record<string, number> = {};
+      let goalsConcededLocal: Record<string, number> = {};
       
-      tData.forEach(t => { scores[t.id] = 0; timeOnPitchLocal[t.id] = 0; });
+      tData.forEach(t => { scores[t.id] = 0; timeOnPitchLocal[t.id] = 0; goalsConcededLocal[t.id] = 0; });
       currentPitch.forEach(t => timeOnPitchLocal[t.id] = 1);
 
       const sortedEvents = [...allEvents].reverse();
@@ -186,9 +188,14 @@ export default function ActiveMatch() {
         } else if (ev.event_type === 'GOAL') {
           scores[ev.team_id] = (scores[ev.team_id] || 0) + 1;
           
+          const concedingTeam = currentPitch.find(t => t.id !== ev.team_id) || currentPitch[1];
+          if (concedingTeam) {
+            goalsConcededLocal[concedingTeam.id] = (goalsConcededLocal[concedingTeam.id] || 0) + 1;
+          }
+
           if (sData?.mode === 'WINNER_STAYS' && currentWaiting.length > 0) {
             const winner = currentPitch.find(t => t.id === ev.team_id) || currentPitch[0];
-            const loser = currentPitch.find(t => t.id !== winner.id) || currentPitch[1];
+            const loser = concedingTeam;
             
             currentPitch = [winner, currentWaiting[0]];
             currentWaiting = [...currentWaiting.slice(1), loser];
@@ -231,6 +238,7 @@ export default function ActiveMatch() {
       setOnPitch(currentPitch);
       setWaiting(currentWaiting);
       setTimeOnPitch(timeOnPitchLocal);
+      setGoalsConceded(goalsConcededLocal);
       
       setTeamScores(prev => {
         let newGoalTeam = null;
@@ -373,6 +381,20 @@ export default function ActiveMatch() {
 
   const endSession = async () => {
     if (window.confirm("Are you sure you want to end this match day? All recorded goals will be added to the players' total stats permanently.")) {
+      // Save the final team stats to the database
+      const teamStatsInserts = Object.keys(timeOnPitch).map(tId => ({
+        session_id: id,
+        team_id: tId,
+        wins: teamScores[tId] || 0,
+        matches_played: timeOnPitch[tId] || 0,
+        goals_conceded: goalsConceded[tId] || 0,
+      }));
+      
+      if (teamStatsInserts.length > 0) {
+        const { error: statsError } = await supabase.from('session_team_stats').insert(teamStatsInserts);
+        if (statsError) console.error("Error saving team stats:", statsError);
+      }
+
       await supabase.from('sessions').update({ status: 'COMPLETED' }).eq('id', id);
       navigate('/matches');
     }

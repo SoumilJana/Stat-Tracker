@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { motion, type Variants } from 'framer-motion';
 import { enrichPlayersWithRatings, type PlayerWithRating } from '../lib/playerRating';
 import { getOnFirePlayers } from '../lib/streaks';
+import PlayerRatingBadge from '../components/PlayerRatingBadge';
 
 export default function Leaderboard() {
   const [stats, setStats] = useState<PlayerWithRating[]>([]);
@@ -54,7 +55,7 @@ export default function Leaderboard() {
         className="mb-10 text-center sm:text-left"
       >
         <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tighter uppercase">Leaderboard</h2>
-        <p className="mt-2 text-xs sm:text-sm font-bold text-neutral-500 tracking-widest uppercase">Top goal scorers of all time</p>
+        <p className="mt-2 text-xs sm:text-sm font-bold text-neutral-500 tracking-widest uppercase">Top players by Overall Rating</p>
       </motion.div>
 
       {stats.length === 0 ? (
@@ -100,6 +101,7 @@ export default function Leaderboard() {
                         {player.username}
                       </h3>
                      <div className="flex items-center gap-3 mt-1">
+                       <PlayerRatingBadge rating={player.rating} variant="boxed" />
                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                          {player.games_played || 0} MATCHES
                        </span>

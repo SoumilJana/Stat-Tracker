@@ -14,6 +14,7 @@ type Profile = {
   username: string;
   full_name?: string | null;
   role?: string;
+  position?: 'FWD' | 'MID' | 'DEF' | 'GK';
   photo_url?: string | null;
   total_goals?: number;
   total_assists?: number;
@@ -48,6 +49,7 @@ export default function Players() {
   const [editUsername, setEditUsername] = useState('');
   const [editFullName, setEditFullName] = useState('');
   const [editPhotoUrl, setEditPhotoUrl] = useState('');
+  const [editPosition, setEditPosition] = useState<'FWD' | 'MID' | 'DEF' | 'GK'>('FWD');
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
 
   const fetchPlayers = async () => {
@@ -144,6 +146,7 @@ export default function Players() {
         username: editUsername,
         full_name: editFullName || null,
         photo_url: editPhotoUrl || null,
+        position: editPosition,
         image_file: imageFile
       });
 
@@ -158,7 +161,8 @@ export default function Players() {
           ...selectedPlayer,
           username: editUsername,
           full_name: editFullName || null,
-          photo_url: finalPhotoUrl || null
+          photo_url: finalPhotoUrl || null,
+          position: editPosition
         });
       }
       
@@ -175,6 +179,7 @@ export default function Players() {
     setEditUsername(player.username);
     setEditFullName(player.full_name || '');
     setEditPhotoUrl(player.photo_url || '');
+    setEditPosition(player.position || 'FWD');
     setEditPhotoFile(null);
     setIsEditModalOpen(true);
   };
@@ -236,6 +241,15 @@ export default function Players() {
                       {player.leaderboardRank === 1 ? '🥇 #1' : player.leaderboardRank === 2 ? '🥈 #2' : '🥉 #3'}
                     </span>
                   )}
+                  <span className={`px-2 py-1 rounded border border-white/10 backdrop-blur-sm text-[9px] font-bold uppercase tracking-widest ${
+                    player.position === 'FWD' ? 'bg-blue-500/20 text-blue-300' :
+                    player.position === 'MID' ? 'bg-green-500/20 text-green-300' :
+                    player.position === 'DEF' ? 'bg-yellow-500/20 text-yellow-300' :
+                    player.position === 'GK' ? 'bg-purple-500/20 text-purple-300' :
+                    'bg-white/5 text-neutral-300'
+                  }`}>
+                    {player.position || 'FWD'}
+                  </span>
                   {player.isTopAssister && (
                     <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                       🎯 TOP ASSIST
@@ -365,10 +379,19 @@ export default function Players() {
                   <div className="pt-24 px-6 sm:px-8 pb-4 mt-auto">
                     <div className="flex flex-row items-center gap-2 mb-3">
                       {selectedPlayer.leaderboardRank && selectedPlayer.leaderboardRank <= 3 && (
-                        <span className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-[10px] font-bold text-neutral-200 uppercase tracking-widest">
+                        <span className="px-3 py-1.5 rounded-md border border-white/10 bg-white/5 backdrop-blur-sm text-xs font-bold text-neutral-300 uppercase tracking-widest">
                           {selectedPlayer.leaderboardRank === 1 ? '🥇 #1' : selectedPlayer.leaderboardRank === 2 ? '🥈 #2' : '🥉 #3'}
                         </span>
                       )}
+                      <span className={`px-3 py-1.5 rounded-md border border-white/10 backdrop-blur-sm text-xs font-bold uppercase tracking-widest ${
+                        selectedPlayer.position === 'FWD' ? 'bg-blue-500/20 text-blue-300' :
+                        selectedPlayer.position === 'MID' ? 'bg-green-500/20 text-green-300' :
+                        selectedPlayer.position === 'DEF' ? 'bg-yellow-500/20 text-yellow-300' :
+                        selectedPlayer.position === 'GK' ? 'bg-purple-500/20 text-purple-300' :
+                        'bg-white/5 text-neutral-300'
+                      }`}>
+                        {selectedPlayer.position || 'FWD'}
+                      </span>
                       {selectedPlayer.isTopAssister && (
                         <span className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-[10px] font-bold text-neutral-200 uppercase tracking-widest">
                           🎯 TOP ASSIST
@@ -429,7 +452,7 @@ export default function Players() {
                         <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
                           <Activity className="w-4 h-4 text-amber-400 mb-1" />
                           <div className="text-2xl font-black text-white drop-shadow-md">{formatRating(selectedPlayer.rating)}</div>
-                          <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Rating</div>
+                          <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">OVR</div>
                         </div>
                       )}
                     </div>
@@ -546,6 +569,19 @@ export default function Players() {
                     className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white focus:ring-primary-500 focus:border-primary-500"
                     placeholder="e.g. Soumil Jana"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-1">Position</label>
+                  <select
+                    value={editPosition}
+                    onChange={(e) => setEditPosition(e.target.value as 'FWD' | 'MID' | 'DEF' | 'GK')}
+                    className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-white focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="FWD">Forward (ST/RW/LW)</option>
+                    <option value="MID">Midfielder (CAM/CM/CDM)</option>
+                    <option value="DEF">Defender (CB/LB/RB)</option>
+                    <option value="GK">Goalkeeper (GK)</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-300 mb-1">Profile Photo</label>

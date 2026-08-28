@@ -1,37 +1,35 @@
 // =============================================================================
 // Player Rating System — Centralized Calculation Engine
 // =============================================================================
-//
-// Rating = (GoalScore × 0.50) + (AssistScore × 0.20)
-//        + (ContributionScore × 0.20) + (ReliabilityScore × 0.10)
-//
-// All components are 0–10. Final rating is clamped to 0–10.
-// The rating is a live cumulative tournament performance snapshot.
+// Position-specific rating system.
+// OVR is 70-99.
 // =============================================================================
 
-// ---------------------------------------------------------------------------
-// Configurable Constants
-// ---------------------------------------------------------------------------
+export const BASE_OVR = 70;
+export const MAX_OVR = 99;
 
-export const RATING_CONFIG = {
-  // Component weights (must sum to 1.00)
-  GOAL_WEIGHT: 0.50,
-  ASSIST_WEIGHT: 0.20,
-  CONTRIBUTION_WEIGHT: 0.20,
-  RELIABILITY_WEIGHT: 0.10,
+export const RELIABILITY_DIVISOR = 3; // For matches (sessions) played
 
-  // Scoring benchmarks (adjusted GPG/APG value that maps to a perfect 10)
-  GOAL_BENCHMARK: 3.0,
-  ASSIST_BENCHMARK: 1.5,
+// Goals/Assists/Awards benchmarks are PER SESSION (since games_played = sessions)
+// We also use mini-match (team wins/losses) where available.
 
-  // Total contribution benchmark (G+A value that maps to a perfect 10)
-  CONTRIBUTION_BENCHMARK: 20,
-
-  // Bayesian smoothing: adds N virtual matches at league-average rate
-  SMOOTHING_MATCHES: 2,
-
-  // Reliability curve divisor (higher = slower saturation)
-  RELIABILITY_DIVISOR: 3,
+export const POSITIONS_CONFIG = {
+  FWD: {
+    weights: { GOAL: 0.60, ASSIST: 0.20, WIN: 0.10, RELIABILITY: 0.10 },
+    benchmarks: { GOAL: 3.0, ASSIST: 1.0, WIN_PCT: 0.60 }
+  },
+  MID: {
+    weights: { GOAL: 0.30, ASSIST: 0.40, WIN: 0.20, RELIABILITY: 0.10 },
+    benchmarks: { GOAL: 1.5, ASSIST: 2.0, WIN_PCT: 0.60 }
+  },
+  DEF: {
+    weights: { GAA: 0.40, AWARD: 0.30, OFFENSE: 0.20, RELIABILITY: 0.10 },
+    benchmarks: { GAA: 0.8, AWARD: 0.33, OFFENSE: 1.5 } // Offense = Goals + Assists
+  },
+  GK: {
+    weights: { GAA: 0.40, AWARD: 0.30, WIN: 0.20, RELIABILITY: 0.10 },
+    benchmarks: { GAA: 0.8, AWARD: 0.33, WIN_PCT: 0.60 }
+  }
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -44,25 +42,16 @@ export interface PlayerStats {
   username: string;
   full_name?: string | null;
   role?: string;
+  position?: 'FWD' | 'MID' | 'DEF' | 'GK';
   photo_url?: string | null;
   total_goals: number;
   total_assists: number;
-  games_played: number;
+  games_played: number; // sessions played
+  total_wins?: number;
+  total_mini_matches?: number;
+  total_goals_conceded?: number;
   best_defender_awards?: number;
   best_gk_awards?: number;
-}
-
-export interface TournamentAverages {
-  leagueAvgGPG: number;
-  leagueAvgAPG: number;
-}
-
-export interface RatingBreakdown {
-  rating: number;
-  goalScore: number;
-  assistScore: number;
-  contributionScore: number;
-  reliabilityScore: number;
 }
 
 export type PlayerWithRating = PlayerStats & { 
@@ -73,156 +62,126 @@ export type PlayerWithRating = PlayerStats & {
 };
 
 // ---------------------------------------------------------------------------
-// Tournament-Wide Averages
-// ---------------------------------------------------------------------------
-
-/**
- * Calculate tournament-wide average goals and assists per match.
- * Uses only players with at least 1 match to avoid skewing the average.
- * Returns sensible defaults if no data exists.
- */
-export function calculateTournamentAverages(
-  allPlayers: PlayerStats[]
-): TournamentAverages {
-  let totalGoals = 0;
-  let totalAssists = 0;
-  let totalMatches = 0;
-
-  for (const p of allPlayers) {
-    const matches = p.games_played ?? 0;
-    if (matches > 0) {
-      totalGoals += p.total_goals ?? 0;
-      totalAssists += p.total_assists ?? 0;
-      totalMatches += matches;
-    }
-  }
-
-  if (totalMatches === 0) {
-    return { leagueAvgGPG: 0, leagueAvgAPG: 0 };
-  }
-
-  return {
-    leagueAvgGPG: totalGoals / totalMatches,
-    leagueAvgAPG: totalAssists / totalMatches,
-  };
-}
-
-// ---------------------------------------------------------------------------
 // Player Rating Calculation
 // ---------------------------------------------------------------------------
 
-/**
- * Calculate a single player's rating breakdown from their cumulative stats
- * and the current tournament-wide averages.
- *
- * Identical inputs always produce identical outputs (deterministic).
- */
-export function calculatePlayerRating(
-  player: PlayerStats,
-  averages: TournamentAverages
-): RatingBreakdown {
+export function calculatePlayerRating(player: PlayerStats): { rating: number } {
+  const position = player.position || 'FWD';
+  const config = POSITIONS_CONFIG[position];
+  
+  const matches = player.games_played ?? 0;
+  if (matches <= 0) return { rating: BASE_OVR };
+
   const goals = player.total_goals ?? 0;
   const assists = player.total_assists ?? 0;
-  const matches = player.games_played ?? 0;
+  const defAwards = player.best_defender_awards ?? 0;
+  const gkAwards = player.best_gk_awards ?? 0;
+  
+  const wins = player.total_wins ?? 0;
+  const miniMatches = player.total_mini_matches ?? 0;
+  const conceded = player.total_goals_conceded ?? 0;
 
-  if (matches <= 0 || (goals <= 0 && assists <= 0)) {
-    return {
-      rating: 0.0,
-      goalScore: 0.0,
-      assistScore: 0.0,
-      contributionScore: 0.0,
-      reliabilityScore: 0.0,
-    };
+  // Compute per-session or per-mini-match averages
+  const gpg = goals / matches;
+  const apg = assists / matches;
+  const offPerGame = (goals + assists) / matches;
+  const defAwardsPerGame = defAwards / matches;
+  const gkAwardsPerGame = gkAwards / matches;
+  
+  const winPct = miniMatches > 0 ? (wins / miniMatches) : 0.5; // default to 50% if no data
+  const gaa = miniMatches > 0 ? (conceded / miniMatches) : 1.0; // default to 1.0 if no data
+
+  // Calculate Reliability
+  const reliabilityScore = 1 - Math.exp(-matches / RELIABILITY_DIVISOR);
+  
+  let performanceScore = 0;
+
+  if (position === 'FWD') {
+    const cfg = config as typeof POSITIONS_CONFIG.FWD;
+    const goalScore = Math.min(1.0, gpg / cfg.benchmarks.GOAL);
+    const assistScore = Math.min(1.0, apg / cfg.benchmarks.ASSIST);
+    const winScore = Math.min(1.0, winPct / cfg.benchmarks.WIN_PCT);
+    
+    performanceScore = 
+      goalScore * cfg.weights.GOAL +
+      assistScore * cfg.weights.ASSIST +
+      winScore * cfg.weights.WIN +
+      reliabilityScore * cfg.weights.RELIABILITY;
+  } 
+  else if (position === 'MID') {
+    const cfg = config as typeof POSITIONS_CONFIG.MID;
+    const goalScore = Math.min(1.0, gpg / cfg.benchmarks.GOAL);
+    const assistScore = Math.min(1.0, apg / cfg.benchmarks.ASSIST);
+    const winScore = Math.min(1.0, winPct / cfg.benchmarks.WIN_PCT);
+    
+    performanceScore = 
+      goalScore * cfg.weights.GOAL +
+      assistScore * cfg.weights.ASSIST +
+      winScore * cfg.weights.WIN +
+      reliabilityScore * cfg.weights.RELIABILITY;
+  }
+  else if (position === 'DEF') {
+    const cfg = config as typeof POSITIONS_CONFIG.DEF;
+    // For GAA, lower is better. 0 conceded = 1.0 score. If GAA > benchmark*2, score 0.
+    const maxGaaLimit = cfg.benchmarks.GAA * 2;
+    const gaaScore = Math.max(0, 1.0 - (gaa / maxGaaLimit));
+    const awardScore = Math.min(1.0, defAwardsPerGame / cfg.benchmarks.AWARD);
+    const offScore = Math.min(1.0, offPerGame / cfg.benchmarks.OFFENSE);
+    
+    performanceScore = 
+      gaaScore * cfg.weights.GAA +
+      awardScore * cfg.weights.AWARD +
+      offScore * cfg.weights.OFFENSE +
+      reliabilityScore * cfg.weights.RELIABILITY;
+  }
+  else if (position === 'GK') {
+    const cfg = config as typeof POSITIONS_CONFIG.GK;
+    const maxGaaLimit = cfg.benchmarks.GAA * 2;
+    const gaaScore = Math.max(0, 1.0 - (gaa / maxGaaLimit));
+    const awardScore = Math.min(1.0, gkAwardsPerGame / cfg.benchmarks.AWARD);
+    const winScore = Math.min(1.0, winPct / cfg.benchmarks.WIN_PCT);
+    
+    performanceScore = 
+      gaaScore * cfg.weights.GAA +
+      awardScore * cfg.weights.AWARD +
+      winScore * cfg.weights.WIN +
+      reliabilityScore * cfg.weights.RELIABILITY;
   }
 
-  const {
-    GOAL_BENCHMARK,
-    ASSIST_BENCHMARK,
-    CONTRIBUTION_BENCHMARK,
-    SMOOTHING_MATCHES,
-    RELIABILITY_DIVISOR,
-    GOAL_WEIGHT,
-    ASSIST_WEIGHT,
-    CONTRIBUTION_WEIGHT,
-    RELIABILITY_WEIGHT,
-  } = RATING_CONFIG;
+  const earnablePoints = MAX_OVR - BASE_OVR;
+  const rawRating = BASE_OVR + (earnablePoints * performanceScore);
+  const rating = Math.round(Math.max(BASE_OVR, Math.min(MAX_OVR, rawRating)));
 
-  // --- Goal Performance (50%) ---
-  // Bayesian-smoothed goals per game
-  const adjustedGPG =
-    (goals + averages.leagueAvgGPG * SMOOTHING_MATCHES) /
-    (matches + SMOOTHING_MATCHES);
-  const goalScore = Math.min(10, (adjustedGPG / GOAL_BENCHMARK) * 10);
-
-  // --- Assist Performance (20%) ---
-  // Bayesian-smoothed assists per game
-  const adjustedAPG =
-    (assists + averages.leagueAvgAPG * SMOOTHING_MATCHES) /
-    (matches + SMOOTHING_MATCHES);
-  const assistScore = Math.min(10, (adjustedAPG / ASSIST_BENCHMARK) * 10);
-
-  // --- Total Contribution (20%) ---
-  const totalContribution = goals + assists;
-  const contributionScore = Math.min(
-    10,
-    (totalContribution / CONTRIBUTION_BENCHMARK) * 10
-  );
-
-  // --- Reliability / Sample Size (10%) ---
-  const reliabilityScore =
-    10 * (1 - Math.exp(-matches / RELIABILITY_DIVISOR));
-
-  // --- Final Rating ---
-  const rawRating =
-    goalScore * GOAL_WEIGHT +
-    assistScore * ASSIST_WEIGHT +
-    contributionScore * CONTRIBUTION_WEIGHT +
-    reliabilityScore * RELIABILITY_WEIGHT;
-
-  const rating = Math.max(0, Math.min(10, rawRating));
-
-  return {
-    rating,
-    goalScore,
-    assistScore,
-    contributionScore,
-    reliabilityScore,
-  };
+  return { rating };
 }
 
 // ---------------------------------------------------------------------------
 // Formatting
 // ---------------------------------------------------------------------------
 
-/** Format a rating value to one decimal place for display. */
 export function formatRating(rating: number): string {
-  return rating.toFixed(1);
+  return Math.round(rating).toString();
 }
 
 // ---------------------------------------------------------------------------
 // Convenience: Enrich an entire player list with ratings
 // ---------------------------------------------------------------------------
 
-/**
- * Compute tournament averages once, then attach a `rating` field to every player.
- * Returns a new array (does not mutate the input).
- */
 export function enrichPlayersWithRatings(
   allPlayers: PlayerStats[],
   onFirePlayers?: Set<string>
 ): PlayerWithRating[] {
-  const averages = calculateTournamentAverages(allPlayers);
-
-  // 1. Map base ratings and onFire
   let enriched = allPlayers.map((player) => {
-    const { rating } = calculatePlayerRating(player, averages);
+    const { rating } = calculatePlayerRating(player);
     const playerId = player.id || player.player_id || '';
     const onFire = onFirePlayers ? onFirePlayers.has(playerId) : false;
     return { ...player, rating, onFire } as PlayerWithRating;
   });
 
-  // 2. Sort using standard leaderboard logic (Goals DESC -> Assists DESC -> Matches DESC -> Defender DESC -> GK DESC -> Name ASC)
+  // Sort using standard leaderboard logic
   enriched.sort((a, b) => {
+    if (b.rating !== a.rating) return b.rating - a.rating;
+
     const aGoals = a.total_goals || 0;
     const bGoals = b.total_goals || 0;
     if (bGoals !== aGoals) return bGoals - aGoals;
@@ -235,23 +194,15 @@ export function enrichPlayersWithRatings(
     const bMatches = b.games_played || 0;
     if (bMatches !== aMatches) return bMatches - aMatches;
 
-    const aDef = a.best_defender_awards || 0;
-    const bDef = b.best_defender_awards || 0;
-    if (bDef !== aDef) return bDef - aDef;
-
-    const aGK = a.best_gk_awards || 0;
-    const bGK = b.best_gk_awards || 0;
-    if (bGK !== aGK) return bGK - aGK;
-
     return a.username.localeCompare(b.username);
   });
 
-  // 3. Assign Rankings
+  // Assign Rankings
   enriched.forEach((p, index) => {
     p.leaderboardRank = index + 1;
   });
 
-  // 4. Assign Top Assist
+  // Assign Top Assist
   let maxAssists = -1;
   enriched.forEach(p => {
     const a = p.total_assists || 0;
@@ -260,7 +211,9 @@ export function enrichPlayersWithRatings(
 
   if (maxAssists > 0) {
     enriched.forEach(p => {
-      p.isTopAssister = (p.total_assists || 0) === maxAssists;
+      if ((p.total_assists || 0) === maxAssists) {
+        p.isTopAssister = true;
+      }
     });
   }
 
