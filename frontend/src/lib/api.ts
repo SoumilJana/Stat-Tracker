@@ -79,7 +79,8 @@ export async function updatePlayer(userId: string, data: any) {
     p_user_id: userId,
     p_username: data.username,
     p_full_name: data.full_name || null,
-    p_photo_url: final_photo_url || null
+    p_photo_url: final_photo_url || null,
+    p_position: data.position || 'FWD'
   });
     
   if (error) throw new Error(error.message);
