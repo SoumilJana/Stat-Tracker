@@ -234,8 +234,8 @@ export default function Players() {
             <div className="absolute inset-0 p-5 flex flex-col pointer-events-none">
               
               {/* Top Row: Tags & Rating */}
-              <div className="mb-2 flex items-start justify-between">
-                <div className="flex flex-row items-center gap-2">
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2 flex-1">
                   {player.leaderboardRank && player.leaderboardRank <= 3 && (
                     <span className="whitespace-nowrap px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                       {player.leaderboardRank === 1 ? '🥇 #1' : player.leaderboardRank === 2 ? '🥈 #2' : '🥉 #3'}
@@ -266,9 +266,10 @@ export default function Players() {
                     </span>
                   ) : null}
                 </div>
-                
                 {player.rating !== undefined && (
-                  <PlayerRatingBadge rating={player.rating} variant="boxed" />
+                  <div className="flex-shrink-0">
+                    <PlayerRatingBadge rating={player.rating} variant="boxed" />
+                  </div>
                 )}
               </div>
 
@@ -377,7 +378,7 @@ export default function Players() {
                   
                   {/* Header / Name Section */}
                   <div className="pt-24 px-6 sm:px-8 pb-4 mt-auto">
-                    <div className="flex flex-row items-center gap-2 mb-3">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
                       {selectedPlayer.leaderboardRank && selectedPlayer.leaderboardRank <= 3 && (
                         <span className="whitespace-nowrap px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-[10px] font-bold text-neutral-200 uppercase tracking-widest">
                           {selectedPlayer.leaderboardRank === 1 ? '🥇 #1' : selectedPlayer.leaderboardRank === 2 ? '🥈 #2' : '🥉 #3'}
