@@ -237,11 +237,11 @@ export default function Players() {
               <div className="mb-2 flex items-start justify-between">
                 <div className="flex flex-row items-center gap-2">
                   {player.leaderboardRank && player.leaderboardRank <= 3 && (
-                    <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
+                    <span className="whitespace-nowrap px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                       {player.leaderboardRank === 1 ? '🥇 #1' : player.leaderboardRank === 2 ? '🥈 #2' : '🥉 #3'}
                     </span>
                   )}
-                  <span className={`px-2 py-1 rounded border border-white/10 backdrop-blur-sm text-[9px] font-bold uppercase tracking-widest ${
+                  <span className={`whitespace-nowrap px-2 py-1 rounded border border-white/10 backdrop-blur-sm text-[9px] font-bold uppercase tracking-widest ${
                     player.position === 'FWD' ? 'bg-blue-500/20 text-blue-300' :
                     player.position === 'MID' ? 'bg-green-500/20 text-green-300' :
                     player.position === 'DEF' ? 'bg-yellow-500/20 text-yellow-300' :
@@ -251,17 +251,17 @@ export default function Players() {
                     {player.position || 'FWD'}
                   </span>
                   {player.isTopAssister && (
-                    <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
+                    <span className="whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                       🎯 TOP ASSIST
                     </span>
                   )}
                   {(player.best_defender_awards || 0) > 0 ? (
-                    <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
+                    <span className="whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                       🛡️ {player.best_defender_awards}
                     </span>
                   ) : null}
                   {(player.best_gk_awards || 0) > 0 ? (
-                    <span className="px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
+                    <span className="whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
                       🧤 {player.best_gk_awards}
                     </span>
                   ) : null}
@@ -379,11 +379,11 @@ export default function Players() {
                   <div className="pt-24 px-6 sm:px-8 pb-4 mt-auto">
                     <div className="flex flex-row items-center gap-2 mb-3">
                       {selectedPlayer.leaderboardRank && selectedPlayer.leaderboardRank <= 3 && (
-                        <span className="px-3 py-1.5 rounded-md border border-white/10 bg-white/5 backdrop-blur-sm text-xs font-bold text-neutral-300 uppercase tracking-widest">
+                        <span className="whitespace-nowrap px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-[10px] font-bold text-neutral-200 uppercase tracking-widest">
                           {selectedPlayer.leaderboardRank === 1 ? '🥇 #1' : selectedPlayer.leaderboardRank === 2 ? '🥈 #2' : '🥉 #3'}
                         </span>
                       )}
-                      <span className={`px-3 py-1.5 rounded-md border border-white/10 backdrop-blur-sm text-xs font-bold uppercase tracking-widest ${
+                      <span className={`whitespace-nowrap px-3 py-1.5 rounded-lg border border-white/10 backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest ${
                         selectedPlayer.position === 'FWD' ? 'bg-blue-500/20 text-blue-300' :
                         selectedPlayer.position === 'MID' ? 'bg-green-500/20 text-green-300' :
                         selectedPlayer.position === 'DEF' ? 'bg-yellow-500/20 text-yellow-300' :
@@ -393,7 +393,7 @@ export default function Players() {
                         {selectedPlayer.position || 'FWD'}
                       </span>
                       {selectedPlayer.isTopAssister && (
-                        <span className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-[10px] font-bold text-neutral-200 uppercase tracking-widest">
+                        <span className="whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-[10px] font-bold text-neutral-200 uppercase tracking-widest">
                           🎯 TOP ASSIST
                         </span>
                       )}
