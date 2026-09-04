@@ -108,7 +108,7 @@ export default function ActiveMatch() {
   }, [id]);
 
   const fetchPollVotes = async () => {
-    const { data } = await supabase.from('poll_votes').select('*').eq('session_id', id);
+    const { data } = await supabase.from('poll_votes').select('*, voter:profiles!poll_votes_voter_id_fkey(username)').eq('session_id', id);
     if (data) setPollVotes(data);
   };
 
@@ -454,6 +454,15 @@ export default function ActiveMatch() {
     if (session.location) text += `Location: ${session.location}\n`;
     text += `\n--- Match Day Tally ---\n`;
     
+    let matchWinner: any = null;
+    let maxScore = -1;
+    Object.entries(teamScores).forEach(([tId, score]) => {
+      if (score > maxScore) {
+        maxScore = score;
+        matchWinner = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
+      }
+    });
+
     Object.entries(teamScores).forEach(([tId, score]) => {
       const t = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
       if (t) {
@@ -462,23 +471,36 @@ export default function ActiveMatch() {
     });
 
     text += `\n--- Player Stats ---\n`;
-    Object.entries(teamPlayers).forEach(([tId, players]) => {
-      const team = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
+    const teams = Object.keys(teamPlayers).map(tId => Object.values(onPitch).concat(waiting).find(t => t.id === tId)).filter(Boolean);
+    teams.sort((a, b) => {
+      if (matchWinner && a?.id === matchWinner.id) return -1;
+      if (matchWinner && b?.id === matchWinner.id) return 1;
+      return 0;
+    });
+
+    teams.forEach(team => {
       if (!team) return;
+      const players = teamPlayers[team.id];
+      if (!players) return;
       
+      const isWinner = matchWinner && team.id === matchWinner.id;
       let hasStats = false;
-      let teamText = `\n${team.name}:\n`;
+      let teamText = isWinner ? `\n🏆 WINNER: ${team.name} 🏆\n` : `\n${team.name}:\n`;
+      
       players.forEach(player => {
         const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
         const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
         
-        if (pGoals > 0 || pAssists > 0) {
+        if (pGoals > 0 || pAssists > 0 || isWinner) {
           hasStats = true;
-          teamText += `- ${player.username}: `;
+          teamText += `- ${player.username}`;
           const stats = [];
           if (pGoals > 0) stats.push(`${pGoals} G`);
           if (pAssists > 0) stats.push(`${pAssists} A`);
-          teamText += stats.join(', ') + '\n';
+          if (stats.length > 0) {
+            teamText += `: ${stats.join(', ')}`;
+          }
+          teamText += '\n';
         }
       });
       if (hasStats) {
@@ -488,18 +510,25 @@ export default function ActiveMatch() {
 
     let topScorerName = 'N/A';
     let topScorerGoals = 0;
+    let topScorerAssists = 0;
+    
     let topAssisterName = 'N/A';
     let topAssisterAssists = 0;
+    let topAssisterGoals = 0;
 
     Object.values(teamPlayers).flat().forEach(player => {
       const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
       const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
-      if (pGoals > topScorerGoals) {
+      
+      if (pGoals > topScorerGoals || (pGoals === topScorerGoals && pGoals > 0 && pAssists > topScorerAssists)) {
         topScorerGoals = pGoals;
+        topScorerAssists = pAssists;
         topScorerName = player.username;
       }
-      if (pAssists > topAssisterAssists) {
+      
+      if (pAssists > topAssisterAssists || (pAssists === topAssisterAssists && pAssists > 0 && pGoals > topAssisterGoals)) {
         topAssisterAssists = pAssists;
+        topAssisterGoals = pGoals;
         topAssisterName = player.username;
       }
     });
@@ -735,6 +764,23 @@ export default function ActiveMatch() {
                     >
                       {hasVoted ? 'Change Vote' : 'Cast Vote'}
                     </button>
+                    
+                    {profile?.role === 'admin' && votesForAward.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-white/10">
+                        <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Admin: Vote Details</div>
+                        <ul className="text-xs text-neutral-400 space-y-1 max-h-32 overflow-y-auto pr-1">
+                          {votesForAward.map(v => {
+                            const candidate = Object.values(teamPlayers).flat().find(p => p.id === v.candidate_id);
+                            return (
+                              <li key={v.id} className="flex justify-between items-center py-1 border-b border-white/5 last:border-0">
+                                <span className="truncate pr-2">{v.voter?.username || 'Unknown'}</span>
+                                <span className="text-white whitespace-nowrap text-[10px] bg-white/10 px-2 py-0.5 rounded-full">voted {candidate?.username || 'Unknown'}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 );
               })}
