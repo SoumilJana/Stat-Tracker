@@ -90,34 +90,34 @@ export default function AppLayout() {
   const location = useLocation();
 
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: Home },
-    { name: 'Matches', path: '/matches', icon: Activity },
-    { name: 'Drafts', path: '/drafts', icon: ClipboardList },
-    { name: 'Players', path: '/players', icon: Users },
-    { name: 'Leaderboard', path: '/leaderboard', icon: Trophy },
-    { name: 'Hall of Fame', path: '/seasons', icon: Award },
+    { name: 'Dashboard', mobileName: 'Home', path: '/', icon: Home },
+    { name: 'Matches', mobileName: 'Matches', path: '/matches', icon: Activity },
+    { name: 'Drafts', mobileName: 'Drafts', path: '/drafts', icon: ClipboardList },
+    { name: 'Players', mobileName: 'Players', path: '/players', icon: Users },
+    { name: 'Leaderboard', mobileName: 'Ranking', path: '/leaderboard', icon: Trophy },
+    { name: 'Hall of Fame', mobileName: 'Awards', path: '/seasons', icon: Award },
   ];
 
   return (
     <div className="min-h-screen bg-neutral-950 flex flex-col md:flex-row pb-16 md:pb-0">
       {/* Mobile Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-neutral-900 border-t border-neutral-800 md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="flex justify-around items-center h-16">
+        <div className="flex justify-between items-center h-16 px-1">
           {navItems.map((item) => (
             <NavLink
               key={item.name}
               to={item.path}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-col items-center justify-center w-full h-full space-y-1 text-xs font-medium transition-colors relative",
+                  "flex flex-col items-center justify-center flex-1 h-full space-y-1 text-[10px] font-medium transition-colors relative",
                   isActive ? "text-primary-400" : "text-neutral-400 hover:text-neutral-200"
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  <item.icon className="w-5 h-5 relative z-10" />
-                  <span className="relative z-10">{item.name}</span>
+                  <item.icon className="w-5 h-5 relative z-10 mb-0.5" />
+                  <span className="relative z-10 truncate w-full text-center px-0.5 tracking-tight">{item.mobileName}</span>
                   {isActive && (
                     <motion.div
                       layoutId="mobile-nav-indicator"
