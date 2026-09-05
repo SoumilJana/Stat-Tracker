@@ -1,32 +1,86 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, type Variants } from 'framer-motion';
 import { enrichPlayersWithRatings, type PlayerWithRating } from '../lib/playerRating';
 import { getOnFirePlayers } from '../lib/streaks';
 import PlayerRatingBadge from '../components/PlayerRatingBadge';
 
+import { buildSeasons, getCurrentSeason } from '../lib/seasons';
+
 export default function Leaderboard() {
+  const seasons = useMemo(() => buildSeasons(), []);
+  
   const [stats, setStats] = useState<PlayerWithRating[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Start on the currently active season
+  const [selectedSeasonNum, setSelectedSeasonNum] = useState<number>(() => getCurrentSeason(seasons).number);
+
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
-      const { data } = await supabase
-        .from('player_stats')
-        .select('*')
-        .order('total_goals', { ascending: false })
-        .order('total_assists', { ascending: false })
-        .order('games_played', { ascending: false })
-        .order('username', { ascending: true });
+      setLoading(true);
+      setErrorMsg(null);
+      
+      const selectedSeason = seasons.find(s => s.number === selectedSeasonNum) || seasons[0];
+
+      const { data: rpcData, error } = await supabase
+        .rpc('get_player_stats_in_range', {
+          p_start_date: selectedSeason.startDate,
+          p_end_date: selectedSeason.endDate
+        });
+        
+      if (error) {
+        setErrorMsg(error.message || 'Error fetching stats');
+        setLoading(false);
+        return;
+      }
+        
+      let processedData: any[] = [];
+        
+      if (rpcData) {
+        const { data: profiles } = await supabase.from('profiles').select('id, username, photo_url');
+        const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+        
+        processedData = rpcData.map((row: any) => {
+          const prof = profileMap.get(row.player_id);
+          return {
+            player_id: row.player_id,
+            username: prof?.username || 'Unknown',
+            photo_url: prof?.photo_url || '',
+            games_played: row.matches_played,
+            total_goals: row.goals,
+            total_assists: row.assists,
+            wins: row.wins,
+            losses: row.losses,
+            draws: row.draws,
+            best_defender_awards: row.best_defender_awards || 0,
+            best_gk_awards: row.best_gk_awards || 0
+          };
+        });
+        
+        processedData.sort((a, b) => {
+          if (b.total_goals !== a.total_goals) return b.total_goals - a.total_goals;
+          if (b.total_assists !== a.total_assists) return b.total_assists - a.total_assists;
+          if (b.games_played !== a.games_played) return b.games_played - a.games_played;
+          return a.username.localeCompare(b.username);
+        });
+      }
       
       const firePlayers = await getOnFirePlayers();
-      
-      if (data) setStats(enrichPlayersWithRatings(data, firePlayers));
+      setStats(enrichPlayersWithRatings(processedData, firePlayers));
       setLoading(false);
     };
 
     fetchLeaderboard();
-  }, []);
+  }, [selectedSeasonNum]);
+
+  if (errorMsg) return (
+    <div className="p-12 text-center text-red-500 bg-red-900/20 border border-red-500/50 rounded-3xl">
+      Error: {errorMsg}
+    </div>
+  );
 
   if (loading) return (
     <div className="flex justify-center items-center h-64">
@@ -44,7 +98,7 @@ export default function Leaderboard() {
 
   const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -52,15 +106,27 @@ export default function Leaderboard() {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-10 text-center sm:text-left"
+        className="mb-10 text-center sm:text-left flex flex-col sm:flex-row sm:items-end justify-between gap-6"
       >
-        <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tighter uppercase">Leaderboard</h2>
-        <p className="mt-2 text-xs sm:text-sm font-bold text-neutral-500 tracking-widest uppercase">Top scorers and playmakers</p>
+        <div>
+          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tighter uppercase">Leaderboard</h2>
+          <p className="mt-2 text-xs sm:text-sm font-bold text-neutral-500 tracking-widest uppercase">Monthly Seasons</p>
+        </div>
+        
+        <select 
+          value={selectedSeasonNum}
+          onChange={(e) => setSelectedSeasonNum(parseInt(e.target.value))}
+          className="bg-neutral-900 border border-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:border-primary-500 cursor-pointer"
+        >
+          {seasons.map(s => (
+             <option key={s.number} value={s.number}>{s.label}</option>
+          ))}
+        </select>
       </motion.div>
 
       {stats.length === 0 ? (
         <div className="p-12 text-center text-neutral-500 bg-neutral-900/50 border border-white/5 rounded-3xl">
-          No stats available yet. Play some matches!
+          No stats available for this month. Play some matches!
         </div>
       ) : (
         <motion.div 

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Users, Shuffle, CheckCircle2, Clock, X, Plus, RotateCcw, EyeOff, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SpinWheel } from '../components/SpinWheel';
 
 type Profile = { id: string; username: string; photo_url: string; role: string; jersey_number: number };
 type DraftCaptain = { id: string; player_id: string; pick_order: number; profile?: Profile };
@@ -26,6 +27,7 @@ export default function Drafts() {
   const [captains, setCaptains] = useState<DraftCaptain[]>([]);
   const [picks, setPicks] = useState<DraftPick[]>([]);
   const [players, setPlayers] = useState<Profile[]>([]);
+  const [revealedPickIndex, setRevealedPickIndex] = useState<number | null>(null);
   
   // Setup state
   const [setupMode, setSetupMode] = useState('STANDARD');
@@ -38,6 +40,16 @@ export default function Drafts() {
   const [pendingPickId, setPendingPickId] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [hiddenPlayerIds, setHiddenPlayerIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (draft && draft.status === 'IN_PROGRESS' && revealedPickIndex === null) {
+      if (draft.current_pick_index === 0) {
+        setRevealedPickIndex(-1); // Show first spin for everyone at the start
+      } else {
+        setRevealedPickIndex(draft.current_pick_index); // Join mid-draft
+      }
+    }
+  }, [draft?.status, draft?.current_pick_index, revealedPickIndex]);
 
   useEffect(() => {
     fetchActiveDraft();
@@ -144,6 +156,7 @@ export default function Drafts() {
       if (capError) throw capError;
 
       setDraft(newDraft);
+      setRevealedPickIndex(-1);
       fetchCaptains(newDraft.id);
     } catch (e: any) {
       alert(e.message);
@@ -174,6 +187,8 @@ export default function Drafts() {
   const round = numCaptains > 0 ? Math.floor(pickNumber / numCaptains) : 0;
   
   let activePickOrder = 0;
+  let remainingCaptains: {id: string; name: string}[] = [];
+  
   if (numCaptains > 0 && draft) {
     const roundSeed = getSeedFromString(`${draft.id}-round-${round}`);
     const random = mulberry32(roundSeed);
@@ -190,6 +205,15 @@ export default function Drafts() {
     
     const pickIndexInRound = pickNumber % numCaptains;
     activePickOrder = roundOrder[pickIndexInRound];
+    
+    // Calculate remaining captains for the spin wheel
+    const remainingPickOrders = roundOrder.slice(pickIndexInRound);
+    remainingCaptains = remainingPickOrders.map(
+      po => captains.find(c => c.pick_order === po)
+    ).filter(Boolean).map(c => ({
+      id: c!.id,
+      name: c!.profile?.username || 'Unknown'
+    }));
   }
   
   const activeCaptain = captains.find(c => c.pick_order === activePickOrder);
@@ -199,6 +223,12 @@ export default function Drafts() {
   useEffect(() => {
     setPendingPickId(null);
   }, [draft?.current_pick_index]);
+
+  useEffect(() => {
+    if (draft?.status === 'IN_PROGRESS' && revealedPickIndex !== null && revealedPickIndex < draft.current_pick_index && captains.length > 0 && remainingCaptains.length <= 1) {
+      setRevealedPickIndex(draft.current_pick_index);
+    }
+  }, [draft?.status, draft?.current_pick_index, revealedPickIndex, remainingCaptains.length, captains.length]);
 
   const makePick = async (playerId: string) => {
     if (!draft || !activeCaptain || !isMyTurn || pendingPickId) return;
@@ -428,8 +458,18 @@ export default function Drafts() {
     { border: 'border-pink-500', bg: 'bg-pink-500/10', text: 'text-pink-400', shadow: 'shadow-pink-500/20' }
   ];
 
+  const showWheel = draft?.status === 'IN_PROGRESS' && revealedPickIndex !== null && revealedPickIndex < draft.current_pick_index && remainingCaptains.length > 1;
+
   return (
     <div className="max-w-6xl mx-auto pb-24 space-y-6 h-full flex flex-col">
+      {showWheel && activeCaptain && (
+        <SpinWheel 
+          candidates={remainingCaptains} 
+          winnerId={activeCaptain.id}
+          onFinished={() => setRevealedPickIndex(draft.current_pick_index)}
+        />
+      )}
+      
       {/* TOP ACTIVE CAPTAIN SECTION */}
       <div className="flex items-center justify-between bg-[#111111] p-3 md:p-4 rounded-2xl border border-white/5 relative overflow-hidden">
         <div className="flex items-center gap-3 relative z-10">

@@ -10,6 +10,7 @@ import NewMatch from './pages/NewMatch';
 import ActiveMatch from './pages/ActiveMatch';
 import Leaderboard from './pages/Leaderboard';
 import Drafts from './pages/Drafts';
+import Seasons from './pages/Seasons';
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
         <Route path="drafts" element={<ProtectedRoute><Drafts /></ProtectedRoute>} />
         <Route path="leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+        <Route path="seasons" element={<ProtectedRoute><Seasons /></ProtectedRoute>} />
       </Route>
     </Routes>
   );

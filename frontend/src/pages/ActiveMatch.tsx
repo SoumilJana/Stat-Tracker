@@ -604,13 +604,17 @@ export default function ActiveMatch() {
   const teamAPlayersList = teamPlayers[teamA.id] || [];
   const teamBPlayersList = teamPlayers[teamB.id] || [];
 
-  let winnerOfTheDay: any = null;
+  let winnersOfTheDay: any[] = [];
   let maxScore = -1;
   if (session?.status === 'COMPLETED') {
     Object.entries(teamScores).forEach(([tId, score]) => {
       if (score > maxScore) {
         maxScore = score;
-        winnerOfTheDay = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
+        const winner = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
+        winnersOfTheDay = winner ? [winner] : [];
+      } else if (score === maxScore && maxScore !== -1) {
+        const winner = Object.values(onPitch).concat(waiting).find(t => t.id === tId);
+        if (winner) winnersOfTheDay.push(winner);
       }
     });
   }
@@ -712,9 +716,16 @@ export default function ActiveMatch() {
         
         {session.status === 'COMPLETED' ? (
           <div className="flex flex-col items-center justify-center relative z-10 py-4">
-            <h2 className="text-xl md:text-2xl font-bold text-neutral-400 mb-2 tracking-widest uppercase">Match Day Winner</h2>
-            <div className="text-5xl md:text-7xl font-black text-primary-400 tracking-tighter drop-shadow-lg mb-4 uppercase text-center">
-              {winnerOfTheDay?.name}
+            <h2 className="text-xl md:text-2xl font-bold text-neutral-400 mb-2 tracking-widest uppercase">
+              {winnersOfTheDay.length > 1 ? 'Match Day Winners (Draw)' : 'Match Day Winner'}
+            </h2>
+            <div className="text-5xl md:text-7xl font-black text-primary-400 tracking-tighter drop-shadow-lg mb-4 uppercase text-center flex flex-col md:flex-row gap-4 items-center justify-center">
+              {winnersOfTheDay.map((winner, idx) => (
+                <span key={winner?.id || idx}>
+                  {winner?.name}
+                  {idx < winnersOfTheDay.length - 1 && <span className="text-3xl text-neutral-500 mx-4 hidden md:inline">&</span>}
+                </span>
+              ))}
             </div>
             <div className="text-lg text-white font-bold bg-neutral-800 px-6 py-2 rounded-full border border-neutral-700 mb-8">
               {maxScore} {session.mode === 'WINNER_STAYS' ? 'Wins' : 'Goals'}
@@ -730,16 +741,18 @@ export default function ActiveMatch() {
                   voteCounts[v.candidate_id] = (voteCounts[v.candidate_id] || 0) + 1;
                 });
                 
-                let leadingCandidateId: string | null = null;
+                let leadingCandidateIds: string[] = [];
                 let maxVotes = 0;
                 Object.entries(voteCounts).forEach(([cId, count]) => {
                   if (count > maxVotes) {
                     maxVotes = count;
-                    leadingCandidateId = cId;
+                    leadingCandidateIds = [cId];
+                  } else if (count === maxVotes && maxVotes > 0) {
+                    leadingCandidateIds.push(cId);
                   }
                 });
 
-                const leadingPlayer = leadingCandidateId ? Object.values(teamPlayers).flat().find(p => p.id === leadingCandidateId) : null;
+                const leadingPlayers = leadingCandidateIds.map(id => Object.values(teamPlayers).flat().find(p => p.id === id)).filter(Boolean);
                 const hasVoted = pollVotes.some(v => v.voter_id === profile?.id && v.award_type === award);
 
                 return (
@@ -749,10 +762,14 @@ export default function ActiveMatch() {
                       {hasVoted && <span className="bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded text-[10px]">VOTED</span>}
                     </h3>
                     
-                    {leadingPlayer ? (
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="text-2xl font-black text-white">{leadingPlayer.username}</div>
-                        <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-full text-white">{maxVotes} {maxVotes === 1 ? 'vote' : 'votes'}</div>
+                    {leadingPlayers.length > 0 ? (
+                      <div className="flex flex-col gap-2 mb-4">
+                        {leadingPlayers.map(player => (
+                          <div key={player?.id} className="flex items-center justify-between">
+                            <div className="text-2xl font-black text-white">{player?.username}</div>
+                            <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-full text-white">{maxVotes} {maxVotes === 1 ? 'vote' : 'votes'}</div>
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <div className="text-neutral-500 italic mb-4">No votes yet</div>
