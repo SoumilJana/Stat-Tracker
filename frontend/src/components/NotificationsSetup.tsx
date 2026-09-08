@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, BellRing } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,9 +10,22 @@ export default function NotificationsSetup() {
 
   useEffect(() => {
     setPermission(Notification.permission);
+    
+    // Give a reminder every time someone HASNT enabled the notifs
+    if (Notification.permission !== 'granted') {
+      const timer = setTimeout(() => {
+        alert("Reminder: You haven't enabled notifications yet! Click the bell icon at the top right to get match alerts.");
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   const subscribeToPush = async () => {
+    if (permission === 'granted') {
+      alert('Notifications are already enabled!');
+      return;
+    }
+
     try {
       setIsSubscribing(true);
       
@@ -65,32 +78,18 @@ export default function NotificationsSetup() {
     }
   };
 
-  if (permission === 'granted') {
-    return (
-      <div className="bg-primary-500/10 border border-primary-500/20 text-primary-400 p-4 rounded-2xl flex items-center gap-3">
-        <BellRing className="w-5 h-5" />
-        <span className="text-sm font-bold tracking-wide">Notifications Enabled</span>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white/[0.02] border border-white/[0.05] p-4 rounded-2xl flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <Bell className="w-5 h-5 text-neutral-400" />
-        <div>
-          <h4 className="text-sm font-bold text-white">Enable Notifications</h4>
-          <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-1">Get match alerts & stats</p>
-        </div>
-      </div>
-      <button 
-        onClick={subscribeToPush}
-        disabled={isSubscribing}
-        className="px-4 py-2 bg-primary-500 text-black text-xs font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50"
-      >
-        {isSubscribing ? 'Setting up...' : 'Enable'}
-      </button>
-    </div>
+    <button 
+      onClick={subscribeToPush}
+      disabled={isSubscribing}
+      className="relative p-3 bg-white/[0.03] border border-white/[0.05] rounded-full hover:bg-white/[0.08] transition-all flex items-center justify-center shrink-0"
+      aria-label="Enable notifications"
+    >
+      <Bell className="w-5 h-5 text-neutral-300" strokeWidth={2} />
+      {permission !== 'granted' && (
+        <span className="absolute top-0 right-0 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#0a0a0a]"></span>
+      )}
+    </button>
   );
 }
 
@@ -98,7 +97,7 @@ export default function NotificationsSetup() {
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
+    .replace(/-/g, '+')
     .replace(/_/g, '/');
 
   const rawData = window.atob(base64);

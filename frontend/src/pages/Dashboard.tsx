@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Activity, Users, Plus, Calendar, ArrowRight, Target } from 'lucide-react';
+import { Users, Plus, Calendar, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { enrichPlayersWithRatings, type PlayerWithRating } from '../lib/playerRating';
-import PlayerRatingBadge from '../components/PlayerRatingBadge';
 import NotificationsSetup from '../components/NotificationsSetup';
 
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
   const { profile } = useAuth();
-  const [topScorer, setTopScorer] = useState<PlayerWithRating | null>(null);
-  const [topAssister, setTopAssister] = useState<PlayerWithRating | null>(null);
   const [totalGoals, setTotalGoals] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
   const [upcomingMatch, setUpcomingMatch] = useState<any>(null);
@@ -20,27 +16,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      // Fetch all player stats and enrich with ratings
-      const { data: allStats } = await supabase
-        .from('player_stats')
-        .select('*');
-      
-      if (allStats && allStats.length > 0) {
-        const enriched = enrichPlayersWithRatings(allStats);
-        
-        // Golden Boot: top scorer
-        const sortedByGoals = [...enriched].sort((a, b) =>
-          b.total_goals - a.total_goals || b.total_assists - a.total_assists || b.games_played - a.games_played || a.username.localeCompare(b.username)
-        );
-        setTopScorer(sortedByGoals[0]);
-        
-        // Playmaker: top assister
-        const sortedByAssists = [...enriched].sort((a, b) =>
-          b.total_assists - a.total_assists || b.total_goals - a.total_goals || b.games_played - a.games_played || a.username.localeCompare(b.username)
-        );
-        setTopAssister(sortedByAssists[0]);
-      }
-
       // Fetch Total Goals directly from events to be accurate
       const { count: goalCount } = await supabase
         .from('events')
@@ -91,122 +66,131 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  if (loading) return <div className="text-primary-500">Loading dashboard...</div>;
+  if (loading) return <div className="text-emerald-500">Loading dashboard...</div>;
 
   return (
     <div className="space-y-8 pb-20">
-      <div>
-        <h2 className="text-2xl font-bold leading-7 text-white sm:text-3xl sm:truncate">Welcome back!</h2>
-        <p className="mt-1 text-sm text-neutral-400">Here's the latest from the pitch.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-black leading-7 text-white sm:text-4xl sm:truncate mb-2">Welcome <span className="text-emerald-400">back!</span></h2>
+          <p className="mt-1 text-sm text-neutral-400">Here's the latest from the pitch.</p>
+        </div>
+        <NotificationsSetup />
       </div>
 
-      <NotificationsSetup />
-
-      {/* Hero Performers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Golden Boot Card */}
-        <div className="bg-[#0a0a0a] border border-white/[0.03] rounded-3xl p-6 sm:p-10 relative overflow-hidden group flex flex-col justify-end min-h-[280px]">
-          {topScorer?.photo_url && (
-            <div className="absolute inset-0 z-0">
-              <img src={topScorer.photo_url} alt="Top Scorer" className="w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-all duration-700" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent" />
-            </div>
-          )}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Sleek Global Stats Strip - Updated to match the design */}
+        <div className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-6 sm:p-8 relative overflow-hidden group">
+          {/* Decorative background gradient */}
+          <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
           
-          <div className="relative z-10 flex flex-col h-full justify-between">
-            <div className="flex items-center gap-3 mb-8 opacity-80">
-              <Trophy className="w-4 h-4 text-primary-500" />
-              <h3 className="text-white font-bold uppercase tracking-[0.2em] text-[10px]">Golden Boot</h3>
-            </div>
-            
-            {topScorer ? (
-              <div className="flex items-end justify-between gap-6 mt-auto">
-                <div>
-                  <h4 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2 flex items-center gap-3">
-                    {topScorer.username}
-                    <PlayerRatingBadge rating={topScorer.rating} size="sm" />
-                  </h4>
-                </div>
-                <div className="text-right">
-                  <div className="text-6xl sm:text-7xl font-black text-primary-500 tracking-tighter leading-none mb-1">
-                    {topScorer.total_goals}
-                  </div>
-                  <div className="text-[9px] font-bold text-neutral-500 uppercase tracking-[0.2em]">
-                    Goals
-                  </div>
-                </div>
+          {/* Subtle geometric shape instead of heavy image */}
+          <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
+
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-1">SEASON 1 (AUGUST)</h3>
               </div>
-            ) : (
-               <p className="text-neutral-600 font-medium tracking-wide">No goals recorded yet.</p>
-            )}
-          </div>
-        </div>
+              <Link to="/seasons" className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors">
+                View All <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
 
-        {/* Playmaker Card */}
-        <div className="bg-[#0a0a0a] border border-white/[0.03] rounded-3xl p-6 sm:p-10 relative overflow-hidden group flex flex-col justify-end min-h-[280px]">
-          {topAssister?.photo_url && (
-            <div className="absolute inset-0 z-0">
-              <img src={topAssister.photo_url} alt="Top Assister" className="w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-all duration-700" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent" />
-            </div>
-          )}
-          
-          <div className="relative z-10 flex flex-col h-full justify-between">
-            <div className="flex items-center gap-3 mb-8 opacity-80">
-              <Target className="w-4 h-4 text-blue-500" />
-              <h3 className="text-white font-bold uppercase tracking-[0.2em] text-[10px]">Playmaker</h3>
-            </div>
-            
-            {topAssister ? (
-              <div className="flex items-end justify-between gap-4 mt-auto">
-                <div>
-                  <h4 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2 flex items-center gap-3">
-                    {topAssister.username}
-                    <PlayerRatingBadge rating={topAssister.rating} size="sm" />
-                  </h4>
+            <div className="flex flex-row items-center justify-between sm:justify-around text-center">
+              <div className="flex flex-col items-center flex-1">
+                <div className="mb-3 text-emerald-400">
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 16v-2.5C4 12 5.5 11 7 11h2l2-3h3l2.5 3H19a2 2 0 0 1 2 2v1c0 1.5-1 2-2 2H6c-1.5 0-2-.5-2-2z" />
+                    <path d="M6 16v2" />
+                    <path d="M10 16v2" />
+                    <path d="M14 16v2" />
+                    <path d="M18 16v2" />
+                  </svg>
                 </div>
-                <div className="text-right">
-                  <div className="text-6xl sm:text-7xl font-black text-blue-500 tracking-tighter leading-none mb-1">
-                    {topAssister.total_assists}
-                  </div>
-                  <div className="text-[9px] font-bold text-neutral-500 uppercase tracking-[0.2em]">
-                    Assists
-                  </div>
-                </div>
+                <div className="text-4xl font-black text-white mb-1">{totalMatches}</div>
+                <div className="text-xs text-neutral-400">Matches</div>
               </div>
-            ) : (
-               <p className="text-neutral-600 font-medium tracking-wide">No assists yet.</p>
-            )}
-          </div>
-        </div>
-      </div>
+              
+              <div className="w-px h-16 bg-white/[0.05]" />
+              
+              <div className="flex flex-col items-center flex-1">
+                <div className="mb-3 text-emerald-400">
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polygon points="12 6 15.5 8.5 14 12.5 10 12.5 8.5 8.5 12 6" />
+                    <path d="M12 6V2" />
+                    <path d="M15.5 8.5l4-2" />
+                    <path d="M14 12.5l2 4" />
+                    <path d="M10 12.5l-2 4" />
+                    <path d="M8.5 8.5l-4-2" />
+                  </svg>
+                </div>
+                <div className="text-4xl font-black text-white mb-1">{totalGoals}</div>
+                <div className="text-xs text-neutral-400">Goals</div>
+              </div>
+              
+              <div className="w-px h-16 bg-white/[0.05]" />
 
-      {/* Sleek Global Stats Strip */}
-      <div className="bg-white/[0.02] border border-white/[0.03] rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-around gap-8 sm:gap-4 backdrop-blur-md">
-        <div className="flex flex-col items-center text-center">
-          <div className="text-neutral-500 flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.2em] mb-2">
-            <Activity className="w-3 h-3" /> Matches Played
+              <div className="flex flex-col items-center flex-1">
+                <div className="mb-3 text-emerald-400">
+                  <Users className="w-8 h-8" strokeWidth={1.5} />
+                </div>
+                <div className="text-4xl font-black text-white mb-1">
+                  {totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : '0.0'}
+                </div>
+                <div className="text-xs text-neutral-400 text-center leading-tight">Avg Goals<br/>per Match</div>
+              </div>
+            </div>
           </div>
-          <div className="text-4xl font-black text-white tracking-tighter">{totalMatches}</div>
         </div>
-        
-        <div className="hidden sm:block w-px h-12 bg-white/[0.05]" />
-        
-        <div className="flex flex-col items-center text-center">
-          <div className="text-neutral-500 flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.2em] mb-2">
-            <Users className="w-3 h-3" /> Total Goals
-          </div>
-          <div className="text-4xl font-black text-white tracking-tighter">{totalGoals}</div>
-        </div>
-        
-        <div className="hidden sm:block w-px h-12 bg-white/[0.05]" />
 
-        <div className="flex flex-col items-center text-center">
-          <div className="text-neutral-500 flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.2em] mb-2">
-            <Trophy className="w-3 h-3" /> Avg Goals / Match
-          </div>
-          <div className="text-4xl font-black text-white tracking-tighter">
-            {totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : '0.0'}
+        {/* Overall Stats */}
+        <div className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-6 sm:p-8 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
+          <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
+
+          <div className="relative z-10 h-full flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-1">OVERALL STATS</h3>
+              </div>
+            </div>
+
+            <div className="flex flex-row items-center justify-around text-center">
+              <div className="flex flex-col items-center flex-1">
+                <div className="mb-3 text-emerald-400">
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 16v-2.5C4 12 5.5 11 7 11h2l2-3h3l2.5 3H19a2 2 0 0 1 2 2v1c0 1.5-1 2-2 2H6c-1.5 0-2-.5-2-2z" />
+                    <path d="M6 16v2" />
+                    <path d="M10 16v2" />
+                    <path d="M14 16v2" />
+                    <path d="M18 16v2" />
+                  </svg>
+                </div>
+                <div className="text-4xl font-black text-white mb-1">{totalMatches}</div>
+                <div className="text-xs text-neutral-400 text-center leading-tight">Total Matches<br/>Played</div>
+              </div>
+              
+              <div className="w-px h-16 bg-white/[0.05]" />
+              
+              <div className="flex flex-col items-center flex-1">
+                <div className="mb-3 text-emerald-400">
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polygon points="12 6 15.5 8.5 14 12.5 10 12.5 8.5 8.5 12 6" />
+                    <path d="M12 6V2" />
+                    <path d="M15.5 8.5l4-2" />
+                    <path d="M14 12.5l2 4" />
+                    <path d="M10 12.5l-2 4" />
+                    <path d="M8.5 8.5l-4-2" />
+                  </svg>
+                </div>
+                <div className="text-4xl font-black text-white mb-1">{totalGoals}</div>
+                <div className="text-xs text-neutral-400 text-center leading-tight">Total Goals<br/>Scored</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -218,25 +202,28 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-white uppercase tracking-wider">Upcoming</h3>
-            <Link to="/matches" className="text-sm font-medium text-primary-400 hover:text-primary-300 flex items-center gap-1">
+            <Link to="/matches" className="text-sm font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           
           {upcomingMatch ? (
-            <Link key={upcomingMatch.id} to={`/matches/${upcomingMatch.id}`} className="bg-[#0a0a0a] border border-white/[0.03] rounded-3xl p-6 hover:bg-white/[0.02] hover:border-white/[0.05] transition-all duration-300 block group relative">
-              <div className="flex justify-between items-start mb-8">
-                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] ${
-                  upcomingMatch.status === 'IN_PROGRESS' ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20' : 
-                  'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                }`}>
-                  {upcomingMatch.status.replace('_', ' ')}
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1.5">
-                  <Calendar className="w-3 h-3" />
-                  {new Date(upcomingMatch.date).toLocaleDateString()}
-                </span>
-              </div>
+            <Link key={upcomingMatch.id} to={`/matches/${upcomingMatch.id}`} className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-6 hover:bg-[#071c17] hover:border-emerald-500/30 transition-all duration-300 block group relative overflow-hidden">
+              <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
+              <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-8">
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] ${
+                    upcomingMatch.status === 'IN_PROGRESS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                    'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                  }`}>
+                    {upcomingMatch.status.replace('_', ' ')}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(upcomingMatch.date).toLocaleDateString()}
+                  </span>
+                </div>
               
               <div className="flex justify-center items-center text-lg font-bold text-white mb-2 h-16">
                 <div className="flex items-center w-full justify-between">
@@ -246,7 +233,7 @@ export default function Dashboard() {
                       <>
                         {sortedTeams.length > 0 ? (
                           sortedTeams.map((team: any, index: number) => {
-                            const colors = ['text-primary-400', 'text-blue-400', 'text-orange-400', 'text-purple-400', 'text-pink-400', 'text-yellow-400'];
+                            const colors = ['text-emerald-400', 'text-blue-400', 'text-orange-400', 'text-purple-400', 'text-pink-400', 'text-yellow-400'];
                             const colorClass = colors[index % colors.length];
                             return (
                               <React.Fragment key={team.id || index}>
@@ -261,7 +248,7 @@ export default function Dashboard() {
                           })
                         ) : (
                           <>
-                            <span className="truncate flex-1 text-center text-primary-400 text-xl">A</span>
+                            <span className="truncate flex-1 text-center text-emerald-400 text-xl">A</span>
                             <span className="text-neutral-700 px-4 text-sm font-black italic">VS</span>
                             <span className="truncate flex-1 text-center text-blue-400 text-xl">B</span>
                           </>
@@ -270,6 +257,7 @@ export default function Dashboard() {
                     );
                   })()}
                 </div>
+              </div>
               </div>
             </Link>
           ) : (
@@ -283,22 +271,25 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-white uppercase tracking-wider">Last Result</h3>
-            <Link to="/matches" className="text-sm font-medium text-primary-400 hover:text-primary-300 flex items-center gap-1">
+            <Link to="/matches" className="text-sm font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
               History <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           
           {completedMatch ? (
-            <Link key={completedMatch.id} to={`/matches/${completedMatch.id}`} className="bg-[#0a0a0a] border border-white/[0.03] rounded-3xl p-6 hover:bg-white/[0.02] hover:border-white/[0.05] transition-all duration-300 block group relative">
-              <div className="flex justify-between items-start mb-8">
-                <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] bg-white/[0.02] text-neutral-500 border border-white/[0.03]">
-                  COMPLETED
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1.5">
-                  <Calendar className="w-3 h-3" />
-                  {new Date(completedMatch.date).toLocaleDateString()}
-                </span>
-              </div>
+            <Link key={completedMatch.id} to={`/matches/${completedMatch.id}`} className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-6 hover:bg-[#071c17] hover:border-emerald-500/30 transition-all duration-300 block group relative overflow-hidden">
+              <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
+              <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-8">
+                  <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] bg-white/[0.02] text-neutral-500 border border-white/[0.03]">
+                    COMPLETED
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(completedMatch.date).toLocaleDateString()}
+                  </span>
+                </div>
               
               <div className="flex justify-center items-center text-lg font-bold text-white mb-2 h-16">
                 <div className="flex flex-col items-center">
@@ -320,11 +311,12 @@ export default function Dashboard() {
                     return (
                       <>
                         <div className="text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-2">{teamNames.join(' vs ')}</div>
-                        <div className="text-4xl text-primary-500 tracking-widest font-black drop-shadow-md">{scores.join(' - ')}</div>
+                        <div className="text-4xl text-emerald-500 tracking-widest font-black drop-shadow-md">{scores.join(' - ')}</div>
                       </>
                     );
                   })()}
                 </div>
+              </div>
               </div>
             </Link>
           ) : (
@@ -340,7 +332,7 @@ export default function Dashboard() {
         <div className="fixed bottom-16 md:bottom-auto md:mt-12 left-0 right-0 p-4 bg-black/80 backdrop-blur-xl border-t border-white/5 md:relative md:bg-transparent md:border-0 md:p-0 z-40 flex justify-center">
           <Link 
             to="/matches/new"
-            className="flex items-center justify-center gap-3 w-full md:w-auto bg-primary-500 text-black px-8 py-4 rounded-full font-black hover:bg-primary-400 hover:scale-105 transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)] tracking-widest uppercase text-sm"
+            className="flex items-center justify-center gap-3 w-full md:w-auto bg-emerald-500 text-black px-8 py-4 rounded-full font-black hover:bg-emerald-400 hover:scale-105 transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)] tracking-widest uppercase text-sm"
           >
             <Plus className="w-5 h-5" strokeWidth={3} />
             New Match

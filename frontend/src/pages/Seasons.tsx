@@ -2,13 +2,12 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, CheckCircle2, X, Crown, Lock } from 'lucide-react';
+import { Users, CheckCircle2, X, Lock, Trophy, BarChart3, Calendar, ChevronDown, Clock, ArrowRight } from 'lucide-react';
+import { buildSeasons, getCurrentSeason } from '../lib/seasons';
 
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
-
-import { buildSeasons, getCurrentSeason } from '../lib/seasons';
 
 interface Profile {
   id: string;
@@ -45,16 +44,19 @@ interface RawStat {
 // Sub-components
 // ─────────────────────────────────────────────
 
-function Avatar({ profile, size = 'sm' }: { profile: Profile | null | undefined; size?: 'sm' | 'md' }) {
-  const cls = size === 'md' ? 'w-10 h-10 text-sm' : 'w-7 h-7 text-xs';
+function Avatar({ profile, size = 'sm', className = '' }: { profile: Profile | null | undefined; size?: 'sm' | 'md' | 'lg' | 'xl'; className?: string }) {
+  const cls = size === 'xl' ? 'w-20 h-20 text-3xl border-2 border-neutral-800' :
+              size === 'lg' ? 'w-12 h-12 text-lg border-2 border-neutral-800' : 
+              size === 'md' ? 'w-10 h-10 text-sm' : 
+              'w-7 h-7 text-xs';
   if (profile?.photo_url)
-    return <img src={profile.photo_url} alt={profile.username} className={`${cls} rounded-full object-cover shrink-0`} />;
+    return <img src={profile.photo_url} alt={profile.username} className={`${cls} rounded-full object-cover shrink-0 ${className}`} />;
   return (
-    <div className={`${cls} rounded-full bg-neutral-800 flex items-center justify-center shrink-0`}>
+    <div className={`${cls} rounded-full bg-neutral-800 flex items-center justify-center shrink-0 ${className}`}>
       {profile ? (
         <span className="font-bold text-neutral-400">{profile.username[0]?.toUpperCase()}</span>
       ) : (
-        <Users className="w-3.5 h-3.5 text-neutral-600" />
+        <Users className="w-1/2 h-1/2 text-neutral-600" />
       )}
     </div>
   );
@@ -62,63 +64,80 @@ function Avatar({ profile, size = 'sm' }: { profile: Profile | null | undefined;
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-function RankRow({ rank, profile, stat, unit }: { rank: number; profile: Profile | null | undefined; stat: number | null; unit: string }) {
-  const isFirst = rank === 0;
-  return (
-    <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors ${isFirst ? 'bg-white/5' : ''}`}>
-      <span className="text-lg w-6 text-center shrink-0">{MEDALS[rank]}</span>
-      <Avatar profile={profile} size="sm" />
-      <span className="flex-1 text-sm font-bold text-white truncate">{profile?.username || '—'}</span>
-      <span className={`text-sm font-black tabular-nums shrink-0 ${isFirst ? 'text-orange-400' : 'text-neutral-500'}`}>
-        {stat ?? '—'}<span className="text-[10px] font-medium text-neutral-600 ml-1">{unit}</span>
-      </span>
-    </div>
-  );
-}
-
-function WinnerRow({ profile, stat, unit }: { profile: Profile | null | undefined; stat: number | null; unit: string }) {
-  if (!profile) {
-    return <p className="text-neutral-600 text-sm text-center py-3">No award this season</p>;
-  }
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
-      <Crown className="w-4 h-4 text-orange-400 shrink-0" />
-      <Avatar profile={profile} size="md" />
-      <span className="flex-1 text-base font-black text-white truncate">{profile.username}</span>
-      {stat !== null && (
-        <span className="text-base font-black text-orange-400 tabular-nums shrink-0">
-          {stat}<span className="text-xs font-medium text-neutral-500 ml-1">{unit}</span>
-        </span>
-      )}
-    </div>
-  );
-}
-
-type PanelColor = 'amber' | 'blue' | 'orange' | 'purple';
-const panelBorder: Record<PanelColor, string> = {
-  amber:  'border-amber-500/20  bg-amber-500/5',
-  blue:   'border-blue-500/20   bg-blue-500/5',
-  orange: 'border-orange-500/20 bg-orange-500/5',
-  purple: 'border-purple-500/20 bg-purple-500/5',
-};
-const panelText: Record<PanelColor, string> = {
-  amber:  'text-amber-400',
-  blue:   'text-blue-400',
-  orange: 'text-orange-400',
-  purple: 'text-purple-400',
+type PanelColor = 'amber' | 'blue' | 'emerald' | 'orange';
+const awardColors: Record<PanelColor, { bg: string; border: string; text: string; glow: string; textGrad: string }> = {
+  amber: {
+    bg: 'from-amber-900/40 to-neutral-950',
+    border: 'border-amber-600/50',
+    text: 'text-amber-500',
+    glow: 'shadow-[0_0_30px_-10px_rgba(245,158,11,0.3)]',
+    textGrad: 'from-amber-300 to-amber-600',
+  },
+  blue: {
+    bg: 'from-blue-900/40 to-neutral-950',
+    border: 'border-blue-600/50',
+    text: 'text-blue-500',
+    glow: 'shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)]',
+    textGrad: 'from-blue-300 to-blue-600',
+  },
+  emerald: {
+    bg: 'from-emerald-900/40 to-neutral-950',
+    border: 'border-emerald-600/50',
+    text: 'text-emerald-500',
+    glow: 'shadow-[0_0_30px_-10px_rgba(16,185,129,0.3)]',
+    textGrad: 'from-emerald-300 to-emerald-600',
+  },
+  orange: {
+    bg: 'from-orange-900/40 to-neutral-950',
+    border: 'border-orange-600/50',
+    text: 'text-orange-500',
+    glow: 'shadow-[0_0_30px_-10px_rgba(249,115,22,0.3)]',
+    textGrad: 'from-orange-300 to-orange-600',
+  },
 };
 
-function Panel({ icon, title, award, color, children }: {
-  icon: string; title: string; award: string; color: PanelColor; children: React.ReactNode;
+function AwardCard({ title, subtitle, icon, color, profile, stat, unit }: {
+  title: string; subtitle: string; icon: string; color: PanelColor; profile: Profile | null | undefined; stat: number | null; unit: string;
 }) {
+  const c = awardColors[color];
   return (
-    <div className={`rounded-2xl border p-4 space-y-3 ${panelBorder[color]}`}>
-      <div>
-        <p className="text-xl mb-1">{icon}</p>
-        <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 ${panelText[color]}`}>{award}</p>
-        <p className="text-lg font-black text-white leading-tight">{title}</p>
+    <div className={`relative overflow-hidden rounded-2xl border ${c.border} bg-gradient-to-b ${c.bg} p-6 flex flex-col items-center text-center ${c.glow}`}>
+      {/* Icon Placeholder (Since no 3D asset, we use large emoji or icon) */}
+      <div className="text-6xl mb-4 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] transform hover:scale-110 transition-transform">
+        {icon}
       </div>
-      <div className="space-y-1">{children}</div>
+      
+      {/* Title */}
+      <h4 className={`text-sm font-black uppercase tracking-widest bg-gradient-to-b ${c.textGrad} bg-clip-text text-transparent mb-1`}>{title}</h4>
+      <p className="text-xs text-neutral-400 mb-6">{subtitle}</p>
+      
+      {/* Winner */}
+      {profile ? (
+        <>
+          <div className="relative">
+            {/* Optional glow behind avatar */}
+            <div className={`absolute inset-0 rounded-full blur-md bg-gradient-to-b ${c.textGrad} opacity-30`} />
+            <Avatar profile={profile} size="xl" className="relative z-10" />
+            <div className={`absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-xs z-20`}>
+              {icon === '⚽' ? '🏆' : icon === '🎯' ? '🏅' : icon === '🛡️' ? '🛡️' : '🧤'}
+            </div>
+          </div>
+          <p className="mt-4 text-lg font-black text-white">{profile.username}</p>
+          <div className="mt-1 flex flex-col items-center">
+            <span className={`text-4xl font-black bg-gradient-to-b ${c.textGrad} bg-clip-text text-transparent`}>{stat}</span>
+            <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest mt-1">{unit}</span>
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center py-4">
+          <p className="text-sm text-neutral-600 font-bold">No winner yet</p>
+        </div>
+      )}
+      
+      {/* View Leaderboard Button */}
+      <button className={`mt-6 w-full py-3 rounded-full border border-white/10 text-xs font-bold text-neutral-300 hover:bg-white/5 flex items-center justify-center gap-2 transition-colors`}>
+        View Leaderboard <ArrowRight className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 }
@@ -150,7 +169,6 @@ export default function Seasons() {
   const isAdmin = profile?.role === 'admin';
   const seasons = useMemo(() => buildSeasons(), []);
 
-  // Default to the currently active season
   const defaultSeason = useMemo(() => getCurrentSeason(seasons), [seasons]);
 
   const [selectedNum, setSelectedNum] = useState(defaultSeason.number);
@@ -170,21 +188,18 @@ export default function Seasons() {
     id ? profileMap.get(id) || null : null,
   [profileMap]);
 
-  // ── Fetch all profiles once ──
   useEffect(() => {
     supabase.from('profiles').select('id, username, photo_url').then(({ data }) => {
       if (data) setProfileMap(new Map(data.map(row => [row.id, row as Profile])));
     });
   }, []);
 
-  // ── Fetch sealed seasons ──
   const fetchSealed = useCallback(async () => {
     const { data } = await supabase.from('seasons').select('*').order('season_number');
     if (data) setSealedSeasons(data as SealedSeason[]);
   }, []);
   useEffect(() => { fetchSealed(); }, [fetchSealed]);
 
-  // ── Fetch live stats when season not sealed ──
   useEffect(() => {
     if (isSealed) { setLoading(false); return; }
     setLoading(true);
@@ -204,13 +219,11 @@ export default function Seasons() {
     return () => { cancelled = true; };
   }, [selectedNum, isSealed, selectedSeason.startDate, selectedSeason.endDate]);
 
-  // ── Derived live top lists ──
   const liveTopScorers   = useMemo(() => [...liveStats].sort((a, b) => b.goals   - a.goals   || b.assists - a.assists).slice(0, 3), [liveStats]);
   const liveTopAssisters = useMemo(() => [...liveStats].sort((a, b) => b.assists - a.assists || b.goals   - a.goals  ).slice(0, 3), [liveStats]);
   const liveDefender     = useMemo(() => [...liveStats].filter(s => s.best_defender_awards > 0).sort((a, b) => b.best_defender_awards - a.best_defender_awards)[0] || null, [liveStats]);
   const liveGK           = useMemo(() => [...liveStats].filter(s => s.best_gk_awards        > 0).sort((a, b) => b.best_gk_awards        - a.best_gk_awards       )[0] || null, [liveStats]);
 
-  // ── Seal handler ──
   const handleSeal = async () => {
     if (!isAdmin) return;
     setSealing(true);
@@ -243,13 +256,14 @@ export default function Seasons() {
     setSealing(false);
   };
 
-  const S = selectedSeason.shortLabel;
+  const now = new Date();
+  const end = new Date(selectedSeason.endDate);
+  const daysLeft = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  // ── Render panels (sealed vs live) ──
   const renderPanels = () => {
     if (loading) return (
       <div className="flex justify-center items-center h-48">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-emerald-500" />
       </div>
     );
 
@@ -271,71 +285,97 @@ export default function Seasons() {
     const gkAwards  = isSealed && sealedData ? sealedData.gk_awards      : liveGK?.best_gk_awards      || null;
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Golden Boot */}
-        <Panel icon="⚽" title="Golden Boot" award={`${S} Golden Boot`} color="amber">
-          {scorers.filter(s => s.pid).length === 0
-            ? <p className="text-neutral-600 text-sm text-center py-3">No goals yet</p>
-            : scorers.map((s, i) => s.pid && (
-              <RankRow key={`scorer-${i}`} rank={i} profile={p(s.pid)} stat={s.val} unit="goals" />
-            ))}
-        </Panel>
-
-        {/* Playmaker */}
-        <Panel icon="🎯" title="Playmaker Award" award={`${S} Playmaker Award`} color="blue">
-          {assisters.filter(s => s.pid).length === 0
-            ? <p className="text-neutral-600 text-sm text-center py-3">No assists yet</p>
-            : assisters.map((s, i) => s.pid && (
-              <RankRow key={`assister-${i}`} rank={i} profile={p(s.pid)} stat={s.val} unit="assists" />
-            ))}
-        </Panel>
-
-        {/* Best Defender */}
-        <Panel icon="🛡️" title="Best Defender" award={`${S} Best Defender`} color="orange">
-          <WinnerRow profile={p(defPid)} stat={defAwards} unit="awards" />
-        </Panel>
-
-        {/* Golden Glove */}
-        <Panel icon="🧤" title="Golden Glove" award={`${S} Golden Glove`} color="purple">
-          <WinnerRow profile={p(gkPid)} stat={gkAwards} unit="awards" />
-        </Panel>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <AwardCard 
+          title="Golden Boot" 
+          subtitle="Most Goals" 
+          icon="⚽" 
+          color="amber" 
+          profile={p(scorers[0]?.pid)} 
+          stat={scorers[0]?.val ?? null} 
+          unit="goals" 
+        />
+        <AwardCard 
+          title="Playmaker Award" 
+          subtitle="Most Assists" 
+          icon="🎯" 
+          color="blue" 
+          profile={p(assisters[0]?.pid)} 
+          stat={assisters[0]?.val ?? null} 
+          unit="assists" 
+        />
+        <AwardCard 
+          title="Best Defender" 
+          subtitle="Most MOTM (Def)" 
+          icon="🛡️" 
+          color="emerald" 
+          profile={p(defPid)} 
+          stat={defAwards} 
+          unit="awards" 
+        />
+        <AwardCard 
+          title="Golden Glove" 
+          subtitle="Best Goalkeeper" 
+          icon="🧤" 
+          color="orange" 
+          profile={p(gkPid)} 
+          stat={gkAwards} 
+          unit="clean sheets" 
+        />
       </div>
     );
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-24 space-y-6">
-      {/* Header */}
+    <div className="max-w-7xl mx-auto pb-24 space-y-6">
+      {/* Header Text */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
       >
-        <div>
-          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tighter uppercase">Hall of Fame</h2>
-          <p className="mt-2 text-xs sm:text-sm font-bold text-neutral-500 tracking-widest uppercase">Season Champions</p>
+        <h2 className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Hall of Fame</h2>
+        <h1 className="text-4xl font-black text-white mb-6">Legends <span className="text-emerald-400">Live Here</span></h1>
+      </motion.div>
+
+      {/* Tabs */}
+      <div className="flex bg-neutral-900 rounded-full p-1 mb-6 max-w-md">
+        <button className="flex-1 bg-emerald-500/10 text-emerald-400 rounded-full py-2.5 text-sm font-bold flex items-center justify-center gap-2 border border-emerald-500/20">
+          <Trophy className="w-4 h-4" /> Season Awards
+        </button>
+        <button className="flex-1 text-neutral-400 rounded-full py-2.5 text-sm font-bold flex items-center justify-center gap-2 hover:text-white transition-colors cursor-not-allowed opacity-50">
+          <BarChart3 className="w-4 h-4" /> All-Time Legends
+        </button>
+      </div>
+
+      {/* Season Selector */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+          <Calendar className="w-5 h-5 text-neutral-400" />
         </div>
         <select
           value={selectedNum}
           onChange={e => setSelectedNum(parseInt(e.target.value))}
-          className="bg-neutral-900 border border-white/10 text-white rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:border-primary-500 cursor-pointer"
+          className="w-full bg-neutral-900 border border-white/5 rounded-xl pl-12 pr-10 py-4 text-white font-bold outline-none appearance-none cursor-pointer focus:border-white/20 transition-colors"
         >
           {seasons.map(s => (
             <option key={s.number} value={s.number}>{s.label}</option>
           ))}
         </select>
-      </motion.div>
+        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+          <ChevronDown className="w-4 h-4 text-neutral-500" />
+        </div>
+      </div>
 
       {/* Status bar */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-8">
         <div className="flex items-center gap-3">
           {isSealed ? (
-            <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-full">
+            <span className="flex items-center gap-1.5 bg-neutral-800 border border-white/10 text-neutral-300 text-xs font-bold px-3 py-1.5 rounded-full">
               <CheckCircle2 className="w-3.5 h-3.5" /> Sealed
             </span>
           ) : (
-            <span className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-1.5 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse inline-block" /> Live
+            <span className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" /> Live Season
             </span>
           )}
           {sealedData?.notes && (
@@ -343,14 +383,28 @@ export default function Seasons() {
           )}
         </div>
 
+        {!isSealed && (
+          <div className="flex items-center gap-2 text-neutral-400 text-sm">
+            <Clock className="w-4 h-4" />
+            <div className="flex flex-col text-right">
+              <span className="font-bold text-white">{daysLeft > 0 ? `${daysLeft} days left` : 'Ends today'}</span>
+              <span className="text-[10px]">until season ends</span>
+            </div>
+          </div>
+        )}
+
         {isAdmin && !isSealed && (
           <button
             onClick={() => setShowSealModal(true)}
-            className="flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-bold px-3 py-1.5 rounded-full transition-colors"
+            className="flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-bold px-3 py-1.5 rounded-full transition-colors ml-auto"
           >
             <Lock className="w-3.5 h-3.5" /> Seal Season
           </button>
         )}
+      </div>
+
+      <div className="mt-8 mb-4">
+        <h3 className="text-sm font-black uppercase tracking-widest text-neutral-400">Season Awards</h3>
       </div>
 
       {/* Panels */}
