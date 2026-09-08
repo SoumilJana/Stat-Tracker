@@ -52,6 +52,7 @@ export interface PlayerStats {
   total_goals_conceded?: number;
   best_defender_awards?: number;
   best_gk_awards?: number;
+  motm_awards?: number;
 }
 
 export type PlayerWithRating = PlayerStats & { 
@@ -76,6 +77,7 @@ export function calculatePlayerRating(player: PlayerStats): { rating: number } {
   const assists = player.total_assists ?? 0;
   const defAwards = player.best_defender_awards ?? 0;
   const gkAwards = player.best_gk_awards ?? 0;
+  const motmAwards = player.motm_awards ?? 0;
   
   const miniMatches = player.total_mini_matches ?? 0;
   const conceded = player.total_goals_conceded ?? 0;
@@ -85,7 +87,7 @@ export function calculatePlayerRating(player: PlayerStats): { rating: number } {
   const apg = assists / matches;
   
   // Combine all awards
-  const totalAwards = defAwards + gkAwards;
+  const totalAwards = defAwards + gkAwards + motmAwards;
   const awardsPerGame = totalAwards / matches;
   
   // Goals against average per mini-match
@@ -155,8 +157,8 @@ export function enrichPlayersWithRatings(
     const bMatches = b.games_played || 0;
     if (bMatches !== aMatches) return bMatches - aMatches;
 
-    const aAwards = (a.best_defender_awards || 0) + (a.best_gk_awards || 0);
-    const bAwards = (b.best_defender_awards || 0) + (b.best_gk_awards || 0);
+    const aAwards = (a.best_defender_awards || 0) + (a.best_gk_awards || 0) + (a.motm_awards || 0);
+    const bAwards = (b.best_defender_awards || 0) + (b.best_gk_awards || 0) + (b.motm_awards || 0);
     if (bAwards !== aAwards) return bAwards - aAwards;
 
     return a.username.localeCompare(b.username);

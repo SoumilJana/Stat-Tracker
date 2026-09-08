@@ -29,6 +29,7 @@ interface SealedSeason {
   assister_3_id: string | null; assister_3_assists: number | null;
   defender_id: string | null;  defender_awards: number | null;
   gk_id: string | null;        gk_awards: number | null;
+  motm_id: string | null;      motm_awards: number | null;
 }
 
 interface RawStat {
@@ -37,6 +38,7 @@ interface RawStat {
   assists: number;
   best_defender_awards: number;
   best_gk_awards: number;
+  motm_awards: number;
 }
 
 
@@ -64,7 +66,7 @@ function Avatar({ profile, size = 'sm', className = '' }: { profile: Profile | n
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-type PanelColor = 'amber' | 'blue' | 'emerald' | 'orange';
+type PanelColor = 'amber' | 'blue' | 'emerald' | 'orange' | 'purple';
 const awardColors: Record<PanelColor, { bg: string; border: string; text: string; glow: string; textGrad: string }> = {
   amber: {
     bg: 'from-amber-900/40 to-neutral-950',
@@ -94,6 +96,13 @@ const awardColors: Record<PanelColor, { bg: string; border: string; text: string
     glow: 'shadow-[0_0_30px_-10px_rgba(249,115,22,0.3)]',
     textGrad: 'from-orange-300 to-orange-600',
   },
+  purple: {
+    bg: 'from-purple-900/40 to-neutral-950',
+    border: 'border-purple-600/50',
+    text: 'text-purple-500',
+    glow: 'shadow-[0_0_30px_-10px_rgba(168,85,247,0.3)]',
+    textGrad: 'from-purple-300 to-purple-600',
+  },
 };
 
 function AwardCard({ title, subtitle, icon, color, profile, stat, unit }: {
@@ -119,7 +128,7 @@ function AwardCard({ title, subtitle, icon, color, profile, stat, unit }: {
             <div className={`absolute inset-0 rounded-full blur-md bg-gradient-to-b ${c.textGrad} opacity-30`} />
             <Avatar profile={profile} size="xl" className="relative z-10" />
             <div className={`absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-xs z-20`}>
-              {icon === '⚽' ? '🏆' : icon === '🎯' ? '🏅' : icon === '🛡️' ? '🛡️' : '🧤'}
+              {icon === '⚽' ? '🏆' : icon === '🎯' ? '🏅' : icon === '🛡️' ? '🛡️' : icon === '⭐' ? '⭐' : '🧤'}
             </div>
           </div>
           <p className="mt-4 text-lg font-black text-white">{profile.username}</p>
@@ -223,6 +232,7 @@ export default function Seasons() {
   const liveTopAssisters = useMemo(() => [...liveStats].sort((a, b) => b.assists - a.assists || b.goals   - a.goals  ).slice(0, 3), [liveStats]);
   const liveDefender     = useMemo(() => [...liveStats].filter(s => s.best_defender_awards > 0).sort((a, b) => b.best_defender_awards - a.best_defender_awards)[0] || null, [liveStats]);
   const liveGK           = useMemo(() => [...liveStats].filter(s => s.best_gk_awards        > 0).sort((a, b) => b.best_gk_awards        - a.best_gk_awards       )[0] || null, [liveStats]);
+  const liveMOTM         = useMemo(() => [...liveStats].filter(s => s.motm_awards           > 0).sort((a, b) => b.motm_awards           - a.motm_awards          )[0] || null, [liveStats]);
 
   const handleSeal = async () => {
     if (!isAdmin) return;
@@ -245,6 +255,7 @@ export default function Seasons() {
       assister_3_id: liveTopAssisters[2]?.player_id || null, assister_3_assists: liveTopAssisters[2]?.assists || null,
       defender_id: liveDefender?.player_id || null, defender_awards: liveDefender?.best_defender_awards || null,
       gk_id:       liveGK?.player_id       || null, gk_awards:       liveGK?.best_gk_awards             || null,
+      motm_id:     liveMOTM?.player_id     || null, motm_awards:     liveMOTM?.motm_awards              || null,
     });
     if (!error) {
       await fetchSealed();
@@ -283,9 +294,11 @@ export default function Seasons() {
     const defAwards = isSealed && sealedData ? sealedData.defender_awards : liveDefender?.best_defender_awards || null;
     const gkPid     = isSealed && sealedData ? sealedData.gk_id          : liveGK?.player_id          || null;
     const gkAwards  = isSealed && sealedData ? sealedData.gk_awards      : liveGK?.best_gk_awards      || null;
+    const motmPid    = isSealed && sealedData ? sealedData.motm_id        : liveMOTM?.player_id        || null;
+    const motmAwards = isSealed && sealedData ? sealedData.motm_awards    : liveMOTM?.motm_awards      || null;
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${selectedNum >= 2 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
         <AwardCard 
           title="Golden Boot" 
           subtitle="Most Goals" 
@@ -322,6 +335,17 @@ export default function Seasons() {
           stat={gkAwards} 
           unit="clean sheets" 
         />
+        {selectedNum >= 2 && (
+          <AwardCard 
+            title="Man of the Season" 
+            subtitle="Most MOTM Awards" 
+            icon="⭐" 
+            color="purple" 
+            profile={p(motmPid)} 
+            stat={motmAwards} 
+            unit="awards" 
+          />
+        )}
       </div>
     );
   };
@@ -462,6 +486,13 @@ export default function Seasons() {
                       ? <PreviewRow rank={0} name={p(liveGK.player_id)?.username || '?'} stat={`${liveGK.best_gk_awards} awards`} />
                       : <p className="text-xs text-neutral-600">No awards this season</p>}
                   </PreviewBlock>
+                  {selectedNum >= 2 && (
+                    <PreviewBlock label="⭐ Man of the Season — Season Winner">
+                      {liveMOTM
+                        ? <PreviewRow rank={0} name={p(liveMOTM.player_id)?.username || '?'} stat={`${liveMOTM.motm_awards} MOTM`} />
+                        : <p className="text-xs text-neutral-600">No awards this season</p>}
+                    </PreviewBlock>
+                  )}
                 </div>
 
                 <label className="block text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-2">

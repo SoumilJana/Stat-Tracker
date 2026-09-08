@@ -32,7 +32,7 @@ export default function ActiveMatch() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pollVotes, setPollVotes] = useState<any[]>([]);
-  const [votingAward, setVotingAward] = useState<'BEST_DEFENDER' | 'BEST_GK' | null>(null);
+  const [votingAward, setVotingAward] = useState<'BEST_DEFENDER' | 'BEST_GK' | 'MOTM' | null>(null);
 
   const [isManagingQueue, setIsManagingQueue] = useState(false);
   const [managedPitch, setManagedPitch] = useState<any[]>([]);
@@ -400,7 +400,7 @@ export default function ActiveMatch() {
     }
   };
 
-  const castPollVote = async (awardType: 'BEST_DEFENDER' | 'BEST_GK', candidateId: string) => {
+  const castPollVote = async (awardType: 'BEST_DEFENDER' | 'BEST_GK' | 'MOTM', candidateId: string) => {
     if (!profile?.id) return alert("You must be logged in to vote.");
     
     // Check if user already voted
@@ -732,9 +732,9 @@ export default function ActiveMatch() {
             </div>
 
             {/* Poll Results */}
-            <div className="w-full mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {['BEST_DEFENDER', 'BEST_GK'].map(award => {
-                const awardName = award === 'BEST_DEFENDER' ? '🛡️ Best Defender' : '🧤 Best Goalkeeper';
+            <div className={`w-full mt-4 grid grid-cols-1 md:grid-cols-${new Date(session.date) < new Date('2026-09-06') ? '2' : '3'} gap-6`}>
+              {(new Date(session.date) < new Date('2026-09-06') ? ['BEST_DEFENDER', 'BEST_GK'] : ['BEST_DEFENDER', 'BEST_GK', 'MOTM']).map(award => {
+                const awardName = award === 'BEST_DEFENDER' ? '🛡️ Best Defender' : award === 'BEST_GK' ? '🧤 Best Goalkeeper' : '⭐ Man of the Match';
                 const votesForAward = pollVotes.filter(v => v.award_type === award);
                 const voteCounts: Record<string, number> = {};
                 votesForAward.forEach(v => {
@@ -776,7 +776,7 @@ export default function ActiveMatch() {
                     )}
                     
                     <button 
-                      onClick={() => setVotingAward(award as 'BEST_DEFENDER' | 'BEST_GK')}
+                      onClick={() => setVotingAward(award as 'BEST_DEFENDER' | 'BEST_GK' | 'MOTM')}
                       className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-white transition-colors"
                     >
                       {hasVoted ? 'Change Vote' : 'Cast Vote'}
@@ -1120,7 +1120,7 @@ export default function ActiveMatch() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative overflow-hidden flex flex-col max-h-[80vh]">
             <h3 className="text-xl font-bold text-white mb-2 text-center">
-              {votingAward === 'BEST_DEFENDER' ? '🛡️ Best Defender' : '🧤 Best Goalkeeper'}
+              {votingAward === 'BEST_DEFENDER' ? '🛡️ Best Defender' : votingAward === 'BEST_GK' ? '🧤 Best Goalkeeper' : '⭐ Man of the Match'}
             </h3>
             <p className="text-neutral-400 text-sm mb-6 text-center">
               Vote for a player from this matchday

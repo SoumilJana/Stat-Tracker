@@ -56,7 +56,8 @@ export default function Leaderboard() {
             losses: row.losses,
             draws: row.draws,
             best_defender_awards: row.best_defender_awards || 0,
-            best_gk_awards: row.best_gk_awards || 0
+            best_gk_awards: row.best_gk_awards || 0,
+            motm_awards: row.motm_awards || 0
           };
         });
         
@@ -196,6 +197,16 @@ export default function Leaderboard() {
                           <span className="text-lg sm:text-2xl mr-0.5">🧤</span>
                           <span className="text-xs sm:text-lg text-purple-400/50">x</span>
                           <span className="ml-0.5">{player.best_gk_awards}</span>
+                        </span>
+                      </div>
+                    ) : null}
+
+                    {player.motm_awards && player.motm_awards > 0 ? (
+                      <div className="flex items-center justify-center">
+                        <span className="text-xl sm:text-3xl font-black text-yellow-400 tabular-nums leading-none tracking-tighter drop-shadow-lg flex items-center">
+                          <span className="text-lg sm:text-2xl mr-0.5">⭐</span>
+                          <span className="text-xs sm:text-lg text-yellow-400/50">x</span>
+                          <span className="ml-0.5">{player.motm_awards}</span>
                         </span>
                       </div>
                     ) : null}
