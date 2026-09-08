@@ -5,66 +5,53 @@ import { supabase } from '../lib/supabase';
 import NotificationsSetup from '../components/NotificationsSetup';
 
 import { useAuth } from '../contexts/AuthContext';
+import { buildSeasons, getCurrentSeason } from '../lib/seasons';
 
 export default function Dashboard() {
   const { profile } = useAuth();
   const [totalGoals, setTotalGoals] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
+  const [seasonGoals, setSeasonGoals] = useState(0);
+  const [seasonMatches, setSeasonMatches] = useState(0);
   const [upcomingMatch, setUpcomingMatch] = useState<any>(null);
   const [completedMatch, setCompletedMatch] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const seasons = React.useMemo(() => buildSeasons(), []);
+  const currentSeason = getCurrentSeason(seasons);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
-      // Fetch Total Goals directly from events to be accurate
-      const { count: goalCount } = await supabase
-        .from('events')
-        .select('*', { count: 'exact', head: true })
-        .eq('event_type', 'GOAL');
-      
+      // Use Promise.all to fetch all dashboard data concurrently
+      const [
+        { count: goalCount },
+        { count: matchCount },
+        { count: sGoalCount },
+        { count: sMatchCount },
+        { data: completed },
+        { data: upcoming }
+      ] = await Promise.all([
+        supabase.from('events').select('*', { count: 'exact', head: true }).eq('event_type', 'GOAL'),
+        supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('status', 'COMPLETED'),
+        supabase.from('events').select('*', { count: 'exact', head: true }).eq('event_type', 'GOAL').gte('timestamp', currentSeason.startDate).lt('timestamp', currentSeason.endDate),
+        supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('status', 'COMPLETED').gte('date', currentSeason.startDate).lt('date', currentSeason.endDate),
+        supabase.from('sessions').select(`id, date, status, mode, location, teams ( id, name ), events ( team_id, event_type )`).eq('status', 'COMPLETED').order('date', { ascending: false }).limit(1),
+        supabase.from('sessions').select(`id, date, status, mode, location, teams ( id, name ), events ( team_id, event_type )`).in('status', ['SCHEDULED', 'IN_PROGRESS']).order('date', { ascending: false }).limit(1)
+      ]);
+
       if (goalCount !== null) setTotalGoals(goalCount);
-
-      // Fetch Total Matches
-      const { count: matchCount } = await supabase
-        .from('sessions')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'COMPLETED');
-      
       if (matchCount !== null) setTotalMatches(matchCount);
+      if (sGoalCount !== null) setSeasonGoals(sGoalCount);
+      if (sMatchCount !== null) setSeasonMatches(sMatchCount);
 
-      // Fetch Most Recent Completed Match
-      const { data: completed } = await supabase
-        .from('sessions')
-        .select(`
-          id, date, status, mode, location,
-          teams ( id, name ),
-          events ( team_id, event_type )
-        `)
-        .eq('status', 'COMPLETED')
-        .order('date', { ascending: false })
-        .limit(1);
-      
       if (completed && completed.length > 0) setCompletedMatch(completed[0]);
-
-      // Fetch Next Upcoming Match
-      const { data: upcoming } = await supabase
-        .from('sessions')
-        .select(`
-          id, date, status, mode, location,
-          teams ( id, name ),
-          events ( team_id, event_type )
-        `)
-        .in('status', ['SCHEDULED', 'IN_PROGRESS'])
-        .order('date', { ascending: false })
-        .limit(1);
-      
       if (upcoming && upcoming.length > 0) setUpcomingMatch(upcoming[0]);
 
       setLoading(false);
     };
 
     fetchDashboardData();
-  }, []);
+  }, [currentSeason.startDate, currentSeason.endDate]);
 
   if (loading) return <div className="text-emerald-500">Loading dashboard...</div>;
 
@@ -91,7 +78,7 @@ export default function Dashboard() {
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-8">
               <div>
-                <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-1">SEASON 1 (AUGUST)</h3>
+                <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-1">{currentSeason.label.toUpperCase()}</h3>
               </div>
               <Link to="/seasons" className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors">
                 View All <ArrowRight className="w-3.5 h-3.5" />
@@ -109,7 +96,7 @@ export default function Dashboard() {
                     <path d="M18 16v2" />
                   </svg>
                 </div>
-                <div className="text-4xl font-black text-white mb-1">{totalMatches}</div>
+                <div className="text-4xl font-black text-white mb-1">{seasonMatches}</div>
                 <div className="text-xs text-neutral-400">Matches</div>
               </div>
               
@@ -127,7 +114,7 @@ export default function Dashboard() {
                     <path d="M8.5 8.5l-4-2" />
                   </svg>
                 </div>
-                <div className="text-4xl font-black text-white mb-1">{totalGoals}</div>
+                <div className="text-4xl font-black text-white mb-1">{seasonGoals}</div>
                 <div className="text-xs text-neutral-400">Goals</div>
               </div>
               
@@ -138,7 +125,7 @@ export default function Dashboard() {
                   <Users className="w-8 h-8" strokeWidth={1.5} />
                 </div>
                 <div className="text-4xl font-black text-white mb-1">
-                  {totalMatches > 0 ? (totalGoals / totalMatches).toFixed(1) : '0.0'}
+                  {seasonMatches > 0 ? (seasonGoals / seasonMatches).toFixed(1) : '0.0'}
                 </div>
                 <div className="text-xs text-neutral-400 text-center leading-tight">Avg Goals<br/>per Match</div>
               </div>
