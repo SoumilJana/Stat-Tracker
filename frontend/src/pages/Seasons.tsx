@@ -160,15 +160,6 @@ function PreviewBlock({ label, children }: { label: string; children: React.Reac
   );
 }
 
-function PreviewRow({ rank, name, stat }: { rank: number; name: string; stat: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2 text-sm">
-      <span className="text-neutral-300">{MEDALS[rank] || '  '} {name}</span>
-      <span className="text-orange-400 font-bold tabular-nums">{stat}</span>
-    </div>
-  );
-}
-
 function OverrideSelectRow({ rank, statLabel, value, onChange, options }: { rank: number; statLabel: string; value: string | null; onChange: (v: string | null) => void; options: Profile[] }) {
   return (
     <div className="flex items-center justify-between gap-2 text-sm">
