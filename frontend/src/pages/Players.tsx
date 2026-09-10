@@ -25,6 +25,8 @@ type Profile = {
   isTopAssister?: boolean;
   best_defender_awards?: number;
   best_gk_awards?: number;
+  total_wins?: number;
+  total_mini_matches?: number;
 };
 
 export default function Players() {
@@ -434,6 +436,15 @@ export default function Players() {
                         <Activity className="w-4 h-4 text-primary-400 mb-1" />
                         <div className="text-2xl font-black text-white drop-shadow-md">{selectedPlayer.games_played || 0}</div>
                         <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Played</div>
+                      </div>
+                      <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
+                        <Activity className="w-4 h-4 text-orange-400 mb-1" />
+                        <div className="text-2xl font-black text-white drop-shadow-md">
+                          {selectedPlayer.total_mini_matches && selectedPlayer.total_mini_matches > 0 
+                            ? Math.round(((selectedPlayer.total_wins || 0) / selectedPlayer.total_mini_matches) * 100) + '%'
+                            : "0%"}
+                        </div>
+                        <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Win Rate</div>
                       </div>
                       {selectedPlayer.best_defender_awards ? (
                         <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">

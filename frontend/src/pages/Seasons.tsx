@@ -169,6 +169,27 @@ function PreviewRow({ rank, name, stat }: { rank: number; name: string; stat: st
   );
 }
 
+function OverrideSelectRow({ rank, statLabel, value, onChange, options }: { rank: number; statLabel: string; value: string | null; onChange: (v: string | null) => void; options: Profile[] }) {
+  return (
+    <div className="flex items-center justify-between gap-2 text-sm">
+      <div className="flex items-center gap-2 flex-1">
+        <span className="text-neutral-500 w-4">{MEDALS[rank] || ''}</span>
+        <select 
+          value={value || ''} 
+          onChange={e => onChange(e.target.value || null)}
+          className="bg-neutral-800 border border-white/10 rounded px-2 py-1 text-white text-sm outline-none focus:border-white/20 w-48"
+        >
+          <option value="">None</option>
+          {options.map(o => (
+            <option key={o.id} value={o.id}>{o.username}</option>
+          ))}
+        </select>
+      </div>
+      <span className="text-orange-400 font-bold tabular-nums text-xs">{statLabel}</span>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────
@@ -183,6 +204,7 @@ export default function Seasons() {
   const [selectedNum, setSelectedNum] = useState(defaultSeason.number);
   const [sealedSeasons, setSealedSeasons] = useState<SealedSeason[]>([]);
   const [profileMap, setProfileMap] = useState<Map<string, Profile>>(new Map());
+  const allProfiles = useMemo(() => Array.from(profileMap.values()).sort((a,b) => a.username.localeCompare(b.username)), [profileMap]);
   const [liveStats, setLiveStats] = useState<RawStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSealModal, setShowSealModal] = useState(false);
@@ -234,9 +256,40 @@ export default function Seasons() {
   const liveGK           = useMemo(() => [...liveStats].filter(s => s.best_gk_awards        > 0).sort((a, b) => b.best_gk_awards        - a.best_gk_awards       )[0] || null, [liveStats]);
   const liveMOTM         = useMemo(() => [...liveStats].filter(s => s.motm_awards           > 0).sort((a, b) => b.motm_awards           - a.motm_awards          )[0] || null, [liveStats]);
 
+  const [overrideScorers, setOverrideScorers] = useState<(string|null)[]>([null, null, null]);
+  const [overrideAssisters, setOverrideAssisters] = useState<(string|null)[]>([null, null, null]);
+  const [overrideDefender, setOverrideDefender] = useState<string|null>(null);
+  const [overrideGK, setOverrideGK] = useState<string|null>(null);
+  const [overrideMOTM, setOverrideMOTM] = useState<string|null>(null);
+
+  useEffect(() => {
+    if (showSealModal) {
+      setOverrideScorers([
+        liveTopScorers[0]?.player_id || null,
+        liveTopScorers[1]?.player_id || null,
+        liveTopScorers[2]?.player_id || null,
+      ]);
+      setOverrideAssisters([
+        liveTopAssisters[0]?.player_id || null,
+        liveTopAssisters[1]?.player_id || null,
+        liveTopAssisters[2]?.player_id || null,
+      ]);
+      setOverrideDefender(liveDefender?.player_id || null);
+      setOverrideGK(liveGK?.player_id || null);
+      setOverrideMOTM(liveMOTM?.player_id || null);
+    }
+  }, [showSealModal, liveTopScorers, liveTopAssisters, liveDefender, liveGK, liveMOTM]);
+
   const handleSeal = async () => {
     if (!isAdmin) return;
     setSealing(true);
+
+    const getStat = (pid: string | null, key: keyof RawStat) => {
+      if (!pid) return null;
+      const stat = liveStats.find(s => s.player_id === pid);
+      return stat ? stat[key] : null;
+    };
+
     const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from('seasons').insert({
       season_number: selectedSeason.number,
@@ -247,15 +300,15 @@ export default function Seasons() {
       notes:         sealNote || null,
       declared_by:   user?.id || null,
       declared_at:   new Date().toISOString(),
-      scorer_1_id: liveTopScorers[0]?.player_id || null, scorer_1_goals: liveTopScorers[0]?.goals || null,
-      scorer_2_id: liveTopScorers[1]?.player_id || null, scorer_2_goals: liveTopScorers[1]?.goals || null,
-      scorer_3_id: liveTopScorers[2]?.player_id || null, scorer_3_goals: liveTopScorers[2]?.goals || null,
-      assister_1_id: liveTopAssisters[0]?.player_id || null, assister_1_assists: liveTopAssisters[0]?.assists || null,
-      assister_2_id: liveTopAssisters[1]?.player_id || null, assister_2_assists: liveTopAssisters[1]?.assists || null,
-      assister_3_id: liveTopAssisters[2]?.player_id || null, assister_3_assists: liveTopAssisters[2]?.assists || null,
-      defender_id: liveDefender?.player_id || null, defender_awards: liveDefender?.best_defender_awards || null,
-      gk_id:       liveGK?.player_id       || null, gk_awards:       liveGK?.best_gk_awards             || null,
-      motm_id:     liveMOTM?.player_id     || null, motm_awards:     liveMOTM?.motm_awards              || null,
+      scorer_1_id: overrideScorers[0], scorer_1_goals: getStat(overrideScorers[0], 'goals'),
+      scorer_2_id: overrideScorers[1], scorer_2_goals: getStat(overrideScorers[1], 'goals'),
+      scorer_3_id: overrideScorers[2], scorer_3_goals: getStat(overrideScorers[2], 'goals'),
+      assister_1_id: overrideAssisters[0], assister_1_assists: getStat(overrideAssisters[0], 'assists'),
+      assister_2_id: overrideAssisters[1], assister_2_assists: getStat(overrideAssisters[1], 'assists'),
+      assister_3_id: overrideAssisters[2], assister_3_assists: getStat(overrideAssisters[2], 'assists'),
+      defender_id: overrideDefender, defender_awards: getStat(overrideDefender, 'best_defender_awards'),
+      gk_id:       overrideGK,       gk_awards:       getStat(overrideGK, 'best_gk_awards'),
+      motm_id:     overrideMOTM,     motm_awards:     getStat(overrideMOTM, 'motm_awards'),
     });
     if (!error) {
       await fetchSealed();
@@ -462,35 +515,65 @@ export default function Seasons() {
                 <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Snapshot Preview</p>
 
                 <div className="space-y-3 mb-5">
-                  <PreviewBlock label="⚽ Golden Boot — Top 3 Scorers">
-                    {liveTopScorers.filter(s => s.goals > 0).length === 0
-                      ? <p className="text-xs text-neutral-600">No data</p>
-                      : liveTopScorers.filter(s => s.goals > 0).map((s, i) => (
-                          <PreviewRow key={s.player_id} rank={i} name={p(s.player_id)?.username || '?'} stat={`${s.goals} goals`} />
-                        ))}
+                  <PreviewBlock label="🏆 Golden Boot - Top 3 Scorers">
+                    {[0, 1, 2].map(i => (
+                      <OverrideSelectRow
+                        key={`scorer-${i}`}
+                        rank={i}
+                        statLabel={`${liveStats.find(s => s.player_id === overrideScorers[i])?.goals || 0} goals`}
+                        value={overrideScorers[i]}
+                        onChange={(val) => {
+                          const newScorers = [...overrideScorers];
+                          newScorers[i] = val;
+                          setOverrideScorers(newScorers);
+                        }}
+                        options={allProfiles}
+                      />
+                    ))}
                   </PreviewBlock>
-                  <PreviewBlock label="🎯 Playmaker Award — Top 3 Assisters">
-                    {liveTopAssisters.filter(s => s.assists > 0).length === 0
-                      ? <p className="text-xs text-neutral-600">No data</p>
-                      : liveTopAssisters.filter(s => s.assists > 0).map((s, i) => (
-                          <PreviewRow key={s.player_id} rank={i} name={p(s.player_id)?.username || '?'} stat={`${s.assists} assists`} />
-                        ))}
+                  <PreviewBlock label="🎯 Playmaker Award - Top 3 Assisters">
+                    {[0, 1, 2].map(i => (
+                      <OverrideSelectRow
+                        key={`assister-${i}`}
+                        rank={i}
+                        statLabel={`${liveStats.find(s => s.player_id === overrideAssisters[i])?.assists || 0} assists`}
+                        value={overrideAssisters[i]}
+                        onChange={(val) => {
+                          const newAssisters = [...overrideAssisters];
+                          newAssisters[i] = val;
+                          setOverrideAssisters(newAssisters);
+                        }}
+                        options={allProfiles}
+                      />
+                    ))}
                   </PreviewBlock>
-                  <PreviewBlock label="🛡️ Best Defender — Season Winner">
-                    {liveDefender
-                      ? <PreviewRow rank={0} name={p(liveDefender.player_id)?.username || '?'} stat={`${liveDefender.best_defender_awards} awards`} />
-                      : <p className="text-xs text-neutral-600">No awards this season</p>}
+                  <PreviewBlock label="🛡️ Best Defender - Season Winner">
+                    <OverrideSelectRow
+                      rank={0}
+                      statLabel={`${liveStats.find(s => s.player_id === overrideDefender)?.best_defender_awards || 0} awards`}
+                      value={overrideDefender}
+                      onChange={setOverrideDefender}
+                      options={allProfiles}
+                    />
                   </PreviewBlock>
-                  <PreviewBlock label="🧤 Golden Glove — Season Winner">
-                    {liveGK
-                      ? <PreviewRow rank={0} name={p(liveGK.player_id)?.username || '?'} stat={`${liveGK.best_gk_awards} awards`} />
-                      : <p className="text-xs text-neutral-600">No awards this season</p>}
+                  <PreviewBlock label="🧤 Golden Glove - Season Winner">
+                    <OverrideSelectRow
+                      rank={0}
+                      statLabel={`${liveStats.find(s => s.player_id === overrideGK)?.best_gk_awards || 0} awards`}
+                      value={overrideGK}
+                      onChange={setOverrideGK}
+                      options={allProfiles}
+                    />
                   </PreviewBlock>
                   {selectedNum >= 2 && (
-                    <PreviewBlock label="⭐ Man of the Season — Season Winner">
-                      {liveMOTM
-                        ? <PreviewRow rank={0} name={p(liveMOTM.player_id)?.username || '?'} stat={`${liveMOTM.motm_awards} MOTM`} />
-                        : <p className="text-xs text-neutral-600">No awards this season</p>}
+                    <PreviewBlock label="⭐ Man of the Season - Season Winner">
+                      <OverrideSelectRow
+                        rank={0}
+                        statLabel={`${liveStats.find(s => s.player_id === overrideMOTM)?.motm_awards || 0} MOTM`}
+                        value={overrideMOTM}
+                        onChange={setOverrideMOTM}
+                        options={allProfiles}
+                      />
                     </PreviewBlock>
                   )}
                 </div>

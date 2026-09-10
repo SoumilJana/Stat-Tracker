@@ -382,13 +382,38 @@ export default function ActiveMatch() {
   const endSession = async () => {
     if (window.confirm("Are you sure you want to end this match day? All recorded goals will be added to the players' total stats permanently.")) {
       // Save the final team stats to the database
-      const teamStatsInserts = Object.keys(timeOnPitch).map(tId => ({
-        session_id: id,
-        team_id: tId,
-        wins: teamScores[tId] || 0,
-        matches_played: timeOnPitch[tId] || 0,
-        goals_conceded: goalsConceded[tId] || 0,
-      }));
+      let maxGoals = -1;
+      let winningTeamId: string | null = null;
+      let isDraw = false;
+
+      if (session?.mode === 'STANDARD') {
+        Object.entries(teamScores).forEach(([tId, goals]) => {
+          if (goals > maxGoals) {
+            maxGoals = goals;
+            winningTeamId = tId;
+            isDraw = false;
+          } else if (goals === maxGoals) {
+            isDraw = true;
+          }
+        });
+      }
+
+      const teamStatsInserts = Object.keys(timeOnPitch).map(tId => {
+        let teamWins = 0;
+        if (session?.mode === 'STANDARD') {
+           teamWins = (!isDraw && winningTeamId === tId) ? 1 : 0;
+        } else {
+           teamWins = teamScores[tId] || 0;
+        }
+
+        return {
+          session_id: id,
+          team_id: tId,
+          wins: teamWins,
+          matches_played: timeOnPitch[tId] || 0,
+          goals_conceded: goalsConceded[tId] || 0,
+        };
+      });
       
       if (teamStatsInserts.length > 0) {
         const { error: statsError } = await supabase.from('session_team_stats').insert(teamStatsInserts);
