@@ -113,17 +113,23 @@ export default function ActiveMatch() {
   };
 
   const fetchMatchData = async () => {
-    // Fetch session
-    const { data: sData } = await supabase.from('sessions').select('*').eq('id', id).single();
+    const [sRes, tRes, eRes] = await Promise.all([
+      supabase.from('sessions').select('*').eq('id', id).single(),
+      supabase.from('teams').select('*').eq('session_id', id).order('name'),
+      supabase.from('events')
+        .select('*, player:profiles!events_player_id_fkey(username), assister:profiles!events_assisted_by_fkey(username)')
+        .eq('session_id', id)
+        .order('timestamp', { ascending: false })
+    ]);
+
+    const sData = sRes.data;
     if (sData) setSession(sData);
     
     fetchPollVotes();
 
-    // Fetch teams
-    const { data: tData } = await supabase.from('teams').select('*').eq('session_id', id).order('name');
-    
+    const tData = tRes.data;
     if (tData && tData.length >= 2) {
-      // Fetch players
+      // Fetch players (depends on teams)
       const { data: tpData } = await supabase
         .from('team_players')
         .select('*, profiles(*)')
@@ -138,13 +144,7 @@ export default function ActiveMatch() {
       }
       setTeamPlayers(tpMap);
 
-      // Fetch events
-      const { data: eData } = await supabase
-        .from('events')
-        .select('*, player:profiles!events_player_id_fkey(username), assister:profiles!events_assisted_by_fkey(username)')
-        .eq('session_id', id)
-        .order('timestamp', { ascending: false });
-      
+      const eData = eRes.data;
       const offlineQueue = JSON.parse(localStorage.getItem(`offline_events_${id}`) || '[]');
       const offlineInserts = offlineQueue
         .filter((a: any) => a.type === 'INSERT')

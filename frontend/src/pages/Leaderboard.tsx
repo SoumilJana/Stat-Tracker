@@ -25,25 +25,28 @@ export default function Leaderboard() {
       
       const selectedSeason = seasons.find(s => s.number === selectedSeasonNum) || seasons[0];
 
-      const { data: rpcData, error } = await supabase
-        .rpc('get_player_stats_in_range', {
+      const [rpcRes, profilesRes, firePlayers] = await Promise.all([
+        supabase.rpc('get_player_stats_in_range', {
           p_start_date: selectedSeason.startDate,
           p_end_date: selectedSeason.endDate
-        });
+        }),
+        supabase.from('profiles').select('id, username, photo_url'),
+        getOnFirePlayers()
+      ]);
         
-      if (error) {
-        setErrorMsg(error.message || 'Error fetching stats');
+      if (rpcRes.error) {
+        setErrorMsg(rpcRes.error.message || 'Error fetching stats');
         setLoading(false);
         return;
       }
         
       let processedData: any[] = [];
         
-      if (rpcData) {
-        const { data: profiles } = await supabase.from('profiles').select('id, username, photo_url');
-        const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+      if (rpcRes.data) {
+        const profiles = profilesRes.data || [];
+        const profileMap = new Map(profiles.map(p => [p.id, p]));
         
-        processedData = rpcData.map((row: any) => {
+        processedData = rpcRes.data.map((row: any) => {
           const prof = profileMap.get(row.player_id);
           return {
             player_id: row.player_id,
@@ -69,7 +72,6 @@ export default function Leaderboard() {
         });
       }
       
-      const firePlayers = await getOnFirePlayers();
       setStats(enrichPlayersWithRatings(processedData, firePlayers));
       setLoading(false);
     };

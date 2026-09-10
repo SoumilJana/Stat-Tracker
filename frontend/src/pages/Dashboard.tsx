@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Plus, Calendar, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -7,22 +7,17 @@ import NotificationsSetup from '../components/NotificationsSetup';
 import { useAuth } from '../contexts/AuthContext';
 import { buildSeasons, getCurrentSeason } from '../lib/seasons';
 
+import { useQuery } from '@tanstack/react-query';
+
 export default function Dashboard() {
   const { profile } = useAuth();
-  const [totalGoals, setTotalGoals] = useState(0);
-  const [totalMatches, setTotalMatches] = useState(0);
-  const [seasonGoals, setSeasonGoals] = useState(0);
-  const [seasonMatches, setSeasonMatches] = useState(0);
-  const [upcomingMatch, setUpcomingMatch] = useState<any>(null);
-  const [completedMatch, setCompletedMatch] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
   const seasons = React.useMemo(() => buildSeasons(), []);
   const currentSeason = getCurrentSeason(seasons);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      // Use Promise.all to fetch all dashboard data concurrently
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboard', currentSeason.startDate, currentSeason.endDate],
+    queryFn: async () => {
       const [
         { count: goalCount },
         { count: matchCount },
@@ -39,21 +34,20 @@ export default function Dashboard() {
         supabase.from('sessions').select(`id, date, status, mode, location, teams ( id, name ), events ( team_id, event_type )`).in('status', ['SCHEDULED', 'IN_PROGRESS']).order('date', { ascending: false }).limit(1)
       ]);
 
-      if (goalCount !== null) setTotalGoals(goalCount);
-      if (matchCount !== null) setTotalMatches(matchCount);
-      if (sGoalCount !== null) setSeasonGoals(sGoalCount);
-      if (sMatchCount !== null) setSeasonMatches(sMatchCount);
+      return {
+        totalGoals: goalCount || 0,
+        totalMatches: matchCount || 0,
+        seasonGoals: sGoalCount || 0,
+        seasonMatches: sMatchCount || 0,
+        completedMatch: completed && completed.length > 0 ? completed[0] : null,
+        upcomingMatch: upcoming && upcoming.length > 0 ? upcoming[0] : null
+      };
+    }
+  });
 
-      if (completed && completed.length > 0) setCompletedMatch(completed[0]);
-      if (upcoming && upcoming.length > 0) setUpcomingMatch(upcoming[0]);
+  if (isLoading || !data) return <div className="text-emerald-500">Loading dashboard...</div>;
 
-      setLoading(false);
-    };
-
-    fetchDashboardData();
-  }, [currentSeason.startDate, currentSeason.endDate]);
-
-  if (loading) return <div className="text-emerald-500">Loading dashboard...</div>;
+  const { totalGoals, totalMatches, seasonGoals, seasonMatches, completedMatch, upcomingMatch } = data;
 
   return (
     <div className="space-y-8 pb-20">
