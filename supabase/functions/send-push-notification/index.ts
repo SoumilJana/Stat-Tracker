@@ -119,13 +119,12 @@ serve(async (req) => {
       };
     }
 
-    // For testing, we only want to send to Admins if no specific targetUserIds are passed
-    // In production, targetUserIds would be the list of players involved in the session.
     let query = supabase.from('push_subscriptions').select('endpoint, p256dh, auth, user_id, profiles!inner(role)');
     
-    // During testing phase (per implementation plan), strictly limit to admin
-    // This can be changed later when ready for production.
-    query = query.eq('profiles.role', 'admin');
+    // If specific target users are provided, filter to them; otherwise send to all subscribers
+    if (targetUserIds && Array.isArray(targetUserIds) && targetUserIds.length > 0) {
+      query = query.in('user_id', targetUserIds);
+    }
 
     const { data: subscriptions, error } = await query;
     if (error) throw error;
