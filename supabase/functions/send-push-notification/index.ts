@@ -31,7 +31,7 @@ serve(async (req) => {
   }
 
   try {
-    const { notificationType, sessionId, targetUserIds } = await req.json();
+    const { notificationType, sessionId, targetUserIds, timeZone: requestedTimeZone } = await req.json();
 
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
       throw new Error("VAPID keys not configured in Edge Function environment");
@@ -93,18 +93,30 @@ serve(async (req) => {
         globalPayload = {
           title: notificationType === 'POST_MATCH' ? "🏁 Match Completed!" : "📊 Last Match Stats",
           body: `${scoreText}${topScorerText}`,
+          icon: '/pwa-192x192.png',
+          badge: '/notification-badge.png',
+          url: '/'
         };
       } else {
         globalPayload = {
           title: notificationType === 'POST_MATCH' ? "🏁 Match Completed!" : "📊 Last Match Stats",
           body: "No past games found yet!",
+          icon: '/pwa-192x192.png',
+          badge: '/notification-badge.png',
+          url: '/'
         };
       }
     } else if (notificationType === 'UPCOMING_INFO' || notificationType === 'MATCH_CREATED') {
       // Will be processed per user
     } else {
       // Fallback or custom push test
-      globalPayload = { title: "Test Notification", body: "This is a test web push." };
+      globalPayload = {
+        title: "Test Notification",
+        body: "This is a test web push.",
+        icon: '/pwa-192x192.png',
+        badge: '/notification-badge.png',
+        url: '/'
+      };
     }
 
     // For testing, we only want to send to Admins if no specific targetUserIds are passed
@@ -154,9 +166,17 @@ serve(async (req) => {
 
       // Generate personalized payload for UPCOMING_INFO and MATCH_CREATED
       if (!globalPayload && scheduledSession) {
-        // Format date: e.g., "22 August, 7:00 AM"
+        // Format date: e.g., "September 12 at 7:00 AM"
+        const timeZone = requestedTimeZone || Deno.env.get("TIMEZONE") || 'Asia/Kolkata';
         const d = new Date(scheduledSession.date);
-        const dateStr = d.toLocaleString('en-US', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true });
+        const dateStr = d.toLocaleString('en-US', {
+          timeZone,
+          day: 'numeric',
+          month: 'long',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
         const locationStr = scheduledSession.location ? `\n📍 ${scheduledSession.location}` : "";
         
         let teamInfo = "\n\nYou haven't been assigned to a team yet.";
@@ -181,11 +201,17 @@ serve(async (req) => {
         personalizedPayload = {
           title: titleStr,
           body: `📅 ${dateStr}${locationStr}${teamInfo}`,
+          icon: '/pwa-192x192.png',
+          badge: '/notification-badge.png',
+          url: '/'
         };
       } else if (!globalPayload && !scheduledSession) {
         personalizedPayload = {
           title: "📅 Upcoming Match",
           body: "No scheduled matches found.",
+          icon: '/pwa-192x192.png',
+          badge: '/notification-badge.png',
+          url: '/'
         };
       }
 

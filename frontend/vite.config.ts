@@ -16,7 +16,7 @@ export default defineConfig({
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       },
-      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
+      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'notification-badge.png'],
       manifest: {
         name: 'StatTracker',
         short_name: 'StatTracker',

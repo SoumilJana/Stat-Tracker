@@ -12,8 +12,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'StatTracker';
   const options = {
     body: data.body || 'You have a new notification.',
-    icon: '/pwa-192x192.png',
-    badge: '/pwa-192x192.png',
+    icon: data.icon || '/pwa-192x192.png',
+    badge: data.badge || '/notification-badge.png',
     data: data.url || '/'
   };
   event.waitUntil(self.registration.showNotification(title, options));

@@ -136,7 +136,8 @@ export default function NewMatch() {
         await supabase.functions.invoke('send-push-notification', {
           body: {
             notificationType: 'MATCH_CREATED',
-            sessionId: session.id
+            sessionId: session.id,
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata'
           }
         });
       } catch (err) {
