@@ -41,21 +41,30 @@ serve(async (req) => {
     let targetSessionId = sessionId;
 
     if (notificationType === 'PAST_STATS' || notificationType === 'POST_MATCH') {
-      // Fetch latest completed session
-      const { data: latestSession } = await supabase
+      // Fetch latest completed session or specific session
+      let sessionQuery = supabase
         .from('sessions')
         .select(`
           id,
           date,
           teams (
             id,
-            name
+            name,
+            team_players (
+              player_id,
+              profiles:profiles!team_players_player_id_fkey(username)
+            )
           )
         `)
-        .eq('status', 'COMPLETED')
-        .order('date', { ascending: false })
-        .limit(1)
-        .single();
+        .eq('status', 'COMPLETED');
+        
+      if (targetSessionId) {
+        sessionQuery = sessionQuery.eq('id', targetSessionId);
+      } else {
+        sessionQuery = sessionQuery.order('date', { ascending: false }).limit(1);
+      }
+
+      const { data: latestSession } = await sessionQuery.single();
 
       if (latestSession) {
         // Fetch goals for this session
@@ -82,21 +91,53 @@ serve(async (req) => {
           });
         }
         
-        const scoreText = Object.entries(teamScores).map(([name, score]) => `${name}: ${score}`).join(' vs ');
-        
-        // Find top scorer
-        const topScorer = Object.entries(playerGoals).sort((a, b) => b[1] - a[1])[0];
-        const topScorerText = topScorer ? ` | Top Scorer: ${topScorer[0]} (${topScorer[1]}⚽)` : '';
+        if (notificationType === 'POST_MATCH') {
+            let winningTeam = null;
+            let maxScore = -1;
+            let isDraw = false;
 
-        // If POST_MATCH, maybe tweak the title slightly, but user said "same notif"
-        // Let's keep the title appropriate for context, but the exact same stats body.
-        globalPayload = {
-          title: notificationType === 'POST_MATCH' ? "🏁 Match Completed!" : "📊 Last Match Stats",
-          body: `${scoreText}${topScorerText}`,
-          icon: '/pwa-192x192.png',
-          badge: '/notification-badge.png',
-          url: '/'
-        };
+            Object.entries(teamScores).forEach(([name, score]) => {
+                if (score > maxScore) {
+                    maxScore = score;
+                    winningTeam = latestSession.teams.find((t: any) => t.name === name);
+                    isDraw = false;
+                } else if (score === maxScore) {
+                    isDraw = true;
+                }
+            });
+
+            if (isDraw || !winningTeam) {
+                globalPayload = {
+                    title: "🏁 Match Ended!",
+                    body: `It's a draw! Final score: ${Object.values(teamScores).join(' - ')}`,
+                    icon: '/pwa-192x192.png',
+                    badge: '/notification-badge.png',
+                    url: '/'
+                };
+            } else {
+                const playerNames = winningTeam.team_players.map((tp: any) => tp.profiles?.username || 'Unknown').join(', ');
+                globalPayload = {
+                    title: "🏁 Match Ended!",
+                    body: `Winner: ${winningTeam.name} (${maxScore} goals)\nTeam: ${playerNames}`,
+                    icon: '/pwa-192x192.png',
+                    badge: '/notification-badge.png',
+                    url: '/'
+                };
+            }
+        } else {
+            // PAST_STATS logic
+            const scoreText = Object.entries(teamScores).map(([name, score]) => `${name}: ${score}`).join(' vs ');
+            const topScorer = Object.entries(playerGoals).sort((a, b) => b[1] - a[1])[0];
+            const topScorerText = topScorer ? ` | Top Scorer: ${topScorer[0]} (${topScorer[1]}⚽)` : '';
+
+            globalPayload = {
+              title: "📊 Last Match Stats",
+              body: `${scoreText}${topScorerText}`,
+              icon: '/pwa-192x192.png',
+              badge: '/notification-badge.png',
+              url: '/'
+            };
+        }
       } else {
         globalPayload = {
           title: notificationType === 'POST_MATCH' ? "🏁 Match Completed!" : "📊 Last Match Stats",

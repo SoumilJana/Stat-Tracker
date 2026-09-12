@@ -421,6 +421,19 @@ export default function ActiveMatch() {
       }
 
       await supabase.from('sessions').update({ status: 'COMPLETED' }).eq('id', id);
+
+      // Trigger post-match notification
+      try {
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            notificationType: 'POST_MATCH',
+            sessionId: id
+          }
+        });
+      } catch (err) {
+        console.error("Failed to send post match notification", err);
+      }
+
       navigate('/matches');
     }
   };
