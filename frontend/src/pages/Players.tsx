@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { createPlayer, deletePlayer, updatePlayer } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import imageCompression from 'browser-image-compression';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, useMotionTemplate, useSpring } from 'framer-motion';
 import { enrichPlayersWithRatings } from '../lib/playerRating';
 import PlayerRatingBadge from '../components/PlayerRatingBadge';
 import { formatRating } from '../lib/playerRating';
@@ -27,6 +27,64 @@ type Profile = {
   best_gk_awards?: number;
   total_wins?: number;
   total_mini_matches?: number;
+};
+
+const TiltCard = ({ player, isDiamond, onClick, children, className }: any) => {
+  const mouseX = useMotionValue(0.5);
+  const mouseY = useMotionValue(0.5);
+
+  const springConfig = { damping: 30, stiffness: 400, mass: 0.5 };
+  const smoothMouseX = useSpring(mouseX, springConfig);
+  const smoothMouseY = useSpring(mouseY, springConfig);
+
+  // Reduced tilt angles for a more premium, subtle effect
+  const rotateX = useTransform(smoothMouseY, [0, 1], ["10deg", "-10deg"]);
+  const rotateY = useTransform(smoothMouseX, [0, 1], ["-10deg", "10deg"]);
+  
+  const glareX = useTransform(smoothMouseX, [0, 1], ["0%", "100%"]);
+  const glareY = useTransform(smoothMouseY, [0, 1], ["0%", "100%"]);
+  
+  const background = useMotionTemplate`radial-gradient(circle at ${glareX} ${glareY}, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 60%)`;
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDiamond) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / width));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / height));
+    mouseX.set(x);
+    mouseY.set(y);
+  };
+
+  const handleMouseLeave = () => {
+    if (!isDiamond) return;
+    mouseX.set(0.5);
+    mouseY.set(0.5);
+  };
+
+  return (
+    <motion.div
+      layoutId={`card-${player.id}`}
+      onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={isDiamond ? {
+        rotateX,
+        rotateY,
+        transformStyle: "preserve-3d",
+      } : {}}
+      className={className}
+    >
+      {isDiamond && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-50 mix-blend-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          style={{ background }}
+        />
+      )}
+      {children}
+    </motion.div>
+  );
 };
 
 export default function Players() {
@@ -215,13 +273,14 @@ export default function Players() {
           const isDiamond = player.role === 'manager';
           
           return (
-          <motion.div 
-            layoutId={`card-${player.id}`}
+          <TiltCard
             key={player.id} 
+            player={player}
+            isDiamond={isDiamond}
             onClick={() => setSelectedPlayer(player)}
             className={`group relative bg-black border rounded-2xl overflow-hidden cursor-pointer shadow-xl transition-all duration-300 aspect-[3/4] ${
               isDiamond 
-                ? 'border-cyan-400/80 shadow-[0_0_20px_rgba(34,211,238,0.6)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] animate-pulse'
+                ? 'border-cyan-400/80 shadow-[0_0_20px_rgba(34,211,238,0.6)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)]'
                 : player.onFire 
                   ? 'border-orange-500/80 shadow-[0_0_15px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)]' 
                   : 'border-white/5 hover:shadow-primary-500/20 hover:border-primary-500/30'
@@ -335,7 +394,7 @@ export default function Players() {
               </div>
 
             </div>
-          </motion.div>
+          </TiltCard>
           );
         })}
         {players.length === 0 && (
