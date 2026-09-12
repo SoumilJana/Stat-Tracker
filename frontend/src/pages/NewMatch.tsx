@@ -22,7 +22,7 @@ export default function NewMatch() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    supabase.from('profiles').select('*').order('username').then(({ data }) => {
+    supabase.from('profiles').select('*').neq('role', 'manager').order('username').then(({ data }) => {
       if (data) setPlayers(data);
     });
   }, []);

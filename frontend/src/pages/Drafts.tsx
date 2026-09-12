@@ -82,7 +82,7 @@ export default function Drafts() {
 
 
   const fetchPlayers = async () => {
-    const { data } = await supabase.from('profiles').select('*').order('username');
+    const { data } = await supabase.from('profiles').select('*').neq('role', 'manager').order('username');
     if (data) setPlayers(data);
   };
 

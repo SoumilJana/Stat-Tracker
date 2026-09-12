@@ -64,12 +64,16 @@ export default function Players() {
 
     if (data) {
       const enriched = enrichPlayersWithRatings(data, firePlayers);
-      setPlayers(enriched.map(p => ({
-        ...p,
-        id: (p as any).id || (p as any).player_id,
-        total_goals: p.total_goals || 0,
-        games_played: p.games_played || 0
-      })));
+      setPlayers(enriched.map(p => {
+        const isManager = p.role === 'manager';
+        return {
+          ...p,
+          id: (p as any).id || (p as any).player_id,
+          total_goals: p.total_goals || 0,
+          games_played: p.games_played || 0,
+          rating: isManager ? 110 : p.rating,
+        };
+      }));
     }
     setLoading(false);
   };
@@ -207,15 +211,20 @@ export default function Players() {
       </div>
 
       <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-        {players.map((player) => (
+        {players.map((player) => {
+          const isDiamond = player.role === 'manager';
+          
+          return (
           <motion.div 
             layoutId={`card-${player.id}`}
             key={player.id} 
             onClick={() => setSelectedPlayer(player)}
             className={`group relative bg-black border rounded-2xl overflow-hidden cursor-pointer shadow-xl transition-all duration-300 aspect-[3/4] ${
-              player.onFire 
-                ? 'border-orange-500/80 shadow-[0_0_15px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)]' 
-                : 'border-white/5 hover:shadow-primary-500/20 hover:border-primary-500/30'
+              isDiamond 
+                ? 'border-cyan-400/80 shadow-[0_0_20px_rgba(34,211,238,0.6)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] animate-pulse'
+                : player.onFire 
+                  ? 'border-orange-500/80 shadow-[0_0_15px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)]' 
+                  : 'border-white/5 hover:shadow-primary-500/20 hover:border-primary-500/30'
             }`}
           >
             {/* Background Image */}
@@ -244,13 +253,14 @@ export default function Players() {
                     </span>
                   )}
                   <span className={`whitespace-nowrap px-2 py-1 rounded border border-white/10 backdrop-blur-sm text-[9px] font-bold uppercase tracking-widest ${
+                    isDiamond ? 'bg-cyan-500/20 text-cyan-300' :
                     player.position === 'FWD' ? 'bg-blue-500/20 text-blue-300' :
                     player.position === 'MID' ? 'bg-green-500/20 text-green-300' :
                     player.position === 'DEF' ? 'bg-yellow-500/20 text-yellow-300' :
                     player.position === 'GK' ? 'bg-purple-500/20 text-purple-300' :
                     'bg-white/5 text-neutral-300'
                   }`}>
-                    {player.position || 'FWD'}
+                    {isDiamond ? 'MANAGER' : player.position || 'FWD'}
                   </span>
                   {player.isTopAssister && (
                     <span className="whitespace-nowrap flex items-center gap-1 px-2 py-1 rounded border border-white/10 bg-white/5 backdrop-blur-sm text-[9px] font-bold text-neutral-300 uppercase tracking-widest">
@@ -326,7 +336,8 @@ export default function Players() {
 
             </div>
           </motion.div>
-        ))}
+          );
+        })}
         {players.length === 0 && (
           <div className="col-span-full py-12 text-center text-neutral-500 bg-[#0B101E] border border-dashed border-neutral-800 rounded-2xl">
             No players found. Add your first player!
@@ -350,7 +361,9 @@ export default function Players() {
                 layoutId={`card-${selectedPlayer.id}`}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className={`bg-neutral-950 border rounded-3xl overflow-hidden w-full max-w-lg shadow-2xl pointer-events-auto relative flex flex-col min-h-[60vh] max-h-[90vh] ${
-                  selectedPlayer.onFire ? 'border-orange-500/80 shadow-[0_0_25px_rgba(249,115,22,0.5)]' : 'border-neutral-800'
+                  selectedPlayer.role === 'manager'
+                    ? 'border-cyan-400/80 shadow-[0_0_40px_rgba(34,211,238,0.7)]'
+                    : selectedPlayer.onFire ? 'border-orange-500/80 shadow-[0_0_25px_rgba(249,115,22,0.5)]' : 'border-neutral-800'
                 }`}
               >
                 {/* Full Background Image */}
@@ -387,13 +400,14 @@ export default function Players() {
                         </span>
                       )}
                       <span className={`whitespace-nowrap px-3 py-1.5 rounded-lg border border-white/10 backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest ${
+                        selectedPlayer.role === 'manager' ? 'bg-cyan-500/20 text-cyan-300' :
                         selectedPlayer.position === 'FWD' ? 'bg-blue-500/20 text-blue-300' :
                         selectedPlayer.position === 'MID' ? 'bg-green-500/20 text-green-300' :
                         selectedPlayer.position === 'DEF' ? 'bg-yellow-500/20 text-yellow-300' :
                         selectedPlayer.position === 'GK' ? 'bg-purple-500/20 text-purple-300' :
                         'bg-white/5 text-neutral-300'
                       }`}>
-                        {selectedPlayer.position || 'FWD'}
+                        {selectedPlayer.role === 'manager' ? 'MANAGER' : selectedPlayer.position || 'FWD'}
                       </span>
                       {selectedPlayer.isTopAssister && (
                         <span className="whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-[10px] font-bold text-neutral-200 uppercase tracking-widest">
