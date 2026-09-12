@@ -767,6 +767,7 @@ export default function ActiveMatch() {
             {/* Poll Results */}
             <div className={`w-full mt-4 grid grid-cols-1 md:grid-cols-${new Date(session.date) < new Date('2026-09-06') ? '2' : '3'} gap-6`}>
               {(new Date(session.date) < new Date('2026-09-06') ? ['BEST_DEFENDER', 'BEST_GK'] : ['BEST_DEFENDER', 'BEST_GK', 'MOTM']).map(award => {
+                const isMatchParticipant = profile ? Object.values(teamPlayers).flat().some(p => p.id === profile.id) : false;
                 const awardName = award === 'BEST_DEFENDER' ? '🛡️ Best Defender' : award === 'BEST_GK' ? '🧤 Best Goalkeeper' : '⭐ Man of the Match';
                 const votesForAward = pollVotes.filter(v => v.award_type === award);
                 const voteCounts: Record<string, number> = {};
@@ -808,12 +809,21 @@ export default function ActiveMatch() {
                       <div className="text-neutral-500 italic mb-4">No votes yet</div>
                     )}
                     
-                    <button 
-                      onClick={() => setVotingAward(award as 'BEST_DEFENDER' | 'BEST_GK' | 'MOTM')}
-                      className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-white transition-colors"
-                    >
-                      {hasVoted ? 'Change Vote' : 'Cast Vote'}
-                    </button>
+                    {isMatchParticipant ? (
+                      <button 
+                        onClick={() => setVotingAward(award as 'BEST_DEFENDER' | 'BEST_GK' | 'MOTM')}
+                        className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold text-white transition-colors"
+                      >
+                        {hasVoted ? 'Change Vote' : 'Cast Vote'}
+                      </button>
+                    ) : (
+                      <button 
+                        disabled
+                        className="w-full py-2 bg-neutral-800 border border-white/5 rounded-xl text-xs font-bold text-neutral-500 cursor-not-allowed"
+                      >
+                        Only match participants can vote
+                      </button>
+                    )}
                     
                     {profile?.role === 'admin' && votesForAward.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-white/10">
