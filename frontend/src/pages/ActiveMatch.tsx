@@ -432,14 +432,22 @@ export default function ActiveMatch() {
     const existingVote = pollVotes.find(v => v.voter_id === profile.id && v.award_type === awardType);
     
     if (existingVote) {
-      await supabase.from('poll_votes').update({ candidate_id: candidateId }).eq('id', existingVote.id);
+      const { error } = await supabase.from('poll_votes').update({ candidate_id: candidateId }).eq('id', existingVote.id);
+      if (error) {
+        console.error("Vote update error:", error);
+        alert("Failed to update vote: " + error.message);
+      }
     } else {
-      await supabase.from('poll_votes').insert({
+      const { error } = await supabase.from('poll_votes').insert({
         session_id: id,
         award_type: awardType,
         voter_id: profile.id,
         candidate_id: candidateId
       });
+      if (error) {
+        console.error("Vote insert error:", error);
+        alert("Failed to cast vote: " + error.message);
+      }
     }
     setVotingAward(null);
     fetchPollVotes();
