@@ -513,8 +513,8 @@ export default function Players() {
                       <div className="bg-white/5 backdrop-blur-xl rounded-xl py-2.5 px-4 border border-white/10 flex flex-col items-center justify-center text-center shadow-xl flex-1 min-w-[90px]">
                         <Activity className="w-4 h-4 text-orange-400 mb-1" />
                         <div className="text-2xl font-black text-white drop-shadow-md">
-                          {selectedPlayer.total_mini_matches && selectedPlayer.total_mini_matches > 0 
-                            ? Math.round(((selectedPlayer.total_wins || 0) / selectedPlayer.total_mini_matches) * 100) + '%'
+                          {selectedPlayer.games_played && selectedPlayer.games_played > 0 
+                            ? Math.round(((selectedPlayer.total_wins || 0) / selectedPlayer.games_played) * 100) + '%'
                             : "0%"}
                         </div>
                         <div className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest mt-0.5">Win Rate</div>
