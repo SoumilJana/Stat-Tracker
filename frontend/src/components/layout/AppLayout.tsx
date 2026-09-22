@@ -89,6 +89,15 @@ export default function AppLayout() {
   const { signOut, user, profile } = useAuth();
   const location = useLocation();
 
+  useEffect(() => {
+    const isAnkita = profile?.username?.toLowerCase() === 'ankita' || profile?.full_name?.toLowerCase() === 'ankita' || profile?.name?.toLowerCase() === 'ankita';
+    if (isAnkita) {
+      document.body.classList.add('theme-pink');
+    } else {
+      document.body.classList.remove('theme-pink');
+    }
+  }, [profile]);
+
   const navItems = [
     { name: 'Dashboard', mobileName: 'Home', path: '/', icon: Home },
     { name: 'Matches', mobileName: 'Matches', path: '/matches', icon: Activity },

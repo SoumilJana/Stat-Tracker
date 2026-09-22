@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Users, Plus, Calendar, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import NotificationsSetup from '../components/NotificationsSetup';
+import AnkitaDashboard from '../components/AnkitaDashboard';
 
 import { useAuth } from '../contexts/AuthContext';
 import { buildSeasons, getCurrentSeason } from '../lib/seasons';
@@ -46,6 +47,12 @@ export default function Dashboard() {
   });
 
   if (isLoading || !data) return <div className="text-emerald-500">Loading dashboard...</div>;
+
+  const isAnkita = profile?.username?.toLowerCase() === 'ankita' || profile?.full_name?.toLowerCase() === 'ankita' || profile?.name?.toLowerCase() === 'ankita';
+
+  if (isAnkita) {
+    return <AnkitaDashboard data={data} currentSeason={currentSeason} profile={profile} />;
+  }
 
   const { totalGoals, totalMatches, seasonGoals, seasonMatches, completedMatch, upcomingMatch } = data;
 

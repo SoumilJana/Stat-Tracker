@@ -95,8 +95,9 @@ export default function Players() {
   const [editingPlayer, setEditingPlayer] = useState<Profile | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Profile | null>(null);
 
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const isAdmin = user?.user_metadata?.role?.includes('admin');
+  const isAnkita = profile?.username?.toLowerCase() === 'ankita' || profile?.full_name?.toLowerCase() === 'ankita' || profile?.name?.toLowerCase() === 'ankita';
 
   // Form State
   const [username, setUsername] = useState('');
@@ -269,7 +270,20 @@ export default function Players() {
       </div>
 
       <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-        {players.map((player) => {
+        {(() => {
+          const displayPlayers = isAnkita 
+            ? players.filter(p => p.username.toLowerCase() === 'ankita' || p.username.toLowerCase() === 'soumil')
+            : players;
+
+          if (displayPlayers.length === 0) {
+            return (
+              <div className="col-span-full py-12 text-center text-neutral-500 bg-[#0B101E] border border-dashed border-neutral-800 rounded-2xl">
+                No players found. Add your first player!
+              </div>
+            );
+          }
+
+          return displayPlayers.map((player) => {
           const isDiamond = player.role === 'manager';
           
           return (
@@ -396,12 +410,8 @@ export default function Players() {
             </div>
           </TiltCard>
           );
-        })}
-        {players.length === 0 && (
-          <div className="col-span-full py-12 text-center text-neutral-500 bg-[#0B101E] border border-dashed border-neutral-800 rounded-2xl">
-            No players found. Add your first player!
-          </div>
-        )}
+        });
+      })()}
       </div>
 
       {/* Expanded Player Card Modal */}
