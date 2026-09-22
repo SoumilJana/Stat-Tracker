@@ -1,4 +1,3 @@
-import React from 'react';
 import { Heart, Star, Flame, Trophy } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';

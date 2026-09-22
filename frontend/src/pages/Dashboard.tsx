@@ -51,7 +51,7 @@ export default function Dashboard() {
   const isAnkita = profile?.username?.toLowerCase() === 'ankita' || profile?.full_name?.toLowerCase() === 'ankita' || profile?.name?.toLowerCase() === 'ankita';
 
   if (isAnkita) {
-    return <AnkitaDashboard data={data} currentSeason={currentSeason} profile={profile} />;
+    return <AnkitaDashboard />;
   }
 
   const { totalGoals, totalMatches, seasonGoals, seasonMatches, completedMatch, upcomingMatch } = data;
