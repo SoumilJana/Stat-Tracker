@@ -1,4 +1,4 @@
-import { Heart, Star, Flame, Trophy } from 'lucide-react';
+import { Heart, Star, Flame } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 
@@ -65,8 +65,7 @@ export default function AnkitaDashboard() {
     );
   }
 
-  const { total_goals, games_played, total_wins, latestGoals } = soumilData;
-  const winRate = games_played > 0 ? Math.round((total_wins / games_played) * 100) : 0;
+  const { total_goals, latestGoals } = soumilData;
 
   return (
     <div className="space-y-8 pb-20">
@@ -90,7 +89,7 @@ export default function AnkitaDashboard() {
               <div className="text-4xl font-black text-white mb-2">
                 Your boyfriend scored <span className="text-rose-500">{latestGoals}</span> {latestGoals === 1 ? 'goal' : 'goals'}! 🔥
               </div>
-              <p className="text-rose-200/80 font-medium text-lg">So proud of him!</p>
+              <p className="text-rose-200/80 font-medium text-lg">Be proud of him!</p>
             </>
           ) : (
             <>
@@ -103,30 +102,14 @@ export default function AnkitaDashboard() {
         </div>
       </div>
 
-      {/* Special Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-        {/* Total Goals */}
-        <div className="bg-[#1a0f14] border border-rose-500/20 rounded-3xl p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-rose-900/10 to-transparent z-0" />
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <Star className="w-10 h-10 text-rose-400 mb-4" fill="currentColor" />
-            <div className="text-5xl font-black text-white mb-2">{total_goals || 0}</div>
-            <div className="text-sm font-bold tracking-widest text-neutral-400 uppercase mb-4">Total Goals ⚽</div>
-            <p className="text-rose-200/60 italic text-sm">"He's basically the Messi of the turf."</p>
-          </div>
-        </div>
-
-        {/* Win Rate */}
-        <div className="bg-[#1a0f14] border border-rose-500/20 rounded-3xl p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-rose-900/10 to-transparent z-0" />
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <Trophy className="w-10 h-10 text-rose-400 mb-4" />
-            <div className="text-5xl font-black text-white mb-2">{winRate}%</div>
-            <div className="text-sm font-bold tracking-widest text-neutral-400 uppercase mb-4">
-              Win Rate ({games_played || 0} Matches) 🏆
-            </div>
-            <p className="text-rose-200/60 italic text-sm">"Winning on the pitch, and winning in life with you."</p>
-          </div>
+      {/* Total Goals */}
+      <div className="bg-[#1a0f14] border border-rose-500/20 rounded-3xl p-8 relative overflow-hidden group mt-8">
+        <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-rose-900/10 to-transparent z-0" />
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <Star className="w-10 h-10 text-rose-400 mb-4" fill="currentColor" />
+          <div className="text-5xl font-black text-white mb-2">{total_goals || 0}</div>
+          <div className="text-sm font-bold tracking-widest text-neutral-400 uppercase mb-4">Total Goals ⚽</div>
+          <p className="text-rose-200/60 italic text-sm">"He's basically the Messi of the turf."</p>
         </div>
       </div>
       
