@@ -37,6 +37,116 @@ export default function ActiveMatch() {
   const [isManagingQueue, setIsManagingQueue] = useState(false);
   const [managedPitch, setManagedPitch] = useState<any[]>([]);
   const [managedWaiting, setManagedWaiting] = useState<any[]>([]);
+  
+  // Bulk Import
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkText, setBulkText] = useState('');
+  const [bulkPreview, setBulkPreview] = useState<any[]>([]);
+
+  const handleParseBulk = () => {
+    const allPlayers = Object.entries(teamPlayers).flatMap(([teamId, players]) =>
+      players.map(p => ({ ...p, teamId }))
+    );
+
+    const lines = bulkText.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    const parsed = [];
+
+    for (const line of lines) {
+      let name = line;
+      let goals = 0;
+      let assists = 0;
+      
+      const gMatch = line.match(/(\d+)\s*g/i);
+      if (gMatch) {
+        goals = parseInt(gMatch[1], 10);
+        name = name.replace(gMatch[0], '');
+      }
+      
+      const aMatch = line.match(/(\d+)\s*a/i);
+      if (aMatch) {
+        assists = parseInt(aMatch[1], 10);
+        name = name.replace(aMatch[0], '');
+      }
+      
+      name = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      
+      if (name === 'rythym') name = 'rhythm';
+      if (name === 'amber') name = 'ambar';
+      if (name === 'bis') name = 'biswajit';
+      if (name === 'aishik') name = 'aishikrc';
+
+      const player = allPlayers.find(p => p.username.toLowerCase().includes(name) || (p.full_name && p.full_name.toLowerCase().includes(name)));
+      
+      parsed.push({
+        rawLine: line,
+        player_id: player?.id,
+        team_id: player?.teamId,
+        username: player?.username || 'Unknown',
+        goals,
+        assists,
+        found: !!player
+      });
+    }
+    setBulkPreview(parsed);
+  };
+
+  const submitBulkStats = async () => {
+    if (bulkPreview.some(p => !p.found)) {
+      alert('Please fix unrecognized players before importing.');
+      return;
+    }
+
+    const goalsList: any[] = [];
+    const assistsList: any[] = [];
+
+    for (const p of bulkPreview) {
+      for (let i = 0; i < p.goals; i++) {
+        goalsList.push({ player_id: p.player_id, team_id: p.team_id });
+      }
+      for (let i = 0; i < p.assists; i++) {
+        assistsList.push({ player_id: p.player_id });
+      }
+    }
+
+    const maxLen = Math.max(goalsList.length, assistsList.length);
+    const newEvents = [];
+
+    for (let i = 0; i < maxLen; i++) {
+      const g = goalsList[i] || { player_id: null, team_id: null };
+      const a = assistsList[i] || { player_id: null };
+      
+      let team_id = g.team_id;
+      if (!team_id && a.player_id) {
+        const p = bulkPreview.find(x => x.player_id === a.player_id);
+        team_id = p ? p.team_id : null;
+      }
+      if (!team_id) {
+         // fallback to first team just to satisfy db
+         team_id = Object.keys(teamPlayers)[0];
+      }
+
+      newEvents.push({
+        session_id: id,
+        event_type: 'GOAL',
+        player_id: g.player_id,
+        team_id: team_id,
+        assisted_by: a.player_id
+      });
+    }
+
+    if (newEvents.length > 0) {
+      const { error } = await supabase.from('events').insert(newEvents);
+      if (error) {
+        alert('Failed to import stats: ' + error.message);
+        return;
+      }
+      fetchMatchData(); // reload
+    }
+    
+    setShowBulkImport(false);
+    setBulkText('');
+    setBulkPreview([]);
+  };
 
   const syncOfflineEvents = async () => {
     if (!navigator.onLine) return;
@@ -706,6 +816,14 @@ export default function ActiveMatch() {
                 <Trash2 className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Delete</span>
               </button>
+              <button 
+                onClick={() => setShowBulkImport(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-colors"
+                title="Bulk Import Stats"
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Bulk</span>
+              </button>
             </>
           )}
           <button 
@@ -1358,6 +1476,75 @@ export default function ActiveMatch() {
                 className="flex-1 py-3 bg-primary-500 text-black font-black uppercase tracking-widest hover:bg-primary-400 transition-all rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Confirm Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {showBulkImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+            <h3 className="text-xl font-bold text-white mb-2">Bulk Import Stats</h3>
+            <p className="text-neutral-400 text-sm mb-4">Paste stats text (e.g. `Tubu 3G 2A`)</p>
+
+            <textarea 
+              value={bulkText}
+              onChange={e => setBulkText(e.target.value)}
+              className="w-full h-32 bg-black border border-white/5 rounded-xl p-3 text-white focus:border-primary-500 outline-none font-mono text-sm mb-4"
+              placeholder="Asmit 4G 3A&#10;Ani 2G 3A"
+            />
+            
+            <div className="flex gap-2 mb-4">
+              <button 
+                onClick={handleParseBulk}
+                className="flex-1 py-2 bg-neutral-800 text-white font-bold rounded-lg hover:bg-neutral-700 transition-colors"
+              >
+                Parse
+              </button>
+            </div>
+
+            {bulkPreview.length > 0 && (
+              <div className="flex-1 overflow-y-auto mb-4 border border-white/5 rounded-xl bg-black/50 p-2">
+                <table className="w-full text-left text-sm text-white">
+                  <thead>
+                    <tr className="border-b border-white/10 text-neutral-500">
+                      <th className="pb-2">Name</th>
+                      <th className="pb-2">Goals</th>
+                      <th className="pb-2">Assists</th>
+                      <th className="pb-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bulkPreview.map((p, i) => (
+                      <tr key={i} className="border-b border-white/5 last:border-0">
+                        <td className="py-2">{p.username}</td>
+                        <td className="py-2 text-primary-400 font-bold">{p.goals > 0 ? p.goals : '-'}</td>
+                        <td className="py-2 text-blue-400 font-bold">{p.assists > 0 ? p.assists : '-'}</td>
+                        <td className="py-2">
+                          {p.found ? <span className="text-green-400 text-xs px-2 py-1 bg-green-400/10 rounded">Matched</span> : <span className="text-red-400 text-xs px-2 py-1 bg-red-400/10 rounded">Not Found</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-auto">
+              <button
+                onClick={() => { setShowBulkImport(false); setBulkPreview([]); setBulkText(''); }}
+                className="flex-1 py-3 text-neutral-400 hover:text-white font-bold transition-colors bg-neutral-800 hover:bg-neutral-700 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={bulkPreview.length === 0}
+                onClick={submitBulkStats}
+                className="flex-1 py-3 bg-primary-500 text-black font-black uppercase tracking-widest hover:bg-primary-400 transition-all rounded-xl disabled:opacity-50"
+              >
+                Import
               </button>
             </div>
           </div>
