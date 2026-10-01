@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Activity, Undo2, SkipForward, Share2, Check, Copy, CloudOff, RefreshCw, Trash2, Edit } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ActiveMatch() {
   const { profile } = useAuth();
@@ -24,6 +25,16 @@ export default function ActiveMatch() {
   const [teamScores, setTeamScores] = useState<Record<string, number>>({});
   const [teamPlayers, setTeamPlayers] = useState<Record<string, any[]>>({});
   const [goalAnim, setGoalAnim] = useState<{teamId: string, id: number} | null>(null);
+  const [overlayEvent, setOverlayEvent] = useState<{type: 'GOAL' | 'ROTATE', title: string, subtitle: string, color: string, id: number} | null>(null);
+  const prevLatestEventIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (overlayEvent) {
+      const timer = setTimeout(() => setOverlayEvent(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [overlayEvent]);
+
   
   const [events, setEvents] = useState<any[]>([]);
   const [timeOnPitch, setTimeOnPitch] = useState<Record<string, number>>({});
@@ -274,7 +285,25 @@ export default function ActiveMatch() {
       allEvents = [...offlineInserts, ...allEvents];
       allEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       
+      
       setEvents(allEvents);
+
+      if (allEvents.length > 0) {
+        const latestEvent = allEvents[0];
+        if (prevLatestEventIdRef.current !== null && prevLatestEventIdRef.current !== latestEvent.id) {
+          if (latestEvent.event_type === 'GOAL') {
+             const tName = tData.find(t => t.id === latestEvent.team_id)?.name || 'Team';
+             const pName = latestEvent.player?.username || 'Player';
+             setOverlayEvent({ type: 'GOAL', title: 'GOAL!', subtitle: `${pName} (${tName})`, color: 'text-primary-400', id: Date.now() });
+          } else if (latestEvent.event_type === 'NO_GOAL_TIME_UP') {
+             setOverlayEvent({ type: 'ROTATE', title: 'TIME UP', subtitle: 'Teams Rotating', color: 'text-orange-400', id: Date.now() });
+          } else if (latestEvent.event_type === 'UNDO') {
+             setOverlayEvent({ type: 'ROTATE', title: 'SWAPPED', subtitle: 'Manual Swap', color: 'text-purple-400', id: Date.now() });
+          }
+        }
+        prevLatestEventIdRef.current = latestEvent.id;
+      }
+
 
       // --- RUN STATE ENGINE ---
       let currentPitch = [tData[0], tData[1]].filter(Boolean);
@@ -777,6 +806,49 @@ export default function ActiveMatch() {
 
   return (
     <div className="max-w-5xl mx-auto pb-24 md:pb-8">
+
+      {/* Event Overlay Animation */}
+      <AnimatePresence>
+        {overlayEvent && (
+          <motion.div
+            key={overlayEvent.id}
+            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 1.1, y: -50 }}
+            transition={{ type: "spring", damping: 15 }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center pointer-events-none"
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div 
+              className="relative z-10 flex flex-col items-center bg-neutral-900/90 border border-white/10 p-12 rounded-3xl shadow-2xl text-center overflow-hidden"
+              initial={{ rotateX: 90 }}
+              animate={{ rotateX: 0 }}
+              transition={{ delay: 0.1, type: "spring" }}
+            >
+              <div className={`absolute inset-0 opacity-20 blur-[50px] ${overlayEvent.color.replace('text-', 'bg-')}`} />
+              
+              <motion.h1 
+                className={`text-6xl md:text-8xl font-black italic tracking-tighter uppercase ${overlayEvent.color} drop-shadow-lg mb-4`}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, type: "spring", bounce: 0.5 }}
+              >
+                {overlayEvent.title}
+              </motion.h1>
+              
+              <motion.p 
+                className="text-2xl md:text-4xl font-bold text-white tracking-widest uppercase drop-shadow-md"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                {overlayEvent.subtitle}
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Offline Indicators */}
       {isOffline && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 mb-6 animate-pulse">
