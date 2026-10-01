@@ -62,13 +62,23 @@ async function run() {
         }
       } else if (ev.event_type === 'NO_GOAL_TIME_UP') {
         if (session.mode === 'WINNER_STAYS' && currentWaiting.length > 0) {
-          const winner = currentPitch[0];
-          const loser = currentPitch[1];
-          currentPitch = [winner, currentWaiting[0]];
-          currentWaiting = [...currentWaiting.slice(1), loser];
-          timeOnPitchLocal[winner.id] += 1;
-          if (currentPitch[1]) {
-            timeOnPitchLocal[currentPitch[1].id] = (timeOnPitchLocal[currentPitch[1].id] || 0) + 1;
+          if (currentWaiting.length >= 2) {
+            const team1 = currentPitch[0];
+            const team2 = currentPitch[1];
+            currentPitch = [currentWaiting[0], currentWaiting[1]];
+            currentWaiting = [...currentWaiting.slice(2), team1, team2];
+            
+            if (currentPitch[0]) timeOnPitchLocal[currentPitch[0].id] = (timeOnPitchLocal[currentPitch[0].id] || 0) + 1;
+            if (currentPitch[1]) timeOnPitchLocal[currentPitch[1].id] = (timeOnPitchLocal[currentPitch[1].id] || 0) + 1;
+          } else {
+            const winner = currentPitch[0];
+            const loser = currentPitch[1];
+            currentPitch = [winner, currentWaiting[0]];
+            currentWaiting = [...currentWaiting.slice(1), loser];
+            timeOnPitchLocal[winner.id] += 1;
+            if (currentPitch[1]) {
+              timeOnPitchLocal[currentPitch[1].id] = (timeOnPitchLocal[currentPitch[1].id] || 0) + 1;
+            }
           }
         }
       } else if (ev.event_type === 'UNDO') {
