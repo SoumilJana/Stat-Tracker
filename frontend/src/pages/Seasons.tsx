@@ -243,7 +243,7 @@ export default function Seasons() {
 
   const liveTopScorers   = useMemo(() => [...liveStats].sort((a, b) => b.goals   - a.goals   || b.assists - a.assists).slice(0, 3), [liveStats]);
   const liveTopAssisters = useMemo(() => [...liveStats].sort((a, b) => b.assists - a.assists || b.goals   - a.goals  ).slice(0, 3), [liveStats]);
-  const liveDefender     = useMemo(() => [...liveStats].filter(s => s.best_defender_awards > 0).sort((a, b) => b.best_defender_awards - a.best_defender_awards)[0] || null, [liveStats]);
+  const liveDefender     = useMemo(() => [...liveStats].filter(s => s.best_defender_awards > 0).sort((a, b) => b.best_defender_awards - a.best_defender_awards || b.goals - a.goals || b.assists - a.assists)[0] || null, [liveStats]);
   const liveGK           = useMemo(() => [...liveStats].filter(s => s.best_gk_awards        > 0).sort((a, b) => b.best_gk_awards        - a.best_gk_awards       )[0] || null, [liveStats]);
   const liveMOTM         = useMemo(() => [...liveStats].filter(s => s.motm_awards           > 0).sort((a, b) => b.motm_awards           - a.motm_awards || b.goals - a.goals)[0] || null, [liveStats]);
 
