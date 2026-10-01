@@ -315,16 +315,31 @@ export default function ActiveMatch() {
           }
         } else if (ev.event_type === 'NO_GOAL_TIME_UP') {
           if (sData?.mode === 'WINNER_STAYS' && currentWaiting.length > 0) {
-            // WINNER STAYS: In a draw, the incumbent (winner of previous match, which is always currentPitch[0]) stays.
-            // The challenger (currentPitch[1]) rotates out.
-            const winner = currentPitch[0];
-            const loser = currentPitch[1];
-            
-            currentPitch = [winner, currentWaiting[0]];
-            currentWaiting = [...currentWaiting.slice(1), loser];
-            
-            timeOnPitchLocal[winner.id] += 1;
-            timeOnPitchLocal[currentPitch[1].id] = (timeOnPitchLocal[currentPitch[1].id] || 0) + 1;
+            if (currentWaiting.length >= 2) {
+              const team1 = currentPitch[0];
+              const team2 = currentPitch[1];
+              const nextTeam1 = currentWaiting[0];
+              const nextTeam2 = currentWaiting[1];
+              
+              currentPitch = [nextTeam1, nextTeam2];
+              currentWaiting = [...currentWaiting.slice(2), team1, team2];
+              
+              if (currentPitch[0]) timeOnPitchLocal[currentPitch[0].id] = (timeOnPitchLocal[currentPitch[0].id] || 0) + 1;
+              if (currentPitch[1]) timeOnPitchLocal[currentPitch[1].id] = (timeOnPitchLocal[currentPitch[1].id] || 0) + 1;
+            } else {
+              // WINNER STAYS: In a draw, the incumbent (winner of previous match, which is always currentPitch[0]) stays.
+              // The challenger (currentPitch[1]) rotates out.
+              const winner = currentPitch[0];
+              const loser = currentPitch[1];
+              
+              currentPitch = [winner, currentWaiting[0]];
+              currentWaiting = [...currentWaiting.slice(1), loser];
+              
+              timeOnPitchLocal[winner.id] += 1;
+              if (currentPitch[1]) {
+                timeOnPitchLocal[currentPitch[1].id] = (timeOnPitchLocal[currentPitch[1].id] || 0) + 1;
+              }
+            }
           }
         } else if (ev.event_type === 'UNDO') {
           // We use 'UNDO' as a MANUAL_SWAP event to avoid schema changes
