@@ -55,6 +55,33 @@ export default function Rules() {
             </ul>
           </div>
         </section>
+        <section>
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-purple-400 text-sm">4</span>
+            Goalkeeper (GK) Commitment
+          </h3>
+          <div className="text-neutral-300 space-y-2 text-sm md:text-base leading-relaxed bg-neutral-950 p-4 rounded-xl border border-neutral-800">
+            <p>If a player's primary fixed position is Goalkeeper, they must play as GK for the entire session.</p>
+            <ul className="list-disc pl-5 space-y-1 mt-2">
+              <li>If the GK gets injured and has to be replaced, the replacement GK <strong>cannot be changed again</strong> for the rest of the session.</li>
+              <li><em>Note: This rule does not apply to regular outfield players who are just filling in as a GK for the day.</em></li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-pink-400 text-sm">5</span>
+            Late Arrival Penalty
+          </h3>
+          <div className="text-neutral-300 space-y-2 text-sm md:text-base leading-relaxed bg-neutral-950 p-4 rounded-xl border border-neutral-800">
+            <p>Teams (A, B, C, etc.) are decided in advance. The first match of the day will always be <strong>Team A vs Team B</strong>.</p>
+            <ul className="list-disc pl-5 space-y-1 mt-2">
+              <li>If you arrive late, you will be penalized by missing <strong>two full rounds</strong> of games.</li>
+              <li>Meaning, if you miss your team's first scheduled match, you are also forced to sit out your team's next scheduled match before you are allowed to play.</li>
+            </ul>
+          </div>
+        </section>
       </div>
     </div>
   );
