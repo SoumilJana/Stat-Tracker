@@ -14,6 +14,7 @@ const ActiveMatch = React.lazy(() => import('./pages/ActiveMatch'));
 const Leaderboard = React.lazy(() => import('./pages/Leaderboard'));
 const Drafts = React.lazy(() => import('./pages/Drafts'));
 const Seasons = React.lazy(() => import('./pages/Seasons'));
+const Rules = React.lazy(() => import('./pages/Rules'));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -49,6 +50,7 @@ function AppRoutes() {
           <Route path="drafts" element={<ProtectedRoute><Drafts /></ProtectedRoute>} />
           <Route path="leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="seasons" element={<ProtectedRoute><Seasons /></ProtectedRoute>} />
+          <Route path="rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />
         </Route>
       </Routes>
     </Suspense>

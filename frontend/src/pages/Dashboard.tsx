@@ -63,7 +63,16 @@ export default function Dashboard() {
           <h2 className="text-3xl font-black leading-7 text-white sm:text-4xl sm:truncate mb-2">Welcome <span className="text-emerald-400">back!</span></h2>
           <p className="mt-1 text-sm text-neutral-400">Here's the latest from the pitch.</p>
         </div>
-        <NotificationsSetup />
+        <div className="flex items-center gap-3">
+          <Link to="/rules" className="bg-[#051410] hover:bg-emerald-900/20 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 transition-colors shadow-sm hidden sm:flex items-center gap-2" title="Rules & Guidelines">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+            <span className="text-sm font-bold">Rules</span>
+          </Link>
+          <Link to="/rules" className="bg-[#051410] hover:bg-emerald-900/20 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 transition-colors shadow-sm sm:hidden" title="Rules & Guidelines">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+          </Link>
+          <NotificationsSetup />
+        </div>
       </div>
 
       {/* Stats Cards */}
