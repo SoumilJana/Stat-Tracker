@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface SpinWheelProps {
@@ -46,7 +46,7 @@ export function SpinWheel({ candidates, winnerId, onFinished }: SpinWheelProps) 
 
   const background = `conic-gradient(from 90deg, ${gradientStops})`;
 
-  const handleSpin = () => {
+  const handleSpin = useCallback(() => {
     if (hasSpun) return;
     setHasSpun(true);
     
@@ -57,7 +57,7 @@ export function SpinWheel({ candidates, winnerId, onFinished }: SpinWheelProps) 
         onFinished();
       }, 1500); // wait 1.5s after finishing before dismissing
     }, 4000);
-  };
+  }, [hasSpun, onFinished]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -68,7 +68,7 @@ export function SpinWheel({ candidates, winnerId, onFinished }: SpinWheelProps) 
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasSpun]);
+  }, [hasSpun, handleSpin]);
 
   return (
     <div className="fixed inset-0 w-screen h-screen z-[100] flex flex-col items-center justify-center bg-neutral-950/60 backdrop-blur-md p-4 overflow-hidden">

@@ -49,7 +49,7 @@ export default function Drafts() {
         setRevealedPickIndex(draft.current_pick_index); // Join mid-draft
       }
     }
-  }, [draft?.status, draft?.current_pick_index, revealedPickIndex]);
+  }, [draft, revealedPickIndex]);
 
   useEffect(() => {
     fetchActiveDraft();
@@ -61,7 +61,7 @@ export default function Drafts() {
     if (selectedCaptainIds.length > maxCaptains) {
       setSelectedCaptainIds(prev => prev.slice(0, maxCaptains));
     }
-  }, [setupMode, setupNumTeams]);
+  }, [setupMode, setupNumTeams, selectedCaptainIds.length]);
 
   useEffect(() => {
     if (!draft?.id) return;

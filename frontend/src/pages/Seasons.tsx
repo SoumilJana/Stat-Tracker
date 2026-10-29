@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,7 +53,7 @@ function Avatar({ profile, size = 'sm', className = '' }: { profile: Profile | n
               size === 'md' ? 'w-10 h-10 text-sm' : 
               'w-7 h-7 text-xs';
   if (profile?.photo_url)
-    return <img src={profile.photo_url} alt={profile.username} className={`${cls} rounded-full object-cover shrink-0 ${className}`} />;
+    return <img src={profile.photo_url} alt={profile.username} loading="lazy" decoding="async" className={`${cls} rounded-full object-cover shrink-0 ${className}`} />;
   return (
     <div className={`${cls} rounded-full bg-neutral-800 flex items-center justify-center shrink-0 ${className}`}>
       {profile ? (
@@ -144,9 +145,12 @@ function AwardCard({ title, subtitle, icon, color, profile, stat, unit }: {
       )}
       
       {/* View Leaderboard Button */}
-      <button className={`mt-6 w-full py-3 rounded-full border border-white/10 text-xs font-bold text-neutral-300 hover:bg-white/5 flex items-center justify-center gap-2 transition-colors`}>
+      <Link 
+        to="/leaderboard" 
+        className="mt-6 w-full py-2.5 rounded-full border border-white/10 hover:border-white/25 active:scale-95 text-xs font-bold text-neutral-300 hover:text-white hover:bg-white/5 flex items-center justify-center gap-1.5 transition-all select-none"
+      >
         View Leaderboard <ArrowRight className="w-3.5 h-3.5" />
-      </button>
+      </Link>
     </div>
   );
 }
@@ -163,12 +167,12 @@ function PreviewBlock({ label, children }: { label: string; children: React.Reac
 function OverrideSelectRow({ rank, statLabel, value, onChange, options }: { rank: number; statLabel: string; value: string | null; onChange: (v: string | null) => void; options: Profile[] }) {
   return (
     <div className="flex items-center justify-between gap-2 text-sm">
-      <div className="flex items-center gap-2 flex-1">
-        <span className="text-neutral-500 w-4">{MEDALS[rank] || ''}</span>
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <span className="text-neutral-500 w-4 shrink-0">{MEDALS[rank] || ''}</span>
         <select 
           value={value || ''} 
           onChange={e => onChange(e.target.value || null)}
-          className="bg-neutral-800 border border-white/10 rounded px-2 py-1 text-white text-sm outline-none focus:border-white/20 w-48"
+          className="bg-neutral-800 border border-white/10 rounded-lg px-2.5 py-1.5 text-white text-sm outline-none focus:border-white/30 flex-1 min-w-0 sm:w-48 transition-colors cursor-pointer"
         >
           <option value="">None</option>
           {options.map(o => (
@@ -176,7 +180,7 @@ function OverrideSelectRow({ rank, statLabel, value, onChange, options }: { rank
           ))}
         </select>
       </div>
-      <span className="text-orange-400 font-bold tabular-nums text-xs">{statLabel}</span>
+      <span className="text-orange-400 font-bold tabular-nums text-xs shrink-0 whitespace-nowrap pl-1">{statLabel}</span>
     </div>
   );
 }
@@ -317,8 +321,16 @@ export default function Seasons() {
 
   const renderPanels = () => {
     if (loading) return (
-      <div className="flex justify-center items-center h-48">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-emerald-500" />
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${selectedNum >= 2 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-4`}>
+        {[1, 2, 3, 4, ...(selectedNum >= 2 ? [5] : [])].map(i => (
+          <div key={i} className="h-80 bg-neutral-900/60 border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-between skeleton-shimmer">
+            <div className="w-16 h-16 bg-neutral-800/60 rounded-full" />
+            <div className="h-5 w-28 bg-neutral-800/60 rounded" />
+            <div className="w-20 h-20 bg-neutral-800/40 rounded-full" />
+            <div className="h-8 w-16 bg-neutral-800/50 rounded" />
+            <div className="h-9 w-full bg-neutral-800/40 rounded-full" />
+          </div>
+        ))}
       </div>
     );
 
@@ -583,17 +595,26 @@ export default function Seasons() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => { setShowSealModal(false); setSealNote(''); }}
-                    className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 text-sm font-bold hover:bg-white/5 transition-colors"
+                    className="flex-1 py-3 rounded-xl border border-white/10 text-neutral-400 text-sm font-bold hover:bg-white/5 active:scale-95 transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSeal}
                     disabled={sealing}
-                    className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-black text-sm font-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 active:scale-95 text-black text-sm font-black transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    <Lock className="w-4 h-4" />
-                    {sealing ? 'Sealing...' : 'Confirm & Seal'}
+                    {sealing ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                        Sealing...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        Confirm & Seal
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

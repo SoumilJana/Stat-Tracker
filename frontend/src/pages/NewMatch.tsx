@@ -223,7 +223,7 @@ export default function NewMatch() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-24">
+    <div className="space-y-6 max-w-5xl mx-auto pb-36 sm:pb-24">
       <div>
         <h2 className="text-2xl font-bold text-white">Start New Match</h2>
         <p className="mt-1 text-sm text-neutral-400">Set up teams and details to begin.</p>
@@ -328,13 +328,18 @@ export default function NewMatch() {
       </div>
       
       {/* Fixed bottom action bar for mobile */}
-      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 p-4 bg-black/80 backdrop-blur-xl border-t border-white/5 md:relative md:bg-transparent md:border-0 md:p-0 md:flex md:justify-end z-40">
+      <div className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 px-4 md:relative md:bg-transparent md:border-0 md:p-0 md:flex md:justify-end z-40 pointer-events-none">
         <button 
           onClick={startMatch}
           disabled={submitting}
-          className="w-full md:w-auto bg-primary-500 text-black px-8 py-4 rounded-full font-black text-sm tracking-widest uppercase hover:bg-primary-400 transition-all hover:scale-105 shadow-[0_0_30px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:shadow-none disabled:hover:scale-100 disabled:cursor-not-allowed"
+          className="pointer-events-auto w-full md:w-auto bg-primary-500 text-black px-7 py-3 sm:py-3.5 rounded-full font-black text-xs sm:text-sm tracking-widest uppercase hover:bg-primary-400 active:scale-95 transition-all shadow-[0_8px_25px_rgba(16,185,129,0.35)] disabled:opacity-50 disabled:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-2 select-none"
         >
-          {submitting ? 'Scheduling...' : 'Schedule Match'}
+          {submitting ? (
+            <>
+              <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              Scheduling...
+            </>
+          ) : 'Schedule Match'}
         </button>
       </div>
     </div>

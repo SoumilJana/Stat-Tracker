@@ -4,10 +4,41 @@ import { Plus, Calendar as CalendarIcon, MapPin, PlayCircle, Trash2 } from 'luci
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
+function MatchesSkeleton() {
+  return (
+    <div className="space-y-8 pb-24">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-8 w-36 bg-neutral-800/70 rounded-xl skeleton-shimmer" />
+          <div className="h-4 w-48 bg-neutral-800/40 rounded-lg skeleton-shimmer" />
+        </div>
+        <div className="h-10 w-28 bg-neutral-800/50 rounded-full skeleton-shimmer" />
+      </div>
+
+      <div className="space-y-4">
+        <div className="h-5 w-28 bg-neutral-800/60 rounded skeleton-shimmer" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-48 bg-neutral-900/60 border border-white/5 rounded-2xl p-6 flex flex-col justify-between skeleton-shimmer">
+              <div className="flex justify-between items-center">
+                <div className="h-5 w-20 bg-neutral-800/60 rounded-full" />
+                <div className="h-5 w-24 bg-neutral-800/40 rounded-full" />
+              </div>
+              <div className="h-10 w-32 mx-auto bg-neutral-800/50 rounded-xl" />
+              <div className="h-4 w-full bg-neutral-800/30 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Matches() {
   const { profile } = useAuth();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [startingMatchId, setStartingMatchId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const fetchSessions = async () => {
@@ -44,19 +75,24 @@ export default function Matches() {
   const startMatch = async (e: any, id: string) => {
     e.preventDefault();
     e.stopPropagation();
+    if (startingMatchId === id) return;
+    
+    setStartingMatchId(id);
     try {
       const { error } = await supabase.from('sessions').update({ status: 'IN_PROGRESS' }).eq('id', id);
       if (error) {
         alert("Failed to start match: " + error.message);
+        setStartingMatchId(null);
         return;
       }
       navigate(`/matches/${id}`);
     } catch (err: any) {
       alert("Error starting match: " + err.message);
+      setStartingMatchId(null);
     }
   };
 
-  if (loading) return <div className="text-primary-500">Loading matches...</div>;
+  if (loading) return <MatchesSkeleton />;
 
   const upcomingSessions = sessions.filter(s => s.status !== 'COMPLETED');
   const completedSessions = sessions.filter(s => s.status === 'COMPLETED');
@@ -84,18 +120,24 @@ export default function Matches() {
       <div 
         key={session.id} 
         onClick={() => navigate(`/matches/${session.id}`)} 
-        className="bg-black border border-white/5 rounded-2xl p-6 hover:border-primary-500/30 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] shadow-xl transition-all duration-300 block group relative cursor-pointer"
+        className="bg-neutral-900/90 border border-white/5 rounded-2xl p-5 sm:p-6 hover:border-primary-500/35 hover:shadow-[0_4px_24px_rgba(16,185,129,0.12)] shadow-lg transition-all duration-200 block group relative cursor-pointer active:scale-[0.99]"
       >
         <div className="flex justify-between items-start mb-6">
-          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-            session.status === 'IN_PROGRESS' ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20' : 
-            session.status === 'SCHEDULED' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-            'bg-white/5 text-neutral-400 border border-white/10'
+          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center ${
+            session.status === 'IN_PROGRESS' ? 'bg-primary-500/15 text-primary-400 border border-primary-500/30' : 
+            session.status === 'SCHEDULED' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' :
+            'bg-neutral-800 text-neutral-300 border border-neutral-700/60'
           }`}>
+            {session.status === 'IN_PROGRESS' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse mr-1.5 inline-block" />
+            )}
+            {session.status === 'SCHEDULED' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5 inline-block" />
+            )}
             {session.status.replace('_', ' ')}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 flex items-center gap-1.5 bg-white/5 border border-white/5 px-3 py-1 rounded-full">
-            <CalendarIcon className="w-3 h-3" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5 bg-neutral-800/80 border border-neutral-700/50 px-2.5 py-1 rounded-full">
+            <CalendarIcon className="w-3 h-3 text-neutral-400" />
             {new Date(session.date).toLocaleDateString()}
           </span>
         </div>
@@ -103,8 +145,8 @@ export default function Matches() {
         <div className="flex justify-center items-center text-lg font-bold text-white mb-2 h-16">
           {session.status === 'COMPLETED' ? (
             <div className="flex flex-col items-center">
-              <div className="text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] mb-2">{teamNames.join(' vs ')}</div>
-              <div className="text-4xl text-primary-500 tracking-widest font-black drop-shadow-md">{scores.join(' - ')}</div>
+              <div className="text-neutral-400 text-[10px] uppercase font-bold tracking-[0.2em] mb-1.5">{teamNames.join(' vs ')}</div>
+              <div className="text-4xl text-primary-400 tracking-widest font-black drop-shadow-md">{scores.join(' - ')}</div>
             </div>
           ) : (
             <div className="flex items-center w-full justify-between">
@@ -117,7 +159,7 @@ export default function Matches() {
                       {index > 0 && (
                         <span className="text-neutral-700 px-2 sm:px-4 text-xs sm:text-sm font-black italic">VS</span>
                       )}
-                      <span className={`truncate flex-1 text-center text-xl ${colorClass}`}>
+                      <span className={`truncate flex-1 text-center text-xl font-black ${colorClass}`}>
                         {team.name.replace('Team ', '')}
                       </span>
                     </React.Fragment>
@@ -125,16 +167,16 @@ export default function Matches() {
                 })
               ) : (
                 <>
-                  <span className="truncate flex-1 text-center text-primary-400 text-xl">A</span>
+                  <span className="truncate flex-1 text-center text-primary-400 text-xl font-black">A</span>
                   <span className="text-neutral-700 px-4 text-sm font-black italic">VS</span>
-                  <span className="truncate flex-1 text-center text-blue-400 text-xl">B</span>
+                  <span className="truncate flex-1 text-center text-blue-400 text-xl font-black">B</span>
                 </>
               )}
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between mt-6 pt-5 border-t border-white/5 text-sm text-neutral-400">
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5 text-sm text-neutral-400">
           <span className="flex items-center gap-1.5 truncate max-w-[50%] text-[11px] font-bold uppercase tracking-wider">
             {session.location ? (
               <><MapPin className="w-3.5 h-3.5 flex-shrink-0 text-neutral-500" /> <span className="truncate">{session.location}</span></>
@@ -142,29 +184,38 @@ export default function Matches() {
               <span className="text-neutral-600 italic">No location</span>
             )}
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 shrink-0">
             {profile?.role === 'admin' && (
               <>
-                <button onClick={(e) => deleteMatch(e, session.id)} className="text-neutral-600 hover:text-red-500 transition-colors p-1" title="Delete Match">
+                <button 
+                  onClick={(e) => deleteMatch(e, session.id)} 
+                  className="text-neutral-500 hover:text-red-400 active:scale-90 transition-all p-1.5 rounded-lg hover:bg-neutral-800" 
+                  title="Delete Match"
+                  aria-label="Delete Match"
+                >
                   <Trash2 className="w-4 h-4" />
                 </button>
 
                 {session.status === 'SCHEDULED' && (
-                  <button onClick={(e) => startMatch(e, session.id)} className="text-primary-400 flex items-center gap-1.5 font-bold hover:text-primary-300 text-xs tracking-wider uppercase">
+                  <button 
+                    onClick={(e) => startMatch(e, session.id)} 
+                    disabled={startingMatchId === session.id}
+                    className="text-primary-400 flex items-center gap-1.5 font-bold hover:text-primary-300 active:scale-95 text-xs tracking-wider uppercase px-2 py-1 rounded-lg hover:bg-primary-950/40 border border-primary-500/20 transition-all disabled:opacity-50"
+                  >
                     <PlayCircle className="w-4 h-4" />
-                    Start
+                    {startingMatchId === session.id ? 'Starting...' : 'Start'}
                   </button>
                 )}
               </>
             )}
             {session.status === 'IN_PROGRESS' && (
-              <span className="text-primary-400 flex items-center gap-1.5 font-bold group-hover:translate-x-1 transition-transform text-xs tracking-wider uppercase">
+              <span className="text-primary-400 flex items-center gap-1.5 font-bold group-hover:translate-x-0.5 transition-transform text-xs tracking-wider uppercase">
                 <PlayCircle className="w-4 h-4" />
                 Resume
               </span>
             )}
             {session.status === 'COMPLETED' && (
-              <span className="text-neutral-500 flex items-center gap-1.5 font-bold group-hover:text-white transition-colors text-xs tracking-wider uppercase">
+              <span className="text-neutral-400 flex items-center gap-1.5 font-bold group-hover:text-white transition-colors text-xs tracking-wider uppercase">
                 Details
               </span>
             )}

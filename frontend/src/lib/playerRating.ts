@@ -44,6 +44,7 @@ export interface PlayerStats {
   role?: string;
   position?: 'FWD' | 'MID' | 'DEF' | 'GK';
   photo_url?: string | null;
+  ranking_image_url?: string | null;
   total_goals: number;
   total_assists: number;
   games_played: number; // sessions played

@@ -171,7 +171,7 @@ export default function ActiveMatch() {
       const action = queue[i];
       let error = null;
       if (action.type === 'INSERT') {
-        const { tempId, ...eventData } = action.payload;
+        const { tempId: _tempId, ...eventData } = action.payload;
         const { error: err } = await supabase.from('events').insert(eventData);
         error = err;
       } else if (action.type === 'DELETE') {

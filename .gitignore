@@ -1,12 +1,42 @@
-# Backend
-backend/__pycache__/
-backend/.venv/
-backend/venv/
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.local
 backend/.env
+frontend/.env
+frontend/.env.local
 
-# Frontend
+# Vercel
+.vercel/
+
+# Dependencies & Build Outputs
+node_modules/
+dist/
+dist-ssr/
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
-frontend/.env
-frontend/.env.local
+
+# Backend Python
+backend/__pycache__/
+backend/.venv/
+backend/venv/
+
+# Supabase
+supabase/.temp/
+
+# Local Scratch & One-off Scripts
+scratch_query.sql
+fix_rpc.sql
+add_manager_role.sql
+create-rules.js
+script.js
+frontend/signup_ankita.js
+frontend/generate_import_sql.cjs
+frontend/sql_output.txt
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+*.log

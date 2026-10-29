@@ -10,6 +10,43 @@ import { buildSeasons, getCurrentSeason } from '../lib/seasons';
 
 import { useQuery } from '@tanstack/react-query';
 
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8 pb-32">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-9 w-48 bg-neutral-800/70 rounded-2xl skeleton-shimmer" />
+          <div className="h-4 w-36 bg-neutral-800/40 rounded-lg skeleton-shimmer" />
+        </div>
+        <div className="h-10 w-24 bg-neutral-800/50 rounded-xl skeleton-shimmer" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-[#051410]/60 border border-emerald-500/10 rounded-3xl p-6 sm:p-8 h-52 flex flex-col justify-between skeleton-shimmer">
+          <div className="h-3 w-28 bg-emerald-900/40 rounded" />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="h-16 bg-neutral-800/30 rounded-2xl" />
+            <div className="h-16 bg-neutral-800/30 rounded-2xl" />
+            <div className="h-16 bg-neutral-800/30 rounded-2xl" />
+          </div>
+        </div>
+        <div className="bg-[#051410]/60 border border-emerald-500/10 rounded-3xl p-6 sm:p-8 h-52 flex flex-col justify-between skeleton-shimmer">
+          <div className="h-3 w-28 bg-emerald-900/40 rounded" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="h-16 bg-neutral-800/30 rounded-2xl" />
+            <div className="h-16 bg-neutral-800/30 rounded-2xl" />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="h-44 bg-neutral-900/60 border border-white/5 rounded-3xl p-6 skeleton-shimmer" />
+        <div className="h-44 bg-neutral-900/60 border border-white/5 rounded-3xl p-6 skeleton-shimmer" />
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { profile } = useAuth();
 
@@ -46,7 +83,7 @@ export default function Dashboard() {
     }
   });
 
-  if (isLoading || !data) return <div className="text-emerald-500">Loading dashboard...</div>;
+  if (isLoading || !data) return <DashboardSkeleton />;
 
   const isAnkita = profile?.username?.toLowerCase() === 'ankita' || profile?.full_name?.toLowerCase() === 'ankita' || profile?.name?.toLowerCase() === 'ankita';
 
@@ -57,18 +94,18 @@ export default function Dashboard() {
   const { totalGoals, totalMatches, seasonGoals, seasonMatches, completedMatch, upcomingMatch } = data;
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-6 sm:space-y-8 pb-32 sm:pb-24">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-black leading-7 text-white sm:text-4xl sm:truncate mb-2">Welcome <span className="text-emerald-400">back!</span></h2>
-          <p className="mt-1 text-sm text-neutral-400">Here's the latest from the pitch.</p>
+          <h2 className="text-2xl sm:text-4xl font-black leading-tight text-white tracking-tight mb-1">Welcome <span className="text-emerald-400">back!</span></h2>
+          <p className="text-xs sm:text-sm text-neutral-400">Here's the latest from the pitch.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link to="/rules" className="bg-[#051410] hover:bg-emerald-900/20 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 transition-colors shadow-sm hidden sm:flex items-center gap-2" title="Rules & Guidelines">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link to="/rules" className="bg-[#051410] hover:bg-emerald-900/20 active:scale-95 text-emerald-400 p-2 sm:px-3 sm:py-2 rounded-xl border border-emerald-500/20 transition-all shadow-sm hidden sm:flex items-center gap-2" title="Rules & Guidelines">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
             <span className="text-sm font-bold">Rules</span>
           </Link>
-          <Link to="/rules" className="bg-[#051410] hover:bg-emerald-900/20 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 transition-colors shadow-sm sm:hidden" title="Rules & Guidelines">
+          <Link to="/rules" className="bg-[#051410] hover:bg-emerald-900/20 active:scale-95 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 transition-all shadow-sm sm:hidden" title="Rules & Guidelines">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
           </Link>
           <NotificationsSetup />
@@ -76,29 +113,29 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sleek Global Stats Strip - Updated to match the design */}
-        <div className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-6 sm:p-8 relative overflow-hidden group">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Sleek Global Stats Strip */}
+        <div className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-5 sm:p-8 relative overflow-hidden group hover:border-emerald-500/35 transition-all duration-300">
           {/* Decorative background gradient */}
           <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
           
-          {/* Subtle geometric shape instead of heavy image */}
+          {/* Subtle geometric shape */}
           <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
 
           <div className="relative z-10">
-            <div className="flex justify-between items-start mb-8">
+            <div className="flex justify-between items-start mb-6 sm:mb-8">
               <div>
                 <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-1">{currentSeason.label.toUpperCase()}</h3>
               </div>
-              <Link to="/seasons" className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors">
+              <Link to="/seasons" className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors active:scale-95">
                 View All <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
             <div className="flex flex-row items-center justify-between sm:justify-around text-center">
               <div className="flex flex-col items-center flex-1">
-                <div className="mb-3 text-emerald-400">
-                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <div className="mb-2 sm:mb-3 text-emerald-400">
+                  <svg className="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 16v-2.5C4 12 5.5 11 7 11h2l2-3h3l2.5 3H19a2 2 0 0 1 2 2v1c0 1.5-1 2-2 2H6c-1.5 0-2-.5-2-2z" />
                     <path d="M6 16v2" />
                     <path d="M10 16v2" />
@@ -106,15 +143,15 @@ export default function Dashboard() {
                     <path d="M18 16v2" />
                   </svg>
                 </div>
-                <div className="text-4xl font-black text-white mb-1">{seasonMatches}</div>
-                <div className="text-xs text-neutral-400">Matches</div>
+                <div className="text-3xl sm:text-4xl font-black text-white mb-1 tabular-nums">{seasonMatches}</div>
+                <div className="text-[11px] sm:text-xs text-neutral-400">Matches</div>
               </div>
               
-              <div className="w-px h-16 bg-white/[0.05]" />
+              <div className="w-px h-14 sm:h-16 bg-white/[0.06]" />
               
               <div className="flex flex-col items-center flex-1">
-                <div className="mb-3 text-emerald-400">
-                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <div className="mb-2 sm:mb-3 text-emerald-400">
+                  <svg className="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <polygon points="12 6 15.5 8.5 14 12.5 10 12.5 8.5 8.5 12 6" />
                     <path d="M12 6V2" />
@@ -124,32 +161,32 @@ export default function Dashboard() {
                     <path d="M8.5 8.5l-4-2" />
                   </svg>
                 </div>
-                <div className="text-4xl font-black text-white mb-1">{seasonGoals}</div>
-                <div className="text-xs text-neutral-400">Goals</div>
+                <div className="text-3xl sm:text-4xl font-black text-white mb-1 tabular-nums">{seasonGoals}</div>
+                <div className="text-[11px] sm:text-xs text-neutral-400">Goals</div>
               </div>
               
-              <div className="w-px h-16 bg-white/[0.05]" />
+              <div className="w-px h-14 sm:h-16 bg-white/[0.06]" />
 
               <div className="flex flex-col items-center flex-1">
-                <div className="mb-3 text-emerald-400">
-                  <Users className="w-8 h-8" strokeWidth={1.5} />
+                <div className="mb-2 sm:mb-3 text-emerald-400">
+                  <Users className="w-7 h-7 sm:w-8 sm:h-8" strokeWidth={1.5} />
                 </div>
-                <div className="text-4xl font-black text-white mb-1">
+                <div className="text-3xl sm:text-4xl font-black text-white mb-1 tabular-nums">
                   {seasonMatches > 0 ? (seasonGoals / seasonMatches).toFixed(1) : '0.0'}
                 </div>
-                <div className="text-xs text-neutral-400 text-center leading-tight">Avg Goals<br/>per Match</div>
+                <div className="text-[11px] sm:text-xs text-neutral-400 text-center leading-tight">Avg Goals<br/>per Match</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Overall Stats */}
-        <div className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-6 sm:p-8 relative overflow-hidden group">
+        <div className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-5 sm:p-8 relative overflow-hidden group hover:border-emerald-500/35 transition-all duration-300">
           <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
           <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
 
           <div className="relative z-10 h-full flex flex-col justify-between">
-            <div className="flex justify-between items-start mb-8">
+            <div className="flex justify-between items-start mb-6 sm:mb-8">
               <div>
                 <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-1">OVERALL STATS</h3>
               </div>
@@ -157,8 +194,8 @@ export default function Dashboard() {
 
             <div className="flex flex-row items-center justify-around text-center">
               <div className="flex flex-col items-center flex-1">
-                <div className="mb-3 text-emerald-400">
-                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <div className="mb-2 sm:mb-3 text-emerald-400">
+                  <svg className="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 16v-2.5C4 12 5.5 11 7 11h2l2-3h3l2.5 3H19a2 2 0 0 1 2 2v1c0 1.5-1 2-2 2H6c-1.5 0-2-.5-2-2z" />
                     <path d="M6 16v2" />
                     <path d="M10 16v2" />
@@ -166,15 +203,15 @@ export default function Dashboard() {
                     <path d="M18 16v2" />
                   </svg>
                 </div>
-                <div className="text-4xl font-black text-white mb-1">{totalMatches}</div>
-                <div className="text-xs text-neutral-400 text-center leading-tight">Total Matches<br/>Played</div>
+                <div className="text-3xl sm:text-4xl font-black text-white mb-1 tabular-nums">{totalMatches}</div>
+                <div className="text-[11px] sm:text-xs text-neutral-400 text-center leading-tight">Total Matches<br/>Played</div>
               </div>
               
-              <div className="w-px h-16 bg-white/[0.05]" />
+              <div className="w-px h-14 sm:h-16 bg-white/[0.06]" />
               
               <div className="flex flex-col items-center flex-1">
-                <div className="mb-3 text-emerald-400">
-                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <div className="mb-2 sm:mb-3 text-emerald-400">
+                  <svg className="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <polygon points="12 6 15.5 8.5 14 12.5 10 12.5 8.5 8.5 12 6" />
                     <path d="M12 6V2" />
@@ -184,8 +221,8 @@ export default function Dashboard() {
                     <path d="M8.5 8.5l-4-2" />
                   </svg>
                 </div>
-                <div className="text-4xl font-black text-white mb-1">{totalGoals}</div>
-                <div className="text-xs text-neutral-400 text-center leading-tight">Total Goals<br/>Scored</div>
+                <div className="text-3xl sm:text-4xl font-black text-white mb-1 tabular-nums">{totalGoals}</div>
+                <div className="text-[11px] sm:text-xs text-neutral-400 text-center leading-tight">Total Goals<br/>Scored</div>
               </div>
             </div>
           </div>
@@ -326,10 +363,10 @@ export default function Dashboard() {
       
       {/* Quick Actions */}
       {profile?.role === 'admin' && (
-        <div className="fixed bottom-16 md:bottom-auto md:mt-12 left-0 right-0 p-4 bg-black/80 backdrop-blur-xl border-t border-white/5 md:relative md:bg-transparent md:border-0 md:p-0 z-40 flex justify-center">
+        <div className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:bottom-auto md:mt-12 left-0 right-0 px-4 md:relative md:bg-transparent md:border-0 md:p-0 z-40 flex justify-center pointer-events-none">
           <Link 
             to="/matches/new"
-            className="flex items-center justify-center gap-3 w-full md:w-auto bg-emerald-500 text-black px-8 py-4 rounded-full font-black hover:bg-emerald-400 hover:scale-105 transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)] tracking-widest uppercase text-sm"
+            className="pointer-events-auto flex items-center justify-center gap-2.5 w-full sm:w-auto bg-emerald-500 text-black px-7 py-3 sm:py-3.5 rounded-full font-black hover:bg-emerald-400 active:scale-95 transition-all shadow-[0_8px_25px_rgba(16,185,129,0.35)] tracking-widest uppercase text-xs sm:text-sm select-none"
           >
             <Plus className="w-5 h-5" strokeWidth={3} />
             New Match
