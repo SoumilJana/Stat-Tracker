@@ -270,7 +270,7 @@ Test and validate all UI flows against these representative viewports:
   - Sliding tab indicator background: `motion.div` (`layoutId="mobile-nav-dock-pill"`) with `bg-primary-950/70 border border-primary-500/30 rounded-xl shadow-[0_0_12px_rgba(16,185,129,0.18)]`.
   - Icon: Scales subtly to `scale-105` with emerald styling `text-primary-400`.
   - Label: Bold emerald font `text-primary-300 font-bold`.
-  - Clean profile: Accent dots under active tab labels are intentionally omitted to maximize vertical space and eliminate visual crowding.
+  - Clean profile: Zero dots below active tab labels to maximize vertical space and eliminate visual clutter.
 * Floating Action & Scroll Clearance:
   - Scrollable container in `AppLayout.tsx`: `pb-28 sm:pb-32 md:pb-8`.
   - Sticky/floating actions (e.g. "New Match" button): Positioned at `bottom-[calc(5rem+env(safe-area-inset-bottom))]` to hover cleanly above the dock's rounded top.
@@ -282,7 +282,7 @@ Test and validate all UI flows against these representative viewports:
 * Profile avatar trigger: `w-9 h-9 rounded-full bg-neutral-800/90 border border-white/10 hover:border-primary-500/50 focus-visible:ring-primary-500/50`.
 
 ### 6.4 Touch Targets & One-Hand Optimization `[VERIFIED]`
-* Minimum interactive target dimension: **44 × 44 pt** (WCAG 2.5.5). Tab buttons in floating dock have `min-h-[42px] py-1` within flex container achieving compliant touch bounds.
+* Minimum interactive target dimension: **44 × 44 pt** (WCAG 2.5.5). Tab buttons in bottom dock have `min-h-[42px] py-1` within flex container achieving compliant touch bounds.
 * Primary action buttons in live match: Minimum height 52px with large fonts (`text-base font-bold`).
 * Taps include active feedback: `active:scale-95` on buttons and tabs.
 

@@ -86,6 +86,15 @@ function AccountDropdown({ user, profile, signOut }: { user: any, profile: any, 
   );
 }
 
+const NAV_ITEMS = [
+  { name: 'Dashboard', mobileName: 'Home', path: '/', icon: Home },
+  { name: 'Matches', mobileName: 'Matches', path: '/matches', icon: Activity },
+  { name: 'Drafts', mobileName: 'Drafts', path: '/drafts', icon: ClipboardList },
+  { name: 'Players', mobileName: 'Players', path: '/players', icon: Users },
+  { name: 'Leaderboard', mobileName: 'Ranking', path: '/leaderboard', icon: Trophy },
+  { name: 'Hall of Fame', mobileName: 'Awards', path: '/seasons', icon: Award },
+];
+
 export default function AppLayout() {
   const { signOut, user, profile } = useAuth();
   const location = useLocation();
@@ -100,24 +109,15 @@ export default function AppLayout() {
     }
   }, [profile]);
 
-  const navItems = [
-    { name: 'Dashboard', mobileName: 'Home', path: '/', icon: Home },
-    { name: 'Matches', mobileName: 'Matches', path: '/matches', icon: Activity },
-    { name: 'Drafts', mobileName: 'Drafts', path: '/drafts', icon: ClipboardList },
-    { name: 'Players', mobileName: 'Players', path: '/players', icon: Users },
-    { name: 'Leaderboard', mobileName: 'Ranking', path: '/leaderboard', icon: Trophy },
-    { name: 'Hall of Fame', mobileName: 'Awards', path: '/seasons', icon: Award },
-  ];
-
   return (
     <div className="min-h-screen bg-neutral-950 flex flex-col md:flex-row">
-      {/* Mobile Bottom Dock Navigation */}
+      {/* Mobile Bottom Dock Navigation (Flush with viewport bottom edge) */}
       <nav
         aria-label="Mobile Navigation"
         className="fixed bottom-0 inset-x-0 z-50 flex justify-center pointer-events-none md:hidden"
       >
         <div className="pointer-events-auto w-full max-w-lg bg-neutral-900/95 backdrop-blur-2xl border-t border-x sm:border-x border-white/10 rounded-t-[22px] shadow-[0_-6px_24px_rgba(0,0,0,0.55)] px-1.5 pt-1.5 pb-[max(0.45rem,env(safe-area-inset-bottom))] flex items-center justify-between ring-1 ring-black/40">
-          {navItems.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.name}
               to={item.path}
@@ -169,7 +169,7 @@ export default function AppLayout() {
           </h1>
         </div>
         <div className="flex-1 px-4 space-y-1.5 mt-4 relative">
-          {navItems.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.name}
               to={item.path}

@@ -88,6 +88,61 @@ const TiltCard = ({ player, isDiamond, onClick, children, className }: any) => {
   );
 };
 
+function PlayersSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-8 w-32 bg-neutral-800/70 rounded-xl skeleton-shimmer" />
+          <div className="h-4 w-44 bg-neutral-800/40 rounded-lg skeleton-shimmer" />
+        </div>
+        <div className="h-10 w-28 bg-neutral-800/50 rounded-xl skeleton-shimmer" />
+      </div>
+
+      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div
+            key={i}
+            className="aspect-[3/4] bg-neutral-900/60 border border-white/5 rounded-2xl p-5 flex flex-col justify-between skeleton-shimmer relative overflow-hidden"
+          >
+            {/* Top row tags & rating */}
+            <div className="flex justify-between items-start gap-2">
+              <div className="flex gap-1.5">
+                <div className="h-5 w-12 bg-neutral-800/60 rounded" />
+                <div className="h-5 w-14 bg-neutral-800/40 rounded" />
+              </div>
+              <div className="h-6 w-9 bg-neutral-800/50 rounded-md" />
+            </div>
+
+            {/* Bottom info & stats */}
+            <div className="space-y-3 mt-auto">
+              <div className="space-y-1">
+                <div className="h-6 w-28 bg-neutral-800/70 rounded" />
+                <div className="h-3 w-16 bg-neutral-800/40 rounded" />
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                <div className="flex justify-between">
+                  <div className="h-3 w-12 bg-neutral-800/40 rounded" />
+                  <div className="h-3 w-6 bg-neutral-800/60 rounded" />
+                </div>
+                <div className="flex justify-between">
+                  <div className="h-3 w-14 bg-neutral-800/40 rounded" />
+                  <div className="h-3 w-6 bg-neutral-800/60 rounded" />
+                </div>
+                <div className="flex justify-between">
+                  <div className="h-3 w-16 bg-neutral-800/40 rounded" />
+                  <div className="h-3 w-8 bg-neutral-800/60 rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Players() {
   const shouldReduceMotion = useReducedMotion();
   const [players, setPlayers] = useState<Profile[]>([]);
@@ -318,7 +373,7 @@ export default function Players() {
     setIsEditModalOpen(true);
   };
 
-  if (loading) return <div className="text-primary-500">Loading players...</div>;
+  if (loading) return <PlayersSkeleton />;
 
   return (
     <div className="space-y-6 relative">
