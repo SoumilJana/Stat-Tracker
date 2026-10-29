@@ -41,7 +41,7 @@ export default function PlayerRatingBadge({
   if (variant === 'boxed') {
     return (
       <span
-        className={`px-2 py-1 rounded border backdrop-blur-sm ${boxClass} ${colorClass} text-xs font-black tracking-widest tabular-nums flex items-center justify-center`}
+        className={`px-2 py-1 rounded-lg border backdrop-blur-sm ${boxClass} ${colorClass} text-xs font-black tracking-widest tabular-nums flex items-center justify-center`}
         title={`OVR: ${display}`}
       >
         <span className="text-[9px] mr-1 opacity-70">OVR</span>

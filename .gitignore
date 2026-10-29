@@ -40,3 +40,6 @@ frontend/sql_output.txt
 .DS_Store
 Thumbs.db
 *.log
+
+# Agent Workflows
+.agents/
