@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { useNavigate } from 'react-router-dom';
 import { Users, Shuffle, CheckCircle2, Clock, X, Plus, RotateCcw, EyeOff, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +23,8 @@ type Draft = {
 
 export default function Drafts() {
   const { profile } = useAuth();
+  const toast = useToast();
+  const confirm = useConfirm();
   const navigate = useNavigate();
   
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -121,7 +125,7 @@ export default function Drafts() {
     } else {
       const maxCaptains = setupMode === 'WINNER_STAYS' ? setupNumTeams : 2;
       if (selectedCaptainIds.length >= maxCaptains) {
-        alert(`You can only select ${maxCaptains} captains for this mode.`);
+        toast.warning(`You can only select ${maxCaptains} captains for this mode.`);
         return;
       }
       setSelectedCaptainIds(prev => [...prev, playerId]);
@@ -130,7 +134,10 @@ export default function Drafts() {
 
   const startDraft = async () => {
     const maxCaptains = setupMode === 'WINNER_STAYS' ? setupNumTeams : 2;
-    if (selectedCaptainIds.length !== maxCaptains) return alert(`Select exactly ${maxCaptains} captains.`);
+    if (selectedCaptainIds.length !== maxCaptains) {
+      toast.warning(`Please select exactly ${maxCaptains} captains.`);
+      return;
+    }
     
     setIsStarting(true);
     
@@ -159,7 +166,7 @@ export default function Drafts() {
       setRevealedPickIndex(-1);
       fetchCaptains(newDraft.id);
     } catch (e: any) {
-      alert(e.message);
+      toast.error('Failed to start draft: ' + e.message);
     } finally {
       setIsStarting(false);
     }
@@ -250,14 +257,21 @@ export default function Drafts() {
       fetchPicks(draft.id);
       
     } catch (e: any) {
-      alert(e.message);
+      toast.error('Failed to record draft pick: ' + e.message);
       setPendingPickId(null);
     }
   };
 
   const removePick = async (pickId: string, pickNum: number) => {
     if (!draft || profile?.role !== 'admin') return;
-    if (!window.confirm("Are you sure you want to remove this pick?")) return;
+    const ok = await confirm({
+      title: "Remove Draft Pick?",
+      description: "Are you sure you want to remove this pick?",
+      confirmText: "Remove Pick",
+      variant: "danger",
+      isDestructive: true
+    });
+    if (!ok) return;
     
     try {
       const isLastPick = pickNum === draft.current_pick_index - 1;
@@ -272,13 +286,20 @@ export default function Drafts() {
       
       fetchPicks(draft.id);
     } catch (e: any) {
-      alert(e.message);
+      toast.error('Failed to remove pick: ' + e.message);
     }
   };
 
   const cancelDraft = async () => {
     if (!draft || profile?.role !== 'admin') return;
-    if (!window.confirm("Are you sure you want to reset the draft? This will clear all picks and progress.")) return;
+    const ok = await confirm({
+      title: "Reset Entire Draft?",
+      description: "Are you sure you want to reset the draft? This will clear all picks and progress.",
+      confirmText: "Reset Draft",
+      variant: "danger",
+      isDestructive: true
+    });
+    if (!ok) return;
     try {
       const { error } = await supabase.from('drafts').update({ status: 'COMPLETED' }).eq('id', draft.id);
       if (error) throw error;
@@ -298,13 +319,19 @@ export default function Drafts() {
       setCaptains([]);
       setPicks([]);
     } catch (e: any) {
-      alert(e.message);
+      toast.error('Failed to reset draft: ' + e.message);
     }
   };
 
   const finishDraft = async () => {
     if (!draft) return;
-    if (!window.confirm("Are you sure you want to finish the draft and create the match?")) return;
+    const ok = await confirm({
+      title: "Finish Draft & Create Match?",
+      description: "Are you sure you want to finish the draft and create the match?",
+      confirmText: "Create Match",
+      variant: "primary"
+    });
+    if (!ok) return;
 
     try {
       await supabase.from('drafts').update({ status: 'COMPLETED' }).eq('id', draft.id);
@@ -343,7 +370,7 @@ export default function Drafts() {
       navigate(`/matches/${session.id}`);
 
     } catch (e: any) {
-      alert(e.message);
+      toast.error('Failed to create match from draft: ' + e.message);
     }
   };
 

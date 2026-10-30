@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Calendar as CalendarIcon, MapPin, PlayCircle, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 function MatchesSkeleton() {
   return (
@@ -36,6 +38,8 @@ function MatchesSkeleton() {
 
 export default function Matches() {
   const { profile } = useAuth();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [startingMatchId, setStartingMatchId] = useState<string | null>(null);
@@ -62,13 +66,20 @@ export default function Matches() {
   const deleteMatch = async (e: any, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete this match completely? This cannot be undone.")) return;
+    const ok = await confirm({
+      title: "Delete Match Completely?",
+      description: "Are you sure you want to delete this match completely? This cannot be undone.",
+      confirmText: "Delete Match",
+      variant: "danger",
+      isDestructive: true
+    });
+    if (!ok) return;
     
     const { error } = await supabase.from('sessions').delete().eq('id', id);
     if (!error) {
       setSessions(prev => prev.filter(s => s.id !== id));
     } else {
-      alert(error.message);
+      toast.error('Failed to delete match: ' + error.message);
     }
   };
 
@@ -81,13 +92,13 @@ export default function Matches() {
     try {
       const { error } = await supabase.from('sessions').update({ status: 'IN_PROGRESS' }).eq('id', id);
       if (error) {
-        alert("Failed to start match: " + error.message);
+        toast.error("Failed to start match: " + error.message);
         setStartingMatchId(null);
         return;
       }
       navigate(`/matches/${id}`);
     } catch (err: any) {
-      alert("Error starting match: " + err.message);
+      toast.error("Error starting match: " + err.message);
       setStartingMatchId(null);
     }
   };

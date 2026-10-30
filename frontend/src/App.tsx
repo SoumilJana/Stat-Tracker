@@ -1,7 +1,10 @@
 import React, { Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthProvider';
+import { useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './components/ui/ToastContainer';
+import { ConfirmProvider } from './components/ui/ConfirmModal';
 import { InstallPrompt } from './components/InstallPrompt';
 import AppLayout from './components/layout/AppLayout';
 
@@ -71,8 +74,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <InstallPrompt />
-          <AppRoutes />
+          <ToastProvider>
+            <ConfirmProvider>
+              <InstallPrompt />
+              <AppRoutes />
+            </ConfirmProvider>
+          </ToastProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

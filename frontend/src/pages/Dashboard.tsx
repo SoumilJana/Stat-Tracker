@@ -22,7 +22,7 @@ function DashboardSkeleton() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#051410]/60 border border-emerald-500/10 rounded-3xl p-6 sm:p-8 h-52 flex flex-col justify-between skeleton-shimmer">
+        <div className="bg-pitch-950/60 border border-emerald-500/10 rounded-3xl p-6 sm:p-8 h-52 flex flex-col justify-between skeleton-shimmer">
           <div className="h-3 w-28 bg-emerald-900/40 rounded" />
           <div className="grid grid-cols-3 gap-3">
             <div className="h-16 bg-neutral-800/30 rounded-2xl" />
@@ -30,7 +30,7 @@ function DashboardSkeleton() {
             <div className="h-16 bg-neutral-800/30 rounded-2xl" />
           </div>
         </div>
-        <div className="bg-[#051410]/60 border border-emerald-500/10 rounded-3xl p-6 sm:p-8 h-52 flex flex-col justify-between skeleton-shimmer">
+        <div className="bg-pitch-950/60 border border-emerald-500/10 rounded-3xl p-6 sm:p-8 h-52 flex flex-col justify-between skeleton-shimmer">
           <div className="h-3 w-28 bg-emerald-900/40 rounded" />
           <div className="grid grid-cols-2 gap-3">
             <div className="h-16 bg-neutral-800/30 rounded-2xl" />
@@ -101,11 +101,11 @@ export default function Dashboard() {
           <p className="text-xs sm:text-sm text-neutral-400">Here's the latest from the pitch.</p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link to="/rules" className="bg-[#051410] hover:bg-emerald-900/20 active:scale-95 text-emerald-400 p-2 sm:px-3 sm:py-2 rounded-xl border border-emerald-500/20 transition-all shadow-sm hidden sm:flex items-center gap-2" title="Rules & Guidelines">
+          <Link to="/rules" className="bg-pitch-950 hover:bg-emerald-900/20 active:scale-95 text-emerald-400 p-2 sm:px-3 sm:py-2 rounded-xl border border-emerald-500/20 transition-all shadow-sm hidden sm:flex items-center gap-2" title="Rules & Guidelines">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
             <span className="text-sm font-bold">Rules</span>
           </Link>
-          <Link to="/rules" className="bg-[#051410] hover:bg-emerald-900/20 active:scale-95 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 transition-all shadow-sm sm:hidden" title="Rules & Guidelines">
+          <Link to="/rules" className="bg-pitch-950 hover:bg-emerald-900/20 active:scale-95 text-emerald-400 p-2 rounded-xl border border-emerald-500/20 transition-all shadow-sm sm:hidden" title="Rules & Guidelines">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
           </Link>
           <NotificationsSetup />
@@ -115,7 +115,7 @@ export default function Dashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Sleek Global Stats Strip */}
-        <div className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-5 sm:p-8 relative overflow-hidden group hover:border-emerald-500/35 transition-all duration-300">
+        <div className="bg-pitch-950 border border-emerald-500/20 rounded-3xl p-5 sm:p-8 relative overflow-hidden group hover:border-emerald-500/35 transition-all duration-300">
           {/* Decorative background gradient */}
           <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
           
@@ -181,7 +181,7 @@ export default function Dashboard() {
         </div>
 
         {/* Overall Stats */}
-        <div className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-5 sm:p-8 relative overflow-hidden group hover:border-emerald-500/35 transition-all duration-300">
+        <div className="bg-pitch-950 border border-emerald-500/20 rounded-3xl p-5 sm:p-8 relative overflow-hidden group hover:border-emerald-500/35 transition-all duration-300">
           <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
           <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
 
@@ -242,7 +242,7 @@ export default function Dashboard() {
           </div>
           
           {upcomingMatch ? (
-            <Link key={upcomingMatch.id} to={`/matches/${upcomingMatch.id}`} className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-6 hover:bg-[#071c17] hover:border-emerald-500/30 transition-all duration-300 block group relative overflow-hidden">
+            <Link key={upcomingMatch.id} to={`/matches/${upcomingMatch.id}`} className="bg-pitch-950 border border-emerald-500/20 rounded-3xl p-6 hover:bg-pitch-900 hover:border-emerald-500/30 transition-all duration-300 block group relative overflow-hidden">
               <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
               <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
               <div className="relative z-10">
@@ -311,7 +311,7 @@ export default function Dashboard() {
           </div>
           
           {completedMatch ? (
-            <Link key={completedMatch.id} to={`/matches/${completedMatch.id}`} className="bg-[#051410] border border-emerald-500/20 rounded-3xl p-6 hover:bg-[#071c17] hover:border-emerald-500/30 transition-all duration-300 block group relative overflow-hidden">
+            <Link key={completedMatch.id} to={`/matches/${completedMatch.id}`} className="bg-pitch-950 border border-emerald-500/20 rounded-3xl p-6 hover:bg-pitch-900 hover:border-emerald-500/30 transition-all duration-300 block group relative overflow-hidden">
               <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
               <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
               <div className="relative z-10">

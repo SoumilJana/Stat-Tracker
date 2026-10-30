@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useToast } from '../contexts/ToastContext';
 import { Copy, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function NewMatch() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [players, setPlayers] = useState<any[]>([]);
   const [location, setLocation] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -58,20 +60,20 @@ export default function NewMatch() {
 
   const startMatch = async () => {
     if (teamA.length === 0 || teamB.length === 0) {
-      alert("Team A and Team B need at least 1 player");
+      toast.warning("Team A and Team B need at least 1 player.");
       return;
     }
     if (mode === 'WINNER_STAYS') {
       if (teamC.length === 0) {
-        alert("Team C needs at least 1 player for Winner Stays");
+        toast.warning("Team C needs at least 1 player for Winner Stays.");
         return;
       }
       if (numTeams >= 4 && teamD.length === 0) {
-        alert("Team D needs at least 1 player");
+        toast.warning("Team D needs at least 1 player.");
         return;
       }
       if (numTeams === 5 && teamE.length === 0) {
-        alert("Team E needs at least 1 player");
+        toast.warning("Team E needs at least 1 player.");
         return;
       }
     }
@@ -149,7 +151,7 @@ export default function NewMatch() {
 
     } catch (e: any) {
       console.error(e);
-      alert(e.message);
+      toast.error('Failed to create match: ' + e.message);
       setSubmitting(false);
     }
   };

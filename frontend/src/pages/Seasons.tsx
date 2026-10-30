@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, CheckCircle2, X, Lock, Trophy, BarChart3, Calendar, ChevronDown, Clock, ArrowRight } from 'lucide-react';
 import { buildSeasons, getCurrentSeason } from '../lib/seasons';
@@ -191,6 +192,7 @@ function OverrideSelectRow({ rank, statLabel, value, onChange, options }: { rank
 
 export default function Seasons() {
   const { profile } = useAuth();
+  const toast = useToast();
   const isAdmin = profile?.role === 'admin';
   const seasons = useMemo(() => buildSeasons(), []);
 
@@ -309,8 +311,9 @@ export default function Seasons() {
       await fetchSealed();
       setShowSealModal(false);
       setSealNote('');
+      toast.success('Season successfully sealed!');
     } else {
-      alert(error.message);
+      toast.error('Failed to seal season: ' + error.message);
     }
     setSealing(false);
   };

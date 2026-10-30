@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -39,4 +40,49 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalized = id.replace(/\\/g, '/');
+          if (normalized.includes('/node_modules/lucide-react/')) {
+            return 'vendor-icons';
+          }
+          if (normalized.includes('/node_modules/@tanstack/')) {
+            return 'vendor-query';
+          }
+          if (
+            normalized.includes('/node_modules/framer-motion/') ||
+            normalized.includes('/node_modules/motion-dom/') ||
+            normalized.includes('/node_modules/motion-utils/')
+          ) {
+            return 'vendor-motion';
+          }
+          if (normalized.includes('/node_modules/@supabase/')) {
+            return 'vendor-supabase';
+          }
+          if (
+            normalized.includes('/node_modules/react/') ||
+            normalized.includes('/node_modules/react-dom/') ||
+            normalized.includes('/node_modules/react-router/') ||
+            normalized.includes('/node_modules/react-router-dom/') ||
+            normalized.includes('/node_modules/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+        },
+      },
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    env: {
+      VITE_SUPABASE_URL: 'https://mock.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'mock-anon-key',
+    },
+  },
 })
+

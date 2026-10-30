@@ -3,6 +3,8 @@ import { Plus, Trash2, Edit2, X, Activity, Target, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createPlayer, deletePlayer, updatePlayer } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import { processImageFile, PORTRAIT_PRESET, RANKING_BANNER_PRESET } from '../lib/imageProcessing';
 import { motion, AnimatePresence, useMotionValue, useTransform, useMotionTemplate, useSpring, useReducedMotion } from 'framer-motion';
 import { enrichPlayersWithRatings } from '../lib/playerRating';
@@ -144,6 +146,8 @@ function PlayersSkeleton() {
 }
 
 export default function PlayersLegacy() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const shouldReduceMotion = useReducedMotion();
   const [players, setPlayers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -250,15 +254,22 @@ export default function PlayersLegacy() {
   }, []);
 
   const handleDeletePlayer = async (player: Profile) => {
-    if (window.confirm(`Are you sure you want to delete ${player.username}?`)) {
-      try {
-        await deletePlayer(player.id);
-        setPlayers(players.filter(p => p.id !== player.id));
-        setSelectedPlayer(null);
-      } catch (error) {
-        console.error('Error deleting player:', error);
-        alert('Failed to delete player');
-      }
+    const ok = await confirm({
+      title: `Delete Player ${player.username}?`,
+      description: `Are you sure you want to delete ${player.username}? This cannot be undone.`,
+      confirmText: "Delete Player",
+      variant: "danger",
+      isDestructive: true
+    });
+    if (!ok) return;
+
+    try {
+      await deletePlayer(player.id);
+      setPlayers(players.filter(p => p.id !== player.id));
+      setSelectedPlayer(null);
+    } catch (error) {
+      console.error('Error deleting player:', error);
+      toast.error('Failed to delete player');
     }
   };
 

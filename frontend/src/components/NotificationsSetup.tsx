@@ -2,27 +2,30 @@ import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 export default function NotificationsSetup() {
   const { profile } = useAuth();
-  const [permission, setPermission] = useState(Notification.permission);
+  const toast = useToast();
+  const [permission, setPermission] = useState<NotificationPermission>(() =>
+    typeof Notification !== 'undefined' ? Notification.permission : 'default'
+  );
   const [isSubscribing, setIsSubscribing] = useState(false);
 
   useEffect(() => {
-    setPermission(Notification.permission);
-    
-    // Give a reminder every time someone HASNT enabled the notifs
-    if (Notification.permission !== 'granted') {
-      const timer = setTimeout(() => {
-        alert("Reminder: You haven't enabled notifications yet! Click the bell icon at the top right to get match alerts.");
-      }, 1000);
-      return () => clearTimeout(timer);
+    if (typeof Notification !== 'undefined') {
+      setPermission(Notification.permission);
     }
   }, []);
 
   const subscribeToPush = async () => {
+    if (typeof Notification === 'undefined') {
+      toast.warning('Notifications are not supported by your browser.');
+      return;
+    }
+
     if (permission === 'granted') {
-      alert('Notifications are already enabled!');
+      toast.info('Notifications are already enabled!');
       return;
     }
 
@@ -33,7 +36,7 @@ export default function NotificationsSetup() {
       setPermission(perm);
       
       if (perm !== 'granted') {
-        alert('Notification permission denied.');
+        toast.warning('Notification permission denied. Please allow notifications in browser site settings.');
         return;
       }
 
@@ -69,10 +72,10 @@ export default function NotificationsSetup() {
 
       if (error) throw error;
 
-      alert('Successfully subscribed to notifications!');
+      toast.success('Successfully subscribed to match notifications!');
     } catch (err: any) {
       console.error("Failed to subscribe:", err);
-      alert('Failed to subscribe: ' + err.message);
+      toast.error('Failed to subscribe: ' + err.message);
     } finally {
       setIsSubscribing(false);
     }
@@ -87,7 +90,7 @@ export default function NotificationsSetup() {
     >
       <Bell className="w-5 h-5 text-neutral-300" strokeWidth={2} />
       {permission !== 'granted' && (
-        <span className="absolute top-0 right-0 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#0a0a0a]"></span>
+        <span className="absolute top-0 right-0 w-3 h-3 bg-emerald-400 rounded-full border-2 border-neutral-950"></span>
       )}
     </button>
   );
