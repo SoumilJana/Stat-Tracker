@@ -14,6 +14,7 @@ import { VotingModal } from './ActiveMatch/components/VotingModal';
 import { QueueManagerModal } from './ActiveMatch/components/QueueManagerModal';
 import { BulkImportModal } from './ActiveMatch/components/BulkImportModal';
 import { EditMatchModal } from './ActiveMatch/components/EditMatchModal';
+import { WinnerStaysClock } from './ActiveMatch/timer/WinnerStaysClock';
 
 export default function ActiveMatch() {
   const { profile } = useAuth();
@@ -83,6 +84,10 @@ export default function ActiveMatch() {
     await castPollVote(awardType, candidateId);
   };
 
+  const handleRecordTimeUp = async () => {
+    await recordTimeUp();
+  };
+
   if (loading) {
     return (
       <div className="text-primary-500 p-8 flex justify-center">
@@ -135,6 +140,16 @@ export default function ActiveMatch() {
         onPitch={onPitch}
         waiting={waiting}
       />
+
+      {/* Winner Stays Dedicated Match Clock */}
+      {session?.mode === 'WINNER_STAYS' && session?.status !== 'COMPLETED' && (
+        <WinnerStaysClock
+          session={session}
+          events={events}
+          profile={profile}
+          onRecordTimeUp={handleRecordTimeUp}
+        />
+      )}
 
       {/* Pitch Roster Action Grid & Chronological Event Stream */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
