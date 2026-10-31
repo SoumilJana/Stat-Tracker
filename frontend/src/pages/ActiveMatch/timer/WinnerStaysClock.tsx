@@ -215,7 +215,7 @@ export function WinnerStaysClock({
   return (
     <div
       data-testid="winner-stays-clock"
-      className={`relative overflow-hidden rounded-3xl bg-[#051410] border ${containerBorderClass} p-6 sm:p-8 mb-8 backdrop-blur-md transition-all duration-300`}
+      className={`relative overflow-hidden rounded-2xl md:rounded-3xl bg-[#051410] border ${containerBorderClass} p-2.5 sm:p-4 md:p-6 mb-2 md:mb-8 backdrop-blur-md transition-all duration-300`}
       onClick={handleInteraction}
     >
       {/* Stadium Pitch Turf Texture Lines */}
@@ -224,15 +224,15 @@ export function WinnerStaysClock({
       </div>
 
       {/* Top Header Row: Phase Badge, Status Badge & Settings Toggle */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-2.5">
+      <div className="relative z-10 h-6 mb-1 sm:mb-3 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2">
           {/* Phase Badge */}
           {isGoalBuffer && (
             <span
               data-testid="phase-badge-buffer"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-ping" />
               Goal Buffer (60s)
             </span>
           )}
@@ -240,7 +240,7 @@ export function WinnerStaysClock({
           {isPlaying && (
             <span
               data-testid="phase-badge-playing"
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black tracking-wider uppercase ${
                 timer.urgencyLevel === 'URGENT_10'
                   ? 'bg-red-500/20 text-red-300 border border-red-500/40 shadow-[0_0_15px_rgba(239,68,68,0.3)] animate-pulse'
                   : timer.urgencyLevel === 'WARNING_30'
@@ -249,7 +249,7 @@ export function WinnerStaysClock({
               }`}
             >
               {timer.urgencyLevel === 'URGENT_10' && (
-                <AlertTriangle className="w-3.5 h-3.5 text-red-400 animate-bounce" />
+                <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-400 animate-bounce" />
               )}
               Playing Match (10:00)
             </span>
@@ -258,9 +258,9 @@ export function WinnerStaysClock({
           {isExpired && (
             <span
               data-testid="phase-badge-expired"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-red-600/30 text-red-300 border border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black tracking-wider uppercase bg-red-600/30 text-red-300 border border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.4)] animate-pulse"
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+              <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-400" />
               Match Expired (00:00)
             </span>
           )}
@@ -269,7 +269,7 @@ export function WinnerStaysClock({
           {isRunning && (
             <span
               data-testid="status-badge-running"
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase bg-emerald-950/60 text-emerald-400 border border-emerald-500/30"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wider uppercase bg-emerald-950/60 text-emerald-400 border border-emerald-500/30"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Running
@@ -279,7 +279,7 @@ export function WinnerStaysClock({
           {isPaused && (
             <span
               data-testid="status-badge-paused"
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.25)]"
+              className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-black tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.25)]"
             >
               <Pause className="w-3 h-3 text-amber-400" />
               Paused
@@ -289,7 +289,7 @@ export function WinnerStaysClock({
           {status === 'IDLE' && (
             <span
               data-testid="status-badge-idle"
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-neutral-900 text-neutral-400 border border-white/10"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase bg-neutral-900 text-neutral-400 border border-white/10"
             >
               Ready
             </span>
@@ -313,24 +313,24 @@ export function WinnerStaysClock({
             data-testid="referee-settings-btn"
             onClick={() => setIsSettingsOpen(true)}
             aria-label="Open Referee Experience Settings"
-            className="p-2 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-all cursor-pointer active:scale-95"
+            className="p-1 sm:p-2 rounded-lg sm:rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-all cursor-pointer active:scale-95"
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
       </div>
 
       {/* Main Large Monospace Athletic Tabular Countdown */}
-      <div className="relative z-10 flex flex-col items-center justify-center my-4 py-2">
+      <div className="relative z-10 flex flex-col items-center justify-center my-0.5 sm:my-2 py-0 sm:py-1">
         <div
           data-testid="timer-display"
-          className={`font-mono tabular-nums text-6xl sm:text-7xl md:text-8xl font-black tracking-tight select-none transition-colors duration-200 ${timeDisplayClass}`}
+          className={`font-mono tabular-nums text-3xl sm:text-4xl md:text-6xl font-black text-white select-none transition-colors duration-200 ${timeDisplayClass}`}
         >
           {timer.formattedTime}
         </div>
 
         {/* Phase Description / Subtext */}
-        <p className="mt-2 text-xs sm:text-sm font-semibold tracking-wide text-neutral-400 uppercase">
+        <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs font-semibold tracking-wide text-neutral-400 uppercase text-center">
           {isGoalBuffer && 'Goal Scored — 60s Team Rotation Buffer'}
           {isPlaying && timer.urgencyLevel === 'URGENT_10' && (
             <span className="text-red-400 font-bold animate-pulse">Final 10 Seconds — Prepare Whistle</span>
@@ -348,7 +348,7 @@ export function WinnerStaysClock({
         {timer.isAdmin && timer.state.previousState && (
           <div
             data-testid="undo-rollback-banner"
-            className="mt-4 flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-2 text-xs text-amber-200"
+            className="mt-2 sm:mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl sm:rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2 text-xs text-amber-200"
           >
             <span>Goal undo detected. Rollback clock to previous state?</span>
             <button
@@ -367,11 +367,11 @@ export function WinnerStaysClock({
         {timer.isAdmin && isExpired && onRecordTimeUp && (
           <div
             data-testid="time-up-record-banner"
-            className="mt-4 flex flex-col sm:flex-row items-center gap-3 bg-red-950/40 border border-red-500/30 rounded-2xl p-4 text-center sm:text-left"
+            className="mt-2 sm:mt-4 flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-red-950/40 border border-red-500/30 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-center sm:text-left"
           >
             <div>
-              <p className="text-sm font-bold text-red-300">Match Countdown Reached 00:00</p>
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs sm:text-sm font-bold text-red-300">Match Countdown Reached 00:00</p>
+              <p className="text-[11px] sm:text-xs text-neutral-400">
                 Record No-Goal Time Up to execute Winner Stays team rotation.
               </p>
             </div>
@@ -380,7 +380,7 @@ export function WinnerStaysClock({
               data-testid="record-time-up-btn"
               disabled={isRecordingTimeUp}
               onClick={handleManualRecordTimeUp}
-              className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-red-950/50 cursor-pointer disabled:opacity-50"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-red-950/50 cursor-pointer disabled:opacity-50"
             >
               {isRecordingTimeUp ? 'Recording...' : 'Record Time Up'}
             </button>
@@ -389,7 +389,7 @@ export function WinnerStaysClock({
       </div>
 
       {/* Control Actions Section */}
-      <div className="relative z-10 mt-6 pt-4 border-t border-white/5 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+      <div className="relative z-10 gap-2 mt-2 pt-2 border-t border-white/5 flex flex-wrap items-center justify-center md:gap-4 md:mt-4 md:pt-4">
         {timer.isAdmin ? (
           <>
             {/* Start / Pause Toggle */}
@@ -398,20 +398,24 @@ export function WinnerStaysClock({
                 type="button"
                 data-testid="pause-timer-btn"
                 onClick={handlePause}
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-6 md:py-3 md:rounded-2xl md:text-sm bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all active:scale-95 cursor-pointer"
               >
-                <Pause className="w-4 h-4 fill-amber-300" />
-                Pause
+                <span data-testid="timer-start-pause-btn" className="flex items-center gap-1.5">
+                  <Pause className="w-3.5 h-3.5 md:w-4 md:h-4 fill-amber-300" />
+                  Pause
+                </span>
               </button>
             ) : (
               <button
                 type="button"
                 data-testid="start-timer-btn"
                 onClick={handleStart}
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-sm font-black bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-all active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-6 md:py-3 md:rounded-2xl md:text-sm bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-all active:scale-95 cursor-pointer"
               >
-                <Play className="w-4 h-4 fill-neutral-950" />
-                {isPaused ? 'Resume' : 'Start Clock'}
+                <span data-testid="timer-start-pause-btn" className="flex items-center gap-1.5">
+                  <Play className="w-3.5 h-3.5 md:w-4 md:h-4 fill-neutral-950" />
+                  {isPaused ? 'Resume' : 'Start Clock'}
+                </span>
               </button>
             )}
 
@@ -421,10 +425,12 @@ export function WinnerStaysClock({
                 type="button"
                 data-testid="skip-buffer-btn"
                 onClick={handleSkip}
-                className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-5 md:py-3 md:rounded-2xl md:text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all active:scale-95 cursor-pointer"
               >
-                <FastForward className="w-4 h-4" />
-                Skip Buffer
+                <span data-testid="timer-skip-buffer-btn" className="flex items-center gap-1.5">
+                  <FastForward className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  Skip Buffer
+                </span>
               </button>
             )}
 
@@ -433,17 +439,19 @@ export function WinnerStaysClock({
               type="button"
               data-testid="reset-timer-btn"
               onClick={handleReset}
-              className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-all active:scale-95 cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold md:px-5 md:py-3 md:rounded-2xl md:text-sm bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-all active:scale-95 cursor-pointer"
             >
-              <RotateCcw className="w-4 h-4" />
-              Reset
+              <span data-testid="timer-reset-btn" className="flex items-center gap-1.5">
+                <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                Reset
+              </span>
             </button>
           </>
         ) : (
           /* Spectator Read-Only HUD */
           <div
             data-testid="spectator-live-hud"
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-neutral-900/90 border border-emerald-500/20 text-xs font-semibold text-neutral-300 shadow-inner"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold md:px-4 md:py-2 md:rounded-2xl bg-neutral-900/90 border border-emerald-500/20 text-neutral-300 shadow-inner"
           >
             <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
             <span>Spectator Live HUD</span>

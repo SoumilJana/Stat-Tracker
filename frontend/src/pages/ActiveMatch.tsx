@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,6 +15,7 @@ import { QueueManagerModal } from './ActiveMatch/components/QueueManagerModal';
 import { BulkImportModal } from './ActiveMatch/components/BulkImportModal';
 import { EditMatchModal } from './ActiveMatch/components/EditMatchModal';
 import { WinnerStaysClock } from './ActiveMatch/timer/WinnerStaysClock';
+import { WinnerStaysGoalEntry } from './ActiveMatch/components/WinnerStaysGoalEntry';
 
 export default function ActiveMatch() {
   const { profile } = useAuth();
@@ -52,6 +53,8 @@ export default function ActiveMatch() {
 
   // UI Modal & Interaction States
   const [pendingGoal, setPendingGoal] = useState<{ playerId: string; teamId: string; teamPlayers: any[] } | null>(null);
+  const isSubmittingGoalRef = useRef(false);
+  const [isSubmittingGoal, setIsSubmittingGoal] = useState(false);
   const [bibColors, setBibColors] = useState<Record<string, string>>({});
   const [isEditingMatch, setIsEditingMatch] = useState(false);
   const [votingAward, setVotingAward] = useState<'BEST_DEFENDER' | 'BEST_GK' | 'MOTM' | null>(null);
@@ -60,14 +63,22 @@ export default function ActiveMatch() {
 
   // Handlers
   const handleInitiateGoal = (playerId: string, teamId: string, playersList: any[]) => {
+    if (isSubmittingGoalRef.current) return;
     setPendingGoal({ playerId, teamId, teamPlayers: playersList });
   };
 
   const handleConfirmGoal = async (assistedBy: string | null) => {
-    if (!pendingGoal) return;
-    const { playerId, teamId } = pendingGoal;
-    setPendingGoal(null);
-    await recordGoal(playerId, teamId, assistedBy);
+    if (!pendingGoal || isSubmittingGoalRef.current) return;
+    isSubmittingGoalRef.current = true;
+    setIsSubmittingGoal(true);
+    try {
+      const { playerId, teamId } = pendingGoal;
+      setPendingGoal(null);
+      await recordGoal(playerId, teamId, assistedBy);
+    } finally {
+      isSubmittingGoalRef.current = false;
+      setIsSubmittingGoal(false);
+    }
   };
 
   const handleEndSession = async () => {
@@ -141,48 +152,96 @@ export default function ActiveMatch() {
         waiting={waiting}
       />
 
-      {/* Winner Stays Dedicated Match Clock */}
-      {session?.mode === 'WINNER_STAYS' && session?.status !== 'COMPLETED' && (
-        <WinnerStaysClock
-          session={session}
-          events={events}
-          profile={profile}
-          onRecordTimeUp={handleRecordTimeUp}
-        />
+      {/* Winner Stays Dedicated Match Clock & Goal Entry or Standard Layout */}
+      {session?.mode === 'WINNER_STAYS' && session?.status !== 'COMPLETED' ? (
+        <>
+          <WinnerStaysClock
+            session={session}
+            events={events}
+            profile={profile}
+            onRecordTimeUp={handleRecordTimeUp}
+          />
+
+          <WinnerStaysGoalEntry
+            session={session}
+            profile={profile}
+            teamA={teamA}
+            teamB={teamB}
+            teamPlayers={teamPlayers}
+            events={events}
+            waiting={waiting}
+            isSubmitting={isSubmittingGoal}
+            onInitiateGoal={handleInitiateGoal}
+            onSwapTeam={recordSwapTeam}
+          />
+
+          {/* Secondary Content Below the Fold */}
+          <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-white/5 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <PitchBoard
+              session={session}
+              profile={profile}
+              teamA={teamA}
+              teamB={teamB}
+              teamPlayers={teamPlayers}
+              waiting={waiting}
+              bibColors={bibColors}
+              events={events}
+              timeOnPitch={timeOnPitch}
+              onPitch={onPitch}
+              onInitiateGoal={handleInitiateGoal}
+              onSwapTeam={recordSwapTeam}
+              onRecordTimeUp={recordTimeUp}
+              onEndSession={handleEndSession}
+              onBibColorChange={(tId, col) => setBibColors(prev => ({ ...prev, [tId]: col }))}
+              onOpenQueueManager={() => setIsManagingQueue(true)}
+            />
+
+            <EventTimeline
+              events={events}
+              session={session}
+              profile={profile}
+              teamA={teamA}
+              teamB={teamB}
+              onPitch={onPitch}
+              waiting={waiting}
+              onUndoEvent={undoEvent}
+            />
+          </div>
+        </>
+      ) : (
+        /* Pitch Roster Action Grid & Chronological Event Stream */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <PitchBoard
+            session={session}
+            profile={profile}
+            teamA={teamA}
+            teamB={teamB}
+            teamPlayers={teamPlayers}
+            waiting={waiting}
+            bibColors={bibColors}
+            events={events}
+            timeOnPitch={timeOnPitch}
+            onPitch={onPitch}
+            onInitiateGoal={handleInitiateGoal}
+            onSwapTeam={recordSwapTeam}
+            onRecordTimeUp={recordTimeUp}
+            onEndSession={handleEndSession}
+            onBibColorChange={(tId, col) => setBibColors(prev => ({ ...prev, [tId]: col }))}
+            onOpenQueueManager={() => setIsManagingQueue(true)}
+          />
+
+          <EventTimeline
+            events={events}
+            session={session}
+            profile={profile}
+            teamA={teamA}
+            teamB={teamB}
+            onPitch={onPitch}
+            waiting={waiting}
+            onUndoEvent={undoEvent}
+          />
+        </div>
       )}
-
-      {/* Pitch Roster Action Grid & Chronological Event Stream */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <PitchBoard
-          session={session}
-          profile={profile}
-          teamA={teamA}
-          teamB={teamB}
-          teamPlayers={teamPlayers}
-          waiting={waiting}
-          bibColors={bibColors}
-          events={events}
-          timeOnPitch={timeOnPitch}
-          onPitch={onPitch}
-          onInitiateGoal={handleInitiateGoal}
-          onSwapTeam={recordSwapTeam}
-          onRecordTimeUp={recordTimeUp}
-          onEndSession={handleEndSession}
-          onBibColorChange={(tId, col) => setBibColors(prev => ({ ...prev, [tId]: col }))}
-          onOpenQueueManager={() => setIsManagingQueue(true)}
-        />
-
-        <EventTimeline
-          events={events}
-          session={session}
-          profile={profile}
-          teamA={teamA}
-          teamB={teamB}
-          onPitch={onPitch}
-          waiting={waiting}
-          onUndoEvent={undoEvent}
-        />
-      </div>
 
       {/* Goal Assist Selection Modal */}
       <AssistModal

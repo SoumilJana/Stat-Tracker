@@ -191,47 +191,55 @@ export function MatchHeader({
     <>
       {/* Offline Indicators */}
       {isOffline && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 mb-6 animate-pulse">
-          <CloudOff className="w-5 h-5" />
-          Offline Mode. Goals will be saved locally and synced later.
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 mb-2 sm:mb-4 animate-pulse">
+          <CloudOff className="w-4 h-4 sm:w-5 h-5 shrink-0" />
+          <span>Offline Mode. Goals will be saved locally and synced later.</span>
         </div>
       )}
       {isSyncing && (
-        <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 mb-6">
-          <RefreshCw className="w-5 h-5 animate-spin" />
-          Syncing offline goals to database...
+        <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 mb-2 sm:mb-4">
+          <RefreshCw className="w-4 h-4 sm:w-5 h-5 animate-spin shrink-0" />
+          <span>Syncing offline goals to database...</span>
         </div>
       )}
 
       {/* Header bar */}
-      <div className="flex items-center justify-between mb-8">
-        <Link to="/matches" className="text-neutral-400 hover:text-white flex items-center gap-2 transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-          <span className="hidden sm:inline">Back to Matches</span>
+      <div className="flex items-center justify-between gap-1.5 sm:gap-3 mb-2 md:mb-6 min-h-[40px] sm:min-h-[48px]">
+        <Link
+          to="/matches"
+          className="p-1 sm:p-0 text-neutral-400 hover:text-white flex items-center gap-1.5 sm:gap-2 transition-colors shrink-0"
+          title="Back to Matches"
+          aria-label="Back to Matches"
+        >
+          <ArrowLeft className="w-4 h-4 sm:w-5 h-5" />
+          <span className="hidden sm:inline text-sm font-medium">Back to Matches</span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
           {profile?.role === 'admin' && (
             <>
               <button
                 onClick={onOpenEdit}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-neutral-500/10 text-neutral-400 hover:bg-neutral-500/20 border border-neutral-500/20 transition-colors"
+                className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-neutral-500/10 text-neutral-400 hover:bg-neutral-500/20 border border-neutral-500/20 transition-colors flex items-center gap-1.5 shrink-0"
                 title="Edit Match"
+                aria-label="Edit Match"
               >
                 <Edit className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Edit</span>
               </button>
               <button
                 onClick={onDeleteMatch}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+                className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors flex items-center gap-1.5 shrink-0"
                 title="Delete Match"
+                aria-label="Delete Match"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Delete</span>
               </button>
               <button
                 onClick={onOpenBulk}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-colors"
+                className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-colors flex items-center gap-1.5 shrink-0"
                 title="Bulk Import Stats"
+                aria-label="Bulk Import Stats"
               >
                 <Activity className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Bulk</span>
@@ -240,8 +248,9 @@ export function MatchHeader({
           )}
           <button
             onClick={copyStats}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 border border-primary-500/20 transition-colors"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 border border-primary-500/20 transition-colors flex items-center gap-1.5 shrink-0"
             title={session?.status === 'COMPLETED' ? 'Copy Match Stats' : 'Copy Teams'}
+            aria-label={session?.status === 'COMPLETED' ? 'Copy Match Stats' : 'Copy Teams'}
           >
             {statsCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">
@@ -254,33 +263,37 @@ export function MatchHeader({
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-colors"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-colors flex items-center gap-1.5 shrink-0"
+            title="Share Match Link"
+            aria-label="Share Match Link"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-primary-500" /> : <Share2 className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
           </button>
           <div
-            className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${
-              session.status === 'IN_PROGRESS'
+            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest whitespace-nowrap shrink-0 ${
+              session?.status === 'IN_PROGRESS'
                 ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
-                : session.status === 'SCHEDULED'
+                : session?.status === 'SCHEDULED'
                 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                 : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
             }`}
           >
-            {session.status.replace('_', ' ')}
+            {session?.status ? session.status.replace('_', ' ') : 'UNKNOWN'}
           </div>
         </div>
       </div>
 
       {/* Match Day Tallies Header */}
-      <div className="flex justify-center mb-6">
-        <div className="bg-black border border-white/10 rounded-full px-6 py-3 flex items-center gap-6 text-sm shadow-lg">
-          <span className="text-neutral-500 font-bold tracking-widest uppercase">Match Day Tally:</span>
+      <div className="flex justify-center mb-2 md:mb-6">
+        <div className="bg-black/90 border border-white/10 rounded-full px-3 py-1 sm:px-6 sm:py-2.5 flex items-center gap-2 sm:gap-6 text-[11px] sm:text-sm shadow-md overflow-x-auto max-w-full">
+          <span className="text-neutral-500 font-bold tracking-wider sm:tracking-widest uppercase text-[10px] sm:text-xs shrink-0">
+            Tally:
+          </span>
           {Object.entries(teamScores).map(([tId, score]) => {
             const t = Object.values(onPitch).concat(waiting).find(item => item.id === tId);
             return t ? (
-              <div key={tId} className="flex items-center gap-1 font-bold">
+              <div key={tId} className="flex items-center gap-1 font-bold shrink-0">
                 <span className={onPitch.find(p => p.id === tId) ? 'text-primary-400' : 'text-neutral-500'}>
                   {t.name.replace('Team ', '')}
                 </span>
