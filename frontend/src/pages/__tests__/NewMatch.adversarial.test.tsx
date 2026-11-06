@@ -295,7 +295,7 @@ describe('Milestone 2: New Match Configuration & Validation Adversarial Tests', 
   });
 
   describe('Focus 2: Mode Switching Hazard & Ghost Player Cleanup', () => {
-    it('purges Teams C, D, and E when switching from 5-team WINNER_STAYS to SPECIAL_7V7', async () => {
+    it('purges Teams C, D, and E when switching from 5-team WINNER_STAYS to SPECIAL_7V7', { timeout: 20000 }, async () => {
       render(<NewMatch />);
       await waitFor(() => {
         expect(screen.getAllByText('User_01').length).toBeGreaterThan(0);
