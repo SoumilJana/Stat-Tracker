@@ -3,6 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
 import { Copy, CheckCircle2, ArrowRight } from 'lucide-react';
+import type { SessionMode } from '../types/session';
+
+/* oxlint-disable-next-line react/only-export-components */
+export function getTeamBadgeText(mode: string, count: number): string {
+  if (mode === 'SPECIAL_7V7') {
+    if (count < 7) return `${count}/7 Starters`;
+    if (count === 7) return '7 Starters';
+    return `7 Starters + ${count - 7} Sub${count - 7 > 1 ? 's' : ''}`;
+  }
+  return `${count} Players`;
+}
 
 export default function NewMatch() {
   const navigate = useNavigate();
@@ -11,7 +22,7 @@ export default function NewMatch() {
   const [location, setLocation] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('19:00');
-  const [mode, setMode] = useState('STANDARD');
+  const [mode, setMode] = useState<SessionMode>('STANDARD');
   const [numTeams, setNumTeams] = useState(3);
   
   const [teamA, setTeamA] = useState<string[]>([]);
@@ -31,7 +42,7 @@ export default function NewMatch() {
 
   // When mode or numTeams changes, clear unused teams
   useEffect(() => {
-    if (mode === 'STANDARD') {
+    if (mode !== 'WINNER_STAYS') {
       setTeamC([]);
       setTeamD([]);
       setTeamE([]);
@@ -59,9 +70,16 @@ export default function NewMatch() {
   };
 
   const startMatch = async () => {
-    if (teamA.length === 0 || teamB.length === 0) {
-      toast.warning("Team A and Team B need at least 1 player.");
-      return;
+    if (mode === 'SPECIAL_7V7') {
+      if (teamA.length < 7 || teamB.length < 7) {
+        toast.warning("Both teams need at least 7 starters for 7v7 Special Mode.");
+        return;
+      }
+    } else {
+      if (teamA.length === 0 || teamB.length === 0) {
+        toast.warning("Team A and Team B need at least 1 player.");
+        return;
+      }
     }
     if (mode === 'WINNER_STAYS') {
       if (teamC.length === 0) {
@@ -158,10 +176,15 @@ export default function NewMatch() {
 
   const getFormattedMatchDetails = () => {
     const formatTeam = (teamName: string, teamIds: string[]) => {
-      const playerNames = teamIds.map(id => {
+      const playerNames = teamIds.map((id, index) => {
         const player = players.find(p => p.id === id);
-        return player ? `• ${player.username}` : '';
-      }).join('\n');
+        if (!player) return '';
+        if (mode === 'SPECIAL_7V7') {
+          const role = index < 7 ? '(Starter)' : '(Sub)';
+          return `• ${player.username} ${role}`;
+        }
+        return `• ${player.username}`;
+      }).filter(Boolean).join('\n');
       return `**${teamName}**\n${playerNames}`;
     };
 
@@ -169,7 +192,7 @@ export default function NewMatch() {
     text += `📅 Date: ${date}\n`;
     text += `⏰ Time: ${time}\n`;
     text += `📍 Location: ${location || 'TBD'}\n`;
-    text += `🎯 Mode: ${mode === 'STANDARD' ? 'Standard Match' : 'Winner Stays'}\n\n`;
+    text += `🎯 Mode: ${mode === 'STANDARD' ? 'Standard Match' : mode === 'SPECIAL_7V7' ? '7v7 Special Mode' : 'Winner Stays'}\n\n`;
     
     text += `${formatTeam('Team A', teamA)}\n\n`;
     text += `${formatTeam('Team B', teamB)}`;
@@ -265,11 +288,12 @@ export default function NewMatch() {
             <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-3">Mode</label>
             <select 
               value={mode}
-              onChange={e => setMode(e.target.value)}
+              onChange={e => setMode(e.target.value as SessionMode)}
               className="w-full bg-neutral-900/50 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             >
               <option value="STANDARD">Standard Match</option>
               <option value="WINNER_STAYS">Winner Stays</option>
+              <option value="SPECIAL_7V7">7v7 Special Mode</option>
             </select>
           </div>
           {mode === 'WINNER_STAYS' && (
@@ -300,13 +324,14 @@ export default function NewMatch() {
             ].map((teamData) => (
               <div key={teamData.id} className={`space-y-3 p-5 bg-black border ${teamData.colors.border} rounded-2xl shadow-lg ${teamData.colors.shadow}`}>
                 <h4 className={`font-bold ${teamData.colors.text} flex items-center justify-between uppercase tracking-widest text-sm mb-4`}>
-                  {teamData.name} <span className={`${teamData.colors.badge} px-3 py-1 rounded-full text-[10px]`}>{teamData.teamArr.length} Players</span>
+                  {teamData.name} <span className={`${teamData.colors.badge} px-3 py-1 rounded-full text-[10px]`}>{getTeamBadgeText(mode, teamData.teamArr.length)}</span>
                 </h4>
                 <div className="space-y-2">
                   {players.map(p => {
                     const isSelected = teamData.teamArr.includes(p.id);
                     const isAssignedElsewhere = [teamA, teamB, teamC, teamD, teamE].some(arr => arr !== teamData.teamArr && arr.includes(p.id));
-                    const isTeamFull = teamData.teamArr.length >= 5;
+                    const maxCapacity = mode === 'SPECIAL_7V7' ? 10 : 5;
+                    const isTeamFull = teamData.teamArr.length >= maxCapacity;
                     const isDisabled = isAssignedElsewhere || (isTeamFull && !isSelected);
 
                     return (

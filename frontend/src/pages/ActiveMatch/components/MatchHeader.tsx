@@ -43,6 +43,7 @@ export function MatchHeader({
 
     if (session.status !== 'COMPLETED') {
       let text = `Match - ${new Date(session.date).toLocaleDateString()}\n`;
+      if (session.mode === 'SPECIAL_7V7') text += `🎯 Mode: 7v7 Special\n`;
       if (session.location) text += `Location: ${session.location}\n`;
       text += `Time: ${new Date(session.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}\n`;
 
@@ -56,11 +57,17 @@ export function MatchHeader({
 
           const bibColor = bibColors[team.id] ? ` (${bibColors[team.id]})` : '';
           text += `\n${team.name}${bibColor}\n`;
-          text += `Captain: ${players[0].username}\n`;
-          if (players.length > 1) {
-            players.slice(1).forEach((p, index) => {
-              text += `${index + 1}. ${p.username}\n`;
+          if (session.mode === 'SPECIAL_7V7') {
+            players.forEach((p, index) => {
+              text += `${index + 1}. ${p.username} ${index < 7 ? '(Starter)' : '(Sub)'}\n`;
             });
+          } else {
+            text += `Captain: ${players[0].username}\n`;
+            if (players.length > 1) {
+              players.slice(1).forEach((p, index) => {
+                text += `${index + 1}. ${p.username}\n`;
+              });
+            }
           }
         });
 
@@ -71,6 +78,7 @@ export function MatchHeader({
     }
 
     let text = `Match Day Stats - ${new Date(session.date).toLocaleDateString()}\n`;
+    if (session.mode === 'SPECIAL_7V7') text += `🎯 Mode: 7v7 Special\n`;
     if (session.location) text += `Location: ${session.location}\n`;
     text += `\n--- Match Day Tally ---\n`;
 
@@ -109,13 +117,14 @@ export function MatchHeader({
       let hasStats = false;
       let teamText = isWinner ? `\n🏆 WINNER: ${team.name} 🏆\n` : `\n${team.name}:\n`;
 
-      players.forEach(player => {
+      players.forEach((player, pIdx) => {
         const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
         const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
 
         if (pGoals > 0 || pAssists > 0 || isWinner) {
           hasStats = true;
-          teamText += `- ${player.username}`;
+          const roleTag = session?.mode === 'SPECIAL_7V7' ? (pIdx < 7 ? ' (Starter)' : ' (Sub)') : '';
+          teamText += `- ${player.username}${roleTag}`;
           const stats = [];
           if (pGoals > 0) stats.push(`${pGoals} G`);
           if (pAssists > 0) stats.push(`${pAssists} A`);
@@ -270,6 +279,11 @@ export function MatchHeader({
             {copied ? <Check className="w-3.5 h-3.5 text-primary-500" /> : <Share2 className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
           </button>
+          {session?.mode === 'SPECIAL_7V7' && (
+            <div className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest whitespace-nowrap shrink-0">
+              7v7 Special
+            </div>
+          )}
           <div
             className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest whitespace-nowrap shrink-0 ${
               session?.status === 'IN_PROGRESS'

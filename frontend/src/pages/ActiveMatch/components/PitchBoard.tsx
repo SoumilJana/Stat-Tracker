@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Clock, SkipForward } from 'lucide-react';
 
 interface PitchBoardProps {
@@ -226,28 +227,47 @@ export function PitchBoard({
                     )}
                   </h4>
                   <div className="space-y-3">
-                    {players.map(player => {
+                    {players.map((player, index) => {
                       const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
                       const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
                       return (
-                        <div
-                          key={player.id}
-                          className="w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl shadow-sm"
-                        >
-                          <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
-                          <div className="flex gap-3">
-                            {pGoals > 0 && (
-                              <span className="text-primary-400 font-bold flex items-center gap-1">
-                                {pGoals} <span className="text-xs text-neutral-500">G</span>
-                              </span>
-                            )}
-                            {pAssists > 0 && (
-                              <span className="text-blue-400 font-bold flex items-center gap-1">
-                                {pAssists} <span className="text-xs text-neutral-500">A</span>
-                              </span>
-                            )}
+                        <Fragment key={player.id}>
+                          {session.mode === 'SPECIAL_7V7' && players.length > 7 && index === 7 && (
+                            <div className="pt-2 pb-1 border-t border-white/10 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-amber-400/80">
+                              <span>Substitutes ({players.length - 7})</span>
+                            </div>
+                          )}
+                          <div
+                            className="w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl shadow-sm"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 pr-2">
+                              <span className="text-white font-medium text-left truncate">{player.username}</span>
+                              {session.mode === 'SPECIAL_7V7' && (
+                                <span
+                                  className={`shrink-0 ${
+                                    index < 7
+                                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
+                                      : 'bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
+                                  }`}
+                                >
+                                  {index < 7 ? 'Starter' : 'Sub'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex gap-3 shrink-0">
+                              {pGoals > 0 && (
+                                <span className="text-primary-400 font-bold flex items-center gap-1">
+                                  {pGoals} <span className="text-xs text-neutral-500">G</span>
+                                </span>
+                              )}
+                              {pAssists > 0 && (
+                                <span className="text-blue-400 font-bold flex items-center gap-1">
+                                  {pAssists} <span className="text-xs text-neutral-500">A</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        </Fragment>
                       );
                     })}
                   </div>
@@ -275,25 +295,44 @@ export function PitchBoard({
                   </button>
                 )}
               </h4>
-              <div className="space-y-3 relative z-10">
-                {teamAPlayersList.map(player => (
-                  <button
-                    key={player.id}
-                    disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
-                    onClick={() => onInitiateGoal(player.id, teamA.id, teamAPlayersList)}
-                    className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${
-                      session.status === 'IN_PROGRESS' && profile?.role === 'admin'
-                        ? 'hover:bg-primary-900/40 hover:border-primary-500/50 group active:scale-95'
-                        : 'disabled:opacity-75 disabled:cursor-default'
-                    }`}
-                  >
-                    <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
-                    {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
-                      <span className="bg-primary-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        + GOAL
-                      </span>
+              <div className="space-y-2.5 sm:space-y-3 relative z-10">
+                {teamAPlayersList.map((player, index) => (
+                  <Fragment key={player.id}>
+                    {session.mode === 'SPECIAL_7V7' && teamAPlayersList.length > 7 && index === 7 && (
+                      <div className="pt-2 pb-1 border-t border-white/10 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-amber-400/80">
+                        <span>Substitutes ({teamAPlayersList.length - 7})</span>
+                      </div>
                     )}
-                  </button>
+                    <button
+                      disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
+                      onClick={() => onInitiateGoal(player.id, teamA.id, teamAPlayersList)}
+                      className={`w-full flex items-center justify-between p-2.5 sm:p-3 md:p-3.5 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${
+                        session.status === 'IN_PROGRESS' && profile?.role === 'admin'
+                          ? 'hover:bg-primary-900/40 hover:border-primary-500/50 group active:scale-95'
+                          : 'disabled:opacity-75 disabled:cursor-default'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                        <span className="text-white font-medium text-left truncate">{player.username}</span>
+                        {session.mode === 'SPECIAL_7V7' && (
+                          <span
+                            className={`shrink-0 ${
+                              index < 7
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
+                                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
+                            }`}
+                          >
+                            {index < 7 ? 'Starter' : 'Sub'}
+                          </span>
+                        )}
+                      </div>
+                      {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
+                        <span className="bg-primary-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          + GOAL
+                        </span>
+                      )}
+                    </button>
+                  </Fragment>
                 ))}
               </div>
             </div>
@@ -315,25 +354,44 @@ export function PitchBoard({
                   </button>
                 )}
               </h4>
-              <div className="space-y-3 relative z-10">
-                {teamBPlayersList.map(player => (
-                  <button
-                    key={player.id}
-                    disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
-                    onClick={() => onInitiateGoal(player.id, teamB.id, teamBPlayersList)}
-                    className={`w-full flex items-center justify-between p-3 md:p-4 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${
-                      session.status === 'IN_PROGRESS' && profile?.role === 'admin'
-                        ? 'hover:bg-blue-900/40 hover:border-blue-500/50 group active:scale-95'
-                        : 'disabled:opacity-75 disabled:cursor-default'
-                    }`}
-                  >
-                    <span className="text-white font-medium text-left truncate pr-2">{player.username}</span>
-                    {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
-                      <span className="bg-blue-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        + GOAL
-                      </span>
+              <div className="space-y-2.5 sm:space-y-3 relative z-10">
+                {teamBPlayersList.map((player, index) => (
+                  <Fragment key={player.id}>
+                    {session.mode === 'SPECIAL_7V7' && teamBPlayersList.length > 7 && index === 7 && (
+                      <div className="pt-2 pb-1 border-t border-white/10 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-amber-400/80">
+                        <span>Substitutes ({teamBPlayersList.length - 7})</span>
+                      </div>
                     )}
-                  </button>
+                    <button
+                      disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
+                      onClick={() => onInitiateGoal(player.id, teamB.id, teamBPlayersList)}
+                      className={`w-full flex items-center justify-between p-2.5 sm:p-3 md:p-3.5 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${
+                        session.status === 'IN_PROGRESS' && profile?.role === 'admin'
+                          ? 'hover:bg-blue-900/40 hover:border-blue-500/50 group active:scale-95'
+                          : 'disabled:opacity-75 disabled:cursor-default'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                        <span className="text-white font-medium text-left truncate">{player.username}</span>
+                        {session.mode === 'SPECIAL_7V7' && (
+                          <span
+                            className={`shrink-0 ${
+                              index < 7
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
+                                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
+                            }`}
+                          >
+                            {index < 7 ? 'Starter' : 'Sub'}
+                          </span>
+                        )}
+                      </div>
+                      {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
+                        <span className="bg-blue-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          + GOAL
+                        </span>
+                      )}
+                    </button>
+                  </Fragment>
                 ))}
               </div>
             </div>

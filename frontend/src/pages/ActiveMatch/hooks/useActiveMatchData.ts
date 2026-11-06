@@ -462,7 +462,7 @@ export function useActiveMatchData(id: string | undefined, currentProfile: any) 
     let winningTeamId: string | null = null;
     let isDraw = false;
 
-    if (session?.mode === 'STANDARD') {
+    if (session?.mode === 'STANDARD' || session?.mode === 'SPECIAL_7V7') {
       Object.entries(teamScores).forEach(([tId, goals]) => {
         if (goals > maxGoals) {
           maxGoals = goals;
@@ -476,7 +476,7 @@ export function useActiveMatchData(id: string | undefined, currentProfile: any) 
 
     const teamStatsInserts = Object.keys(timeOnPitch).map(tId => {
       let teamWins = 0;
-      if (session?.mode === 'STANDARD') {
+      if (session?.mode === 'STANDARD' || session?.mode === 'SPECIAL_7V7') {
         teamWins = !isDraw && winningTeamId === tId ? 1 : 0;
       } else {
         teamWins = teamScores[tId] || 0;

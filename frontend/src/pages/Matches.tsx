@@ -134,20 +134,27 @@ export default function Matches() {
         className="bg-neutral-900/90 border border-white/5 rounded-2xl p-5 sm:p-6 hover:border-primary-500/35 hover:shadow-[0_4px_24px_rgba(16,185,129,0.12)] shadow-lg transition-all duration-200 block group relative cursor-pointer active:scale-[0.99]"
       >
         <div className="flex justify-between items-start mb-6">
-          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center ${
-            session.status === 'IN_PROGRESS' ? 'bg-primary-500/15 text-primary-400 border border-primary-500/30' : 
-            session.status === 'SCHEDULED' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' :
-            'bg-neutral-800 text-neutral-300 border border-neutral-700/60'
-          }`}>
-            {session.status === 'IN_PROGRESS' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse mr-1.5 inline-block" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center ${
+              session.status === 'IN_PROGRESS' ? 'bg-primary-500/15 text-primary-400 border border-primary-500/30' : 
+              session.status === 'SCHEDULED' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' :
+              'bg-neutral-800 text-neutral-300 border border-neutral-700/60'
+            }`}>
+              {session.status === 'IN_PROGRESS' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse mr-1.5 inline-block" />
+              )}
+              {session.status === 'SCHEDULED' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5 inline-block" />
+              )}
+              {session.status.replace('_', ' ')}
+            </span>
+            {session.mode === 'SPECIAL_7V7' && (
+              <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                7v7 Special
+              </span>
             )}
-            {session.status === 'SCHEDULED' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5 inline-block" />
-            )}
-            {session.status.replace('_', ' ')}
-          </span>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5 bg-neutral-800/80 border border-neutral-700/50 px-2.5 py-1 rounded-full">
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5 bg-neutral-800/80 border border-neutral-700/50 px-2.5 py-1 rounded-full shrink-0">
             <CalendarIcon className="w-3 h-3 text-neutral-400" />
             {new Date(session.date).toLocaleDateString()}
           </span>

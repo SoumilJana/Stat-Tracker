@@ -246,14 +246,21 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
               <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
               <div className="relative z-10">
-                <div className="flex justify-between items-start mb-8">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] ${
-                    upcomingMatch.status === 'IN_PROGRESS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
-                    'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                  }`}>
-                    {upcomingMatch.status.replace('_', ' ')}
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1.5">
+                <div className="flex justify-between items-start mb-8 gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] ${
+                      upcomingMatch.status === 'IN_PROGRESS' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                      'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                    }`}>
+                      {upcomingMatch.status.replace('_', ' ')}
+                    </span>
+                    {upcomingMatch.mode === 'SPECIAL_7V7' && (
+                      <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] bg-purple-500/10 text-purple-400 border border-purple-500/20 whitespace-nowrap">
+                        7v7 Special
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1.5 shrink-0">
                     <Calendar className="w-3 h-3" />
                     {new Date(upcomingMatch.date).toLocaleDateString()}
                   </span>
@@ -315,11 +322,18 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-emerald-900/10 to-transparent z-0 pointer-events-none" />
               <div className="absolute -right-20 -top-20 w-64 h-64 border-[40px] border-emerald-500/5 rounded-full z-0 pointer-events-none" />
               <div className="relative z-10">
-                <div className="flex justify-between items-start mb-8">
-                  <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] bg-white/[0.02] text-neutral-500 border border-white/[0.03]">
-                    COMPLETED
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1.5">
+                <div className="flex justify-between items-start mb-8 gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] bg-white/[0.02] text-neutral-500 border border-white/[0.03]">
+                      COMPLETED
+                    </span>
+                    {completedMatch.mode === 'SPECIAL_7V7' && (
+                      <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] bg-purple-500/10 text-purple-400 border border-purple-500/20 whitespace-nowrap">
+                        7v7 Special
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600 flex items-center gap-1.5 shrink-0">
                     <Calendar className="w-3 h-3" />
                     {new Date(completedMatch.date).toLocaleDateString()}
                   </span>

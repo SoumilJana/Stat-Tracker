@@ -18,7 +18,7 @@ export function AssistModal({ isOpen, pendingGoal, onConfirm, onCancel }: Assist
           Goal by {scorer?.username}
         </p>
 
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
           <button
             onClick={() => onConfirm(null)}
             className="w-full py-4 px-4 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-xl border border-white/5 transition-colors cursor-pointer"

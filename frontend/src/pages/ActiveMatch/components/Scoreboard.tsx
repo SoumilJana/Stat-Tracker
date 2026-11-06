@@ -47,6 +47,11 @@ export function Scoreboard({
 
       {session.status === 'COMPLETED' ? (
         <div className="flex flex-col items-center justify-center relative z-10 py-2 sm:py-4">
+          {session.mode === 'SPECIAL_7V7' && (
+            <div className="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3 inline-block">
+              7v7 Special
+            </div>
+          )}
           <h2 className="text-base sm:text-xl md:text-2xl font-bold text-neutral-400 mb-1 sm:mb-2 tracking-widest uppercase">
             {winnersOfTheDay.length > 1 ? 'Match Day Winners (Draw)' : 'Match Day Winner'}
           </h2>
@@ -183,6 +188,11 @@ export function Scoreboard({
             <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700 shadow-inner">
               <span className="text-neutral-400 font-bold text-[10px] sm:text-xs md:text-sm">VS</span>
             </div>
+            {session.mode === 'SPECIAL_7V7' && (
+              <div className="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full mt-2">
+                7v7 Special
+              </div>
+            )}
             {waiting && waiting.length > 0 && (
               <div className="mt-1 px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[10px] font-bold text-amber-400 tracking-wide whitespace-nowrap">
                 Next: {waiting.map(t => t.name).join(', ')}
