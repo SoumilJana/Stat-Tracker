@@ -251,7 +251,7 @@ describe('M1 Adversarial Challenge: MatchHeader & Scoreboard', () => {
       expect(copiedText).toContain('Match Day Tally');
     });
 
-    it('handles Share Match Link and displays copied feedback', () => {
+    it('handles Share Match Link and displays copied feedback', async () => {
       vi.useFakeTimers();
       render(
         <MemoryRouter>
@@ -277,8 +277,12 @@ describe('M1 Adversarial Challenge: MatchHeader & Scoreboard', () => {
       const shareBtn = screen.getByTitle('Share Match Link');
       expect(shareBtn).toBeInTheDocument();
 
-      fireEvent.click(shareBtn);
-      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(window.location.href);
+      await act(async () => {
+        fireEvent.click(shareBtn);
+      });
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining(window.location.href)
+      );
 
       // Verify copied feedback
       expect(screen.getByText('Copied!')).toBeInTheDocument();

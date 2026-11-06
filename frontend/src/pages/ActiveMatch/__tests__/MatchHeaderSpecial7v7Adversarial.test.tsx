@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MatchHeader } from '../components/MatchHeader';
 import { Scoreboard } from '../components/Scoreboard';
@@ -452,6 +452,57 @@ describe('Empirical Challenge: Milestone 3 SPECIAL_7V7 Active Match, Headers, Ba
       expect(clipboardOutput).not.toContain('(Starter)');
       expect(clipboardOutput).not.toContain('(Sub)');
       expect(clipboardOutput).toContain('- Alpha_1: 1 G');
+    });
+
+    it('triggers rich WhatsApp share with asterisks, tally, and scorecard link when clicking Share button', async () => {
+      const shareMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { share: shareMock });
+
+      const stdPlayersA = teamAPlayers10.slice(0, 5);
+      const stdPlayersB = teamBPlayers7.slice(0, 5);
+      const events = [
+        { id: 'e1', event_type: 'GOAL', player_id: 'alpha-1', assisted_by: null, team_id: teamA.id },
+      ];
+
+      render(
+        <MemoryRouter>
+          <MatchHeader
+            session={{
+              id: 's-share-whatsapp-test',
+              mode: 'SPECIAL_7V7',
+              status: 'COMPLETED',
+              date: '2026-11-06T18:00:00Z',
+              location: 'Turf Park',
+            }}
+            profile={adminProfile}
+            teamScores={{ [teamA.id]: 1, [teamB.id]: 0 }}
+            onPitch={[teamA, teamB]}
+            waiting={[]}
+            teamPlayers={{ [teamA.id]: stdPlayersA, [teamB.id]: stdPlayersB }}
+            events={events}
+            pollVotes={[]}
+            bibColors={{}}
+            isOffline={false}
+            isSyncing={false}
+            onOpenEdit={vi.fn()}
+            onDeleteMatch={vi.fn()}
+            onOpenBulk={vi.fn()}
+          />
+        </MemoryRouter>
+      );
+
+      const shareBtn = screen.getByTitle('Share Match Link');
+      await act(async () => {
+        fireEvent.click(shareBtn);
+      });
+
+      expect(shareMock).toHaveBeenCalled();
+      const shareCallArg = shareMock.mock.calls[0][0];
+      expect(shareCallArg.title).toContain('StatTracker - Match Stats');
+      expect(shareCallArg.text).toContain('⚽ *StatTracker Match Day Stats*');
+      expect(shareCallArg.text).toContain('🏆 *FINAL TALLY*');
+      expect(shareCallArg.text).toContain('👑 *WINNER:* Alpha Hawks');
+      expect(shareCallArg.text).toContain('🔗 *Full Match Scorecard:*');
     });
   });
 

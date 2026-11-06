@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, Activity, Copy, Check, Share2, CloudOff, RefreshCw } from 'lucide-react';
+import { buildWhatsAppShareText, executeMatchShare } from '../utils/shareUtils';
 
 interface MatchHeaderProps {
   session: any;
@@ -35,8 +36,33 @@ export function MatchHeader({
   onDeleteMatch,
   onOpenBulk
 }: MatchHeaderProps) {
-  const [copied, setCopied] = useState(false);
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'shared'>('idle');
   const [statsCopied, setStatsCopied] = useState(false);
+
+  const handleShare = async () => {
+    if (!session) return;
+    const shareText = buildWhatsAppShareText({
+      session,
+      teamScores,
+      onPitch,
+      waiting,
+      teamPlayers,
+      events,
+      pollVotes,
+      bibColors,
+      matchUrl: typeof window !== 'undefined' ? window.location.href : '',
+    });
+
+    const result = await executeMatchShare(
+      shareText,
+      `StatTracker - ${session.status === 'COMPLETED' ? 'Match Stats' : 'Match Lineup'}`
+    );
+
+    if (result.success) {
+      setShareStatus(result.action === 'shared' ? 'shared' : 'copied');
+      setTimeout(() => setShareStatus('idle'), 2000);
+    }
+  };
 
   const copyStats = () => {
     if (!session) return;
@@ -267,17 +293,19 @@ export function MatchHeader({
             </span>
           </button>
           <button
-            onClick={() => {
-              navigator.clipboard.writeText(window.location.href);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }}
+            onClick={handleShare}
             className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-colors flex items-center gap-1.5 shrink-0"
             title="Share Match Link"
             aria-label="Share Match Link"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-primary-500" /> : <Share2 className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
+            {shareStatus !== 'idle' ? (
+              <Check className="w-3.5 h-3.5 text-primary-500" />
+            ) : (
+              <Share2 className="w-3.5 h-3.5" />
+            )}
+            <span className="hidden sm:inline">
+              {shareStatus === 'shared' ? 'Shared!' : shareStatus === 'copied' ? 'Copied!' : 'Share'}
+            </span>
           </button>
           {session?.mode === 'SPECIAL_7V7' && (
             <div className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest whitespace-nowrap shrink-0">
