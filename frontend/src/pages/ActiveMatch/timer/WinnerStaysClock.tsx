@@ -249,7 +249,7 @@ export function WinnerStaysClock({
               }`}
             >
               {timer.urgencyLevel === 'URGENT_10' && (
-                <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-400 animate-bounce" />
+                <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-400" />
               )}
               Playing Match (10:00)
             </span>

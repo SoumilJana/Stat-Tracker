@@ -70,7 +70,7 @@ export function PlayerTiltCard({ player, isDiamond, shouldReduceMotion, onClick 
               }
             : {}
         }
-        className={`group relative bg-black border rounded-2xl overflow-hidden cursor-pointer shadow-xl transition-all duration-300 aspect-[3/4] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/70 ${
+        className={`group relative bg-black border rounded-2xl overflow-hidden cursor-pointer shadow-xl transition-[border-color,box-shadow] duration-200 aspect-[3/4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/70 ${
           isDiamond
             ? 'border-cyan-400/80 shadow-[0_0_20px_rgba(34,211,238,0.6)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)]'
             : player.onFire
