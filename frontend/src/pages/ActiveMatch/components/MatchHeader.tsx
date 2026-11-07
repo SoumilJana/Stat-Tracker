@@ -144,15 +144,17 @@ export function MatchHeader({
       let teamText = isWinner ? `\n🏆 WINNER: ${team.name} 🏆\n` : `\n${team.name}:\n`;
 
       players.forEach((player) => {
-        const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
-        const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
+        const pGoals = events.filter(e => e.event_type === 'GOAL' && !e.is_own_goal && e.player_id === player.id).length;
+        const pAssists = events.filter(e => e.event_type === 'GOAL' && !e.is_own_goal && e.assisted_by === player.id).length;
+        const pOwnGoals = events.filter(e => e.event_type === 'GOAL' && e.is_own_goal && e.player_id === player.id).length;
 
-        if (pGoals > 0 || pAssists > 0 || isWinner) {
+        if (pGoals > 0 || pAssists > 0 || pOwnGoals > 0 || isWinner) {
           hasStats = true;
           teamText += `- ${player.username}`;
           const stats = [];
           if (pGoals > 0) stats.push(`${pGoals} G`);
           if (pAssists > 0) stats.push(`${pAssists} A`);
+          if (pOwnGoals > 0) stats.push(`${pOwnGoals} OG`);
           if (stats.length > 0) {
             teamText += `: ${stats.join(', ')}`;
           }
@@ -175,8 +177,8 @@ export function MatchHeader({
     Object.values(teamPlayers)
       .flat()
       .forEach(player => {
-        const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
-        const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
+        const pGoals = events.filter(e => e.event_type === 'GOAL' && !e.is_own_goal && e.player_id === player.id).length;
+        const pAssists = events.filter(e => e.event_type === 'GOAL' && !e.is_own_goal && e.assisted_by === player.id).length;
 
         if (pGoals > topScorerGoals || (pGoals === topScorerGoals && pGoals > 0 && pAssists > topScorerAssists)) {
           topScorerGoals = pGoals;

@@ -1,9 +1,16 @@
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
+export interface PendingGoalData {
+  playerId: string;
+  teamId: string;
+  teamPlayers: any[];
+  opponentTeam?: { id: string; name: string };
+}
+
 interface AssistModalProps {
   isOpen: boolean;
-  pendingGoal: { playerId: string; teamId: string; teamPlayers: any[] } | null;
-  onConfirm: (assistedBy: string | null) => void;
+  pendingGoal: PendingGoalData | null;
+  onConfirm: (assistedBy: string | null, isOwnGoal?: boolean) => void;
   onCancel: () => void;
 }
 
@@ -40,19 +47,31 @@ export function AssistModal({ isOpen, pendingGoal, onConfirm, onCancel }: Assist
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
               <button
+                type="button"
                 onClick={() => onConfirm(null)}
-                className="w-full py-4 px-4 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-xl border border-white/5 transition-colors cursor-pointer"
+                className="w-full py-4 px-4 bg-neutral-800 hover:bg-neutral-700 active:scale-[0.98] text-white font-bold rounded-xl border border-white/5 transition-all select-none touch-manipulation cursor-pointer text-sm sm:text-base"
               >
                 No Assist
               </button>
+
+              {pendingGoal.opponentTeam && (
+                <button
+                  type="button"
+                  onClick={() => onConfirm(null, true)}
+                  className="w-full py-3.5 px-4 bg-rose-500/15 hover:bg-rose-500/25 active:bg-rose-500/35 active:scale-[0.98] text-rose-300 hover:text-rose-200 font-bold rounded-xl border border-rose-500/30 transition-all select-none touch-manipulation cursor-pointer flex items-center justify-center gap-2 text-sm sm:text-base shadow-sm"
+                >
+                  <span>⚡ Own Goal (Award to {pendingGoal.opponentTeam.name})</span>
+                </button>
+              )}
 
               {pendingGoal.teamPlayers
                 .filter(p => p.id !== pendingGoal.playerId)
                 .map(player => (
                   <button
                     key={player.id}
+                    type="button"
                     onClick={() => onConfirm(player.id)}
-                    className="w-full py-4 px-4 bg-primary-500/10 hover:bg-primary-500/20 text-primary-400 font-bold rounded-xl border border-primary-500/20 transition-colors cursor-pointer"
+                    className="w-full py-4 px-4 bg-primary-500/10 hover:bg-primary-500/20 active:bg-primary-500/30 active:scale-[0.98] text-primary-400 font-bold rounded-xl border border-primary-500/20 transition-all select-none touch-manipulation cursor-pointer text-sm sm:text-base"
                   >
                     {player.username}
                   </button>
@@ -60,8 +79,9 @@ export function AssistModal({ isOpen, pendingGoal, onConfirm, onCancel }: Assist
             </div>
 
             <button
+              type="button"
               onClick={onCancel}
-              className="mt-6 w-full py-3 text-neutral-500 hover:text-white text-sm font-medium transition-colors cursor-pointer"
+              className="mt-6 w-full py-3 text-neutral-500 hover:text-white active:scale-95 text-sm font-medium transition-all select-none touch-manipulation cursor-pointer"
             >
               Cancel
             </button>

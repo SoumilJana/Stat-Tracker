@@ -52,13 +52,14 @@ export function WinnerStaysGoalEntry({
   const isInProgress = session?.status === 'IN_PROGRESS';
   const isGoalActionDisabled = Boolean(isSubmitting) || !isInProgress || !isAdmin;
 
-  // Calculate goal tally per player in current match events
+  // Calculate goal tally per player in current match events (excluding own goals)
   const getPlayerGoalCount = (playerId: string): number => {
     if (!Array.isArray(events)) return 0;
     return events.filter(
       (e) =>
         e &&
         (e.event_type === 'GOAL' || e.type === 'GOAL') &&
+        !e.is_own_goal &&
         (e.player_id === playerId || e.playerId === playerId)
     ).length;
   };

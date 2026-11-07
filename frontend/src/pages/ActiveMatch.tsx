@@ -52,7 +52,12 @@ export default function ActiveMatch() {
   );
 
   // UI Modal & Interaction States
-  const [pendingGoal, setPendingGoal] = useState<{ playerId: string; teamId: string; teamPlayers: any[] } | null>(null);
+  const [pendingGoal, setPendingGoal] = useState<{
+    playerId: string;
+    teamId: string;
+    teamPlayers: any[];
+    opponentTeam?: { id: string; name: string };
+  } | null>(null);
   const isSubmittingGoalRef = useRef(false);
   const [isSubmittingGoal, setIsSubmittingGoal] = useState(false);
   const [bibColors, setBibColors] = useState<Record<string, string>>({});
@@ -64,17 +69,28 @@ export default function ActiveMatch() {
   // Handlers
   const handleInitiateGoal = (playerId: string, teamId: string, playersList: any[]) => {
     if (isSubmittingGoalRef.current) return;
-    setPendingGoal({ playerId, teamId, teamPlayers: playersList });
+    const opponent = onPitch.find(t => t.id !== teamId) || (teams.length >= 2 ? (teamId === teams[0].id ? teams[1] : teams[0]) : undefined);
+    setPendingGoal({
+      playerId,
+      teamId,
+      teamPlayers: playersList,
+      opponentTeam: opponent ? { id: opponent.id, name: opponent.name } : undefined
+    });
   };
 
-  const handleConfirmGoal = async (assistedBy: string | null) => {
+  const handleConfirmGoal = async (assistedBy: string | null, isOwnGoal: boolean = false) => {
     if (!pendingGoal || isSubmittingGoalRef.current) return;
     isSubmittingGoalRef.current = true;
     setIsSubmittingGoal(true);
     try {
-      const { playerId, teamId } = pendingGoal;
+      const { playerId, teamId, opponentTeam } = pendingGoal;
       setPendingGoal(null);
-      await recordGoal(playerId, teamId, assistedBy);
+      const targetTeamId = isOwnGoal && opponentTeam ? opponentTeam.id : teamId;
+      if (isOwnGoal) {
+        await recordGoal(playerId, targetTeamId, null, true);
+      } else {
+        await recordGoal(playerId, targetTeamId, assistedBy);
+      }
     } finally {
       isSubmittingGoalRef.current = false;
       setIsSubmittingGoal(false);

@@ -82,16 +82,16 @@ export function useActiveMatchData(id: string | undefined, currentProfile: any) 
 
       const eData = eRes.data;
       const offlineQueue = JSON.parse(localStorage.getItem(`offline_events_${id}`) || '[]');
+      const allFlatPlayers = Object.values(tpMap).flat();
       const offlineInserts = offlineQueue
         .filter((a: any) => a.type === 'INSERT')
         .map((a: any) => {
-          const tPlayers = tpMap[a.payload.team_id] || [];
           return {
             ...a.payload,
             id: a.tempId,
-            player: { username: tPlayers.find((p: any) => p.id === a.payload.player_id)?.username },
+            player: { username: allFlatPlayers.find((p: any) => p.id === a.payload.player_id)?.username },
             assister: a.payload.assisted_by
-              ? { username: Object.values(tpMap).flat().find((p: any) => p.id === a.payload.assisted_by)?.username }
+              ? { username: allFlatPlayers.find((p: any) => p.id === a.payload.assisted_by)?.username }
               : null
           };
         });
@@ -110,13 +110,23 @@ export function useActiveMatchData(id: string | undefined, currentProfile: any) 
           if (latestEvent.event_type === 'GOAL') {
             const tName = tData.find(t => t.id === latestEvent.team_id)?.name || 'Team';
             const pName = latestEvent.player?.username || 'Player';
-            setOverlayEvent({
-              type: 'GOAL',
-              title: 'GOAL!',
-              subtitle: `${pName} (${tName})`,
-              color: 'text-primary-400',
-              id: Date.now()
-            });
+            if (latestEvent.is_own_goal) {
+              setOverlayEvent({
+                type: 'GOAL',
+                title: 'OWN GOAL!',
+                subtitle: `${pName} (Awarded to ${tName})`,
+                color: 'text-rose-400',
+                id: Date.now()
+              });
+            } else {
+              setOverlayEvent({
+                type: 'GOAL',
+                title: 'GOAL!',
+                subtitle: `${pName} (${tName})`,
+                color: 'text-primary-400',
+                id: Date.now()
+              });
+            }
           } else if (latestEvent.event_type === 'NO_GOAL_TIME_UP') {
             setOverlayEvent({
               type: 'ROTATE',
@@ -210,14 +220,20 @@ export function useActiveMatchData(id: string | undefined, currentProfile: any) 
     };
   }, [id, syncOfflineEvents, fetchMatchData, fetchPollVotes]);
 
-  const recordGoal = async (playerId: string, teamId: string, assistedBy: string | null) => {
+  const recordGoal = async (
+    playerId: string,
+    teamId: string,
+    assistedBy: string | null,
+    isOwnGoal: boolean = false
+  ) => {
     if (!id) return;
     const eventData = {
       session_id: id,
       event_type: 'GOAL',
       player_id: playerId,
       team_id: teamId,
-      assisted_by: assistedBy,
+      assisted_by: isOwnGoal ? null : assistedBy,
+      is_own_goal: isOwnGoal,
       timestamp: new Date().toISOString()
     };
 

@@ -30,13 +30,14 @@ export default function AnkitaDashboard() {
       let latestGoals = 0;
 
       if (latestSession) {
-        // 3. Count his goals in that specific match
+        // 3. Count his goals in that specific match (excluding own goals)
         const { count } = await supabase
           .from('events')
           .select('*', { count: 'exact', head: true })
           .eq('session_id', latestSession.id)
           .eq('player_id', soumilId)
-          .eq('event_type', 'GOAL');
+          .eq('event_type', 'GOAL')
+          .neq('is_own_goal', true);
           
         latestGoals = count || 0;
       }

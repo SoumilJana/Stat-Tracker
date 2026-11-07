@@ -1,4 +1,4 @@
-# StatTracker [![Version](https://img.shields.io/badge/version-v2.8-10b981.svg?style=flat-square)](#)
+# StatTracker [![Version](https://img.shields.io/badge/version-v3.0-10b981.svg?style=flat-square)](#)
 
 A high-performance football & futsal match tracking Progressive Web App (PWA) built with **React 19**, **Supabase**, **Tailwind CSS v4**, and **Framer Motion**.
 
@@ -6,7 +6,7 @@ A high-performance football & futsal match tracking Progressive Web App (PWA) bu
 
 ## ⚡ Features
 
-- **Live Active Match Center:** Pitch board rotation, single-screen referee control center, 7v7 Special mode, and integrated Winner Stays match clock with referee haptics and audio whistles.
+- **Live Active Match Center:** Pitch board rotation, single-screen referee control center, 7v7 Special mode, Own Goals handling, and integrated Winner Stays match clock with referee haptics and audio whistles.
 - **Smart Sharing:** Instant WhatsApp-formatted lineup and post-match scorecard sharing with deep link generation.
 - **Player Profiles & FIFA-Style Tilt Cards:** 3D interactive player cards, career stats, goals, assists, radar ratings, and awards.
 - **Leaderboards & Seasons:** Monthly and all-time rankings, top scorers, assisters, MOTM awards, and Hall of Fame.

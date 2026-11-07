@@ -21,10 +21,10 @@ export async function getOnFirePlayers(): Promise<Set<string>> {
 
     const sessionIds = recentSessions.map(s => s.id);
 
-    // 2. Fetch all GOAL events from those sessions
+    // 2. Fetch all GOAL events from those sessions (excluding own goals)
     const { data: goalEvents, error: eventError } = await supabase
       .from('events')
-      .select('player_id, session_id')
+      .select('player_id, session_id, is_own_goal')
       .eq('event_type', 'GOAL')
       .in('session_id', sessionIds);
 
@@ -35,7 +35,7 @@ export async function getOnFirePlayers(): Promise<Set<string>> {
     // 3. Count goals per player per session
     const playerSessionGoals: Record<string, Record<string, number>> = {};
     for (const event of goalEvents) {
-      if (event.player_id && event.session_id) {
+      if (event.player_id && event.session_id && !event.is_own_goal) {
         if (!playerSessionGoals[event.player_id]) {
           playerSessionGoals[event.player_id] = {};
         }

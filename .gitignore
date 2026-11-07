@@ -41,5 +41,9 @@ frontend/sql_output.txt
 Thumbs.db
 *.log
 
-# Agent Workflows
+# Agent Workflows & Skills
 .agents/
+.impeccable/
+skills-lock.json
+DESIGN.md
+PRODUCT.md

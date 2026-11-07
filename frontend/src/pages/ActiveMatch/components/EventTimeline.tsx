@@ -40,12 +40,14 @@ export function EventTimeline({
                 <div className="mt-1">
                   {event.event_type === 'GOAL' && (
                     <div
-                      className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)] ${
-                        event.team_id === teamA?.id
-                          ? 'bg-primary-500 shadow-primary-500/50'
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        event.is_own_goal
+                          ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]'
+                          : event.team_id === teamA?.id
+                          ? 'bg-primary-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
                           : event.team_id === teamB?.id
-                          ? 'bg-blue-500 shadow-blue-500/50'
-                          : 'bg-white'
+                          ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'
+                          : 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]'
                       }`}
                     />
                   )}
@@ -54,13 +56,24 @@ export function EventTimeline({
                 <div>
                   <p className="text-sm text-white">
                     {event.event_type === 'GOAL' ? (
-                      <>
-                        <span className="font-bold">{event.player?.username || event.profiles?.username}</span> scored for{' '}
-                        <span className="font-medium text-neutral-400">
-                          {Object.values(onPitch).concat(waiting).find(t => t.id === event.team_id)?.name}
-                        </span>
-                        {event.assister?.username && <span className="text-neutral-500 ml-1">(Ast: {event.assister.username})</span>}
-                      </>
+                      event.is_own_goal ? (
+                        <>
+                          <span className="font-bold">{event.player?.username || event.profiles?.username}</span>{' '}
+                          <span className="inline-block px-1.5 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 mr-1 select-none">OG</span>{' '}
+                          scored an <span className="text-rose-400 font-semibold">own goal</span> (awarded to{' '}
+                          <span className="font-medium text-neutral-300">
+                            {Object.values(onPitch).concat(waiting).find(t => t.id === event.team_id)?.name}
+                          </span>)
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-bold">{event.player?.username || event.profiles?.username}</span> scored for{' '}
+                          <span className="font-medium text-neutral-400">
+                            {Object.values(onPitch).concat(waiting).find(t => t.id === event.team_id)?.name}
+                          </span>
+                          {event.assister?.username && <span className="text-neutral-500 ml-1">(Ast: {event.assister.username})</span>}
+                        </>
+                      )
                     ) : event.event_type === 'NO_GOAL_TIME_UP' ? (
                       <span className="italic text-neutral-400">Time up / No goals (Teams rotated)</span>
                     ) : (
@@ -74,8 +87,9 @@ export function EventTimeline({
               </div>
               {idx === 0 && session.status === 'IN_PROGRESS' && profile?.role === 'admin' && (
                 <button
+                  type="button"
                   onClick={() => onUndoEvent(event.id)}
-                  className="text-neutral-500 hover:text-red-400 p-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  className="text-neutral-500 hover:text-red-400 active:scale-90 p-2 md:opacity-0 md:group-hover:opacity-100 transition-all touch-manipulation select-none cursor-pointer"
                   title="Undo Event"
                 >
                   <Undo2 className="w-4 h-4" />
