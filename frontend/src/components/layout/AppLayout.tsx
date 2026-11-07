@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { APP_VERSION } from '../../version';
 
 function AccountDropdown({ user, profile, signOut }: { user: any, profile: any, signOut: () => void }) {
   const [open, setOpen] = useState(false);
@@ -166,6 +167,7 @@ export default function AppLayout() {
           <h1 className="text-xl font-black text-white flex items-center gap-2.5 tracking-tight">
             <img src="/pwa-192x192.png" alt="StatTracker Logo" className="w-8 h-8 rounded-xl shadow-md border border-white/10" />
             StatTracker
+            <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">v{APP_VERSION}</span>
           </h1>
         </div>
         <div className="flex-1 px-4 space-y-1.5 mt-4 relative">
@@ -203,11 +205,12 @@ export default function AppLayout() {
         {/* Seamless Top Header (Mobile Brand + Desktop Profile Bar) */}
         <header className="h-14 sm:h-16 shrink-0 flex items-center justify-between md:justify-end px-4 sm:px-6 md:px-8 sticky top-0 z-40 bg-neutral-950/85 backdrop-blur-md md:bg-transparent">
           {/* Mobile Brand Lockup */}
-          <div className="flex md:hidden items-center gap-2.5">
+          <div className="flex md:hidden items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-neutral-900 border border-white/10 p-1 flex items-center justify-center">
               <img src="/pwa-192x192.png" alt="StatTracker Logo" className="w-full h-full rounded-lg object-cover" />
             </div>
             <span className="text-base sm:text-lg font-black text-white tracking-tight">StatTracker</span>
+            <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/10">v{APP_VERSION}</span>
           </div>
           
           <div className="flex items-center gap-3">
