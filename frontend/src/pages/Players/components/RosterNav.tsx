@@ -36,7 +36,7 @@ export function RosterNav({
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
             placeholder="Search by username or name..."
-            className="w-full bg-neutral-900/90 border border-white/10 focus:border-primary-500/50 rounded-xl pl-9 pr-8 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none transition-all shadow-inner"
+            className="w-full bg-neutral-900/90 border border-white/10 focus:border-primary-500/50 rounded-xl pl-9 pr-8 py-2 text-base sm:text-sm text-white placeholder-neutral-500 focus:outline-none transition-all shadow-inner"
           />
           {searchQuery && (
             <button

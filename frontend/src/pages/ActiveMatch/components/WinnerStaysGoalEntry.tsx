@@ -133,7 +133,7 @@ export function WinnerStaysGoalEntry({
                     : playerName
                 }
                 data-testid={`player-card-${player.id}`}
-                className={`group w-full min-h-[44px] h-12 bg-neutral-900/80 border border-white/10 rounded-xl px-2.5 py-1.5 flex items-center justify-between transition-all active:scale-[0.98] ${
+                className={`group w-full min-h-[44px] h-12 bg-neutral-900/80 border border-white/10 rounded-xl px-2.5 py-1.5 flex items-center justify-between transition-all select-none active:scale-[0.98] ${
                   isGoalActionDisabled
                     ? 'opacity-50 cursor-not-allowed pointer-events-none'
                     : 'hover:border-white/20 hover:bg-neutral-800/80 cursor-pointer'

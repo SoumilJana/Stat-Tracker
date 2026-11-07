@@ -398,7 +398,7 @@ export function WinnerStaysClock({
                 type="button"
                 data-testid="pause-timer-btn"
                 onClick={handlePause}
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-6 md:py-3 md:rounded-2xl md:text-sm bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-6 md:py-3 md:rounded-2xl md:text-sm bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all select-none active:scale-95 cursor-pointer"
               >
                 <span data-testid="timer-start-pause-btn" className="flex items-center gap-1.5">
                   <Pause className="w-3.5 h-3.5 md:w-4 md:h-4 fill-amber-300" />
@@ -410,7 +410,7 @@ export function WinnerStaysClock({
                 type="button"
                 data-testid="start-timer-btn"
                 onClick={handleStart}
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-6 md:py-3 md:rounded-2xl md:text-sm bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-all active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-6 md:py-3 md:rounded-2xl md:text-sm bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-all select-none active:scale-95 cursor-pointer"
               >
                 <span data-testid="timer-start-pause-btn" className="flex items-center gap-1.5">
                   <Play className="w-3.5 h-3.5 md:w-4 md:h-4 fill-neutral-950" />
@@ -425,7 +425,7 @@ export function WinnerStaysClock({
                 type="button"
                 data-testid="skip-buffer-btn"
                 onClick={handleSkip}
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-5 md:py-3 md:rounded-2xl md:text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-5 md:py-3 md:rounded-2xl md:text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all select-none active:scale-95 cursor-pointer"
               >
                 <span data-testid="timer-skip-buffer-btn" className="flex items-center gap-1.5">
                   <FastForward className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -439,7 +439,7 @@ export function WinnerStaysClock({
               type="button"
               data-testid="reset-timer-btn"
               onClick={handleReset}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold md:px-5 md:py-3 md:rounded-2xl md:text-sm bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-all active:scale-95 cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold md:px-5 md:py-3 md:rounded-2xl md:text-sm bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-all select-none active:scale-95 cursor-pointer"
             >
               <span data-testid="timer-reset-btn" className="flex items-center gap-1.5">
                 <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" />
