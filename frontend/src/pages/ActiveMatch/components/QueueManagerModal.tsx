@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface QueueManagerModalProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ export function QueueManagerModal({
   onSave,
   onClose
 }: QueueManagerModalProps) {
+  const shouldReduceMotion = useReducedMotion();
+  const isTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
   const [managedPitch, setManagedPitch] = useState<any[]>(initialPitch);
   const [managedWaiting, setManagedWaiting] = useState<any[]>(initialWaiting);
 
@@ -24,11 +27,27 @@ export function QueueManagerModal({
     setManagedWaiting(initialWaiting);
   }, [initialPitch, initialWaiting]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col max-h-[90vh]">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="queue-manager-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={shouldReduceMotion || isTest ? { duration: 0 } : { duration: 0.15 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            key="queue-manager-dialog"
+            initial={shouldReduceMotion || isTest ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={shouldReduceMotion || isTest ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
+            transition={shouldReduceMotion || isTest ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 350 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col max-h-[90vh]"
+          >
         <h3 className="text-xl font-black text-white uppercase tracking-widest mb-2">
           Manage Match Order
         </h3>
@@ -127,7 +146,9 @@ export function QueueManagerModal({
             Confirm Order
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

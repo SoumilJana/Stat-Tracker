@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface SpinWheelProps {
   candidates: { id: string; name: string }[];
@@ -19,6 +19,7 @@ const getTextColor = () => {
 };
 
 export function SpinWheel({ candidates, winnerId, onFinished }: SpinWheelProps) {
+  const shouldReduceMotion = useReducedMotion();
   const [hasSpun, setHasSpun] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
 
@@ -50,14 +51,14 @@ export function SpinWheel({ candidates, winnerId, onFinished }: SpinWheelProps) 
     if (hasSpun) return;
     setHasSpun(true);
     
-    // 4s animation
+    const spinDuration = shouldReduceMotion ? 200 : 4000;
     setTimeout(() => {
       setIsFinished(true);
       setTimeout(() => {
         onFinished();
-      }, 1500); // wait 1.5s after finishing before dismissing
-    }, 4000);
-  }, [hasSpun, onFinished]);
+      }, shouldReduceMotion ? 400 : 1500);
+    }, spinDuration);
+  }, [hasSpun, onFinished, shouldReduceMotion]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -108,7 +109,7 @@ export function SpinWheel({ candidates, winnerId, onFinished }: SpinWheelProps) 
             style={{ background }}
             initial={{ rotate: 0 }}
             animate={{ rotate: hasSpun ? targetRotation : 0 }}
-            transition={{ duration: 4, ease: [0.1, 0.85, 0.15, 1] }}
+            transition={{ duration: shouldReduceMotion ? 0.2 : 4, ease: [0.1, 0.85, 0.15, 1] }}
             onClick={handleSpin}
           >
             {displayCandidates.map((c, i) => {

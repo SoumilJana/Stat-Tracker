@@ -10,6 +10,7 @@ import { APP_VERSION } from '../../version';
 function AccountDropdown({ user, profile, signOut }: { user: any, profile: any, signOut: () => void }) {
   const [open, setOpen] = useState(false);
   const [stats, setStats] = useState<any>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (open && user?.id && !stats) {
@@ -38,13 +39,14 @@ function AccountDropdown({ user, profile, signOut }: { user: any, profile: any, 
         <>
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.12 }}
             className="fixed inset-0 z-40" onClick={() => setOpen(false)} 
           />
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: -6 }}
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: -6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -6 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: -4 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
             className="absolute right-0 mt-2.5 w-60 bg-neutral-900/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 origin-top-right ring-1 ring-black/60"
           >
             <div className="px-4 py-3 border-b border-white/[0.08] bg-black/30">

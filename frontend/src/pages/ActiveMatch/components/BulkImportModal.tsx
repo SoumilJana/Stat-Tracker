@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -13,11 +14,11 @@ export function BulkImportModal({
   onImport,
   onClose
 }: BulkImportModalProps) {
+  const shouldReduceMotion = useReducedMotion();
+  const isTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
   const [bulkText, setBulkText] = useState('');
   const [bulkPreview, setBulkPreview] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
-
-  if (!isOpen) return null;
 
   const handleParseBulk = () => {
     const allPlayers = Object.entries(teamPlayers).flatMap(([teamId, players]) =>
@@ -87,8 +88,26 @@ export function BulkImportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="bulk-import-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={shouldReduceMotion || isTest ? { duration: 0 } : { duration: 0.15 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={handleCancel}
+        >
+          <motion.div
+            key="bulk-import-dialog"
+            initial={shouldReduceMotion || isTest ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={shouldReduceMotion || isTest ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 8 }}
+            transition={shouldReduceMotion || isTest ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 350 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+          >
         <h3 className="text-xl font-bold text-white mb-2">Bulk Import Stats</h3>
         <p className="text-neutral-400 text-sm mb-4">Paste stats text (e.g. `Tubu 3G 2A`)</p>
 
@@ -154,7 +173,9 @@ export function BulkImportModal({
             {importing ? 'Importing...' : 'Import'}
           </button>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
