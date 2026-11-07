@@ -205,14 +205,16 @@ export function buildWhatsAppShareText({
     return Object.values(teamPlayers).flat().find(p => p.id === maxId)?.username;
   };
 
+  const motm = getAwardWinner('MOTM');
   const bestGk = getAwardWinner('BEST_GK');
   const bestDef = getAwardWinner('BEST_DEFENDER');
 
-  const hasHighlights = topScorerGoals > 0 || topAssisterAssists > 0 || bestGk || bestDef;
+  const hasHighlights = topScorerGoals > 0 || topAssisterAssists > 0 || motm || bestGk || bestDef;
   if (hasHighlights) {
     text += `\n🌟 *HIGHLIGHTS*\n`;
     if (topScorerGoals > 0) text += `🔥 *Top Scorer:* ${topScorerName} (${topScorerGoals}G)\n`;
     if (topAssisterAssists > 0) text += `👟 *Top Assister:* ${topAssisterName} (${topAssisterAssists}A)\n`;
+    if (motm) text += `⭐ *Man of the Match:* ${motm}\n`;
     if (bestGk) text += `🧤 *Best GK:* ${bestGk}\n`;
     if (bestDef) text += `🛡️ *Best Defender:* ${bestDef}\n`;
   }

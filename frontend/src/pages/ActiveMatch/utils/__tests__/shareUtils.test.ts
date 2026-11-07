@@ -91,6 +91,7 @@ describe('shareUtils: WhatsApp Text Builder & Share Dispatcher', () => {
 
       const pollVotes = [
         { id: 'v1', award_type: 'BEST_GK', candidate_id: 'p4' },
+        { id: 'v2', award_type: 'MOTM', candidate_id: 'p1' },
       ];
 
       const text = buildWhatsAppShareText({
@@ -120,6 +121,7 @@ describe('shareUtils: WhatsApp Text Builder & Share Dispatcher', () => {
       expect(text).toContain('- Sam: 1 A');
       expect(text).toContain('🔥 *Top Scorer:* Alex (2G)');
       expect(text).toContain('👟 *Top Assister:* Sam (1A)');
+      expect(text).toContain('⭐ *Man of the Match:* Alex');
       expect(text).toContain('🧤 *Best GK:* David');
       expect(text).toContain('🔗 *Full Match Scorecard:*');
       expect(text).toContain('https://stattracker.app/matches/session-completed');
