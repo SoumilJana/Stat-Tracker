@@ -572,8 +572,9 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
       fireEvent.click(screen.getByTitle('Copy Teams'));
 
       expect(clipboardText).toContain('🎯 Mode: 7v7 Special');
-      expect(clipboardText).toContain('1. APlayer_1 (Starter)');
-      expect(clipboardText).toContain('7. APlayer_7 (Starter)');
+      expect(clipboardText).toContain('1. APlayer_1');
+      expect(clipboardText).toContain('7. APlayer_7');
+      expect(clipboardText).not.toContain('(Starter)');
       expect(clipboardText).not.toContain('(Sub)');
     });
 
@@ -604,10 +605,12 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
 
       fireEvent.click(screen.getByTitle('Copy Teams'));
 
-      expect(clipboardText).toContain('7. APlayer_7 (Starter)');
-      expect(clipboardText).toContain('8. APlayer_8 (Sub)');
-      expect(clipboardText).toContain('9. APlayer_9 (Sub)');
+      expect(clipboardText).toContain('7. APlayer_7');
+      expect(clipboardText).toContain('8. APlayer_8');
+      expect(clipboardText).toContain('9. APlayer_9');
       expect(clipboardText).not.toContain('10. APlayer_10');
+      expect(clipboardText).not.toContain('(Starter)');
+      expect(clipboardText).not.toContain('(Sub)');
     });
 
     it('formats completed match stats share distinguishing starter and sub goalscorers', () => {
@@ -642,8 +645,10 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
       fireEvent.click(screen.getByTitle('Copy Match Stats'));
 
       expect(clipboardText).toContain('🎯 Mode: 7v7 Special');
-      expect(clipboardText).toContain('- APlayer_1 (Starter): 1 G');
-      expect(clipboardText).toContain('- APlayer_9 (Sub): 1 G, 1 A');
+      expect(clipboardText).toContain('- APlayer_1: 1 G');
+      expect(clipboardText).toContain('- APlayer_9: 1 G, 1 A');
+      expect(clipboardText).not.toContain('(Starter)');
+      expect(clipboardText).not.toContain('(Sub)');
     });
   });
 

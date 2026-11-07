@@ -85,7 +85,7 @@ export function MatchHeader({
           text += `\n${team.name}${bibColor}\n`;
           if (session.mode === 'SPECIAL_7V7') {
             players.forEach((p, index) => {
-              text += `${index + 1}. ${p.username} ${index < 7 ? '(Starter)' : '(Sub)'}\n`;
+              text += `${index + 1}. ${p.username}\n`;
             });
           } else {
             text += `Captain: ${players[0].username}\n`;
@@ -149,8 +149,7 @@ export function MatchHeader({
 
         if (pGoals > 0 || pAssists > 0 || isWinner) {
           hasStats = true;
-          const roleTag = session?.mode === 'SPECIAL_7V7' ? (pIdx < 7 ? ' (Starter)' : ' (Sub)') : '';
-          teamText += `- ${player.username}${roleTag}`;
+          teamText += `- ${player.username}`;
           const stats = [];
           if (pGoals > 0) stats.push(`${pGoals} G`);
           if (pAssists > 0) stats.push(`${pAssists} A`);

@@ -439,14 +439,13 @@ describe('Milestone 3: 7v7 Special Mode (SPECIAL_7V7) Active Match & Pitch Board
       expect(mockClipboardText).toContain('🎯 Mode: 7v7 Special');
       expect(mockClipboardText).not.toContain('Captain:');
 
-      // Check Starters (1 to 7)
-      expect(mockClipboardText).toContain('1. AlphaPlayer_1 (Starter)');
-      expect(mockClipboardText).toContain('7. AlphaPlayer_7 (Starter)');
-
-      // Check Substitutes (8 to 10)
-      expect(mockClipboardText).toContain('8. AlphaPlayer_8 (Sub)');
-      expect(mockClipboardText).toContain('9. AlphaPlayer_9 (Sub)');
-      expect(mockClipboardText).toContain('10. AlphaPlayer_10 (Sub)');
+      expect(mockClipboardText).toContain('1. AlphaPlayer_1');
+      expect(mockClipboardText).toContain('7. AlphaPlayer_7');
+      expect(mockClipboardText).toContain('8. AlphaPlayer_8');
+      expect(mockClipboardText).toContain('9. AlphaPlayer_9');
+      expect(mockClipboardText).toContain('10. AlphaPlayer_10');
+      expect(mockClipboardText).not.toContain('(Starter)');
+      expect(mockClipboardText).not.toContain('(Sub)');
     });
 
     it('formats WhatsApp completed match stats with 🎯 Mode: 7v7 Special and appends (Starter)/(Sub)', () => {
@@ -481,10 +480,10 @@ describe('Milestone 3: 7v7 Special Mode (SPECIAL_7V7) Active Match & Pitch Board
 
       expect(navigator.clipboard.writeText).toHaveBeenCalled();
       expect(mockClipboardText).toContain('🎯 Mode: 7v7 Special');
-      // AlphaPlayer_1 is starter (pIdx 0) -> (Starter)
-      expect(mockClipboardText).toContain('- AlphaPlayer_1 (Starter)');
-      // AlphaPlayer_8 is sub (pIdx 7) -> (Sub)
-      expect(mockClipboardText).toContain('- AlphaPlayer_8 (Sub)');
+      expect(mockClipboardText).toContain('- AlphaPlayer_1');
+      expect(mockClipboardText).toContain('- AlphaPlayer_8');
+      expect(mockClipboardText).not.toContain('(Starter)');
+      expect(mockClipboardText).not.toContain('(Sub)');
     });
 
     it('preserves standard format in STANDARD mode without 7v7 Special or Starter/Sub roles', () => {

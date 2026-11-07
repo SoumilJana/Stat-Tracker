@@ -48,7 +48,7 @@ describe('shareUtils: WhatsApp Text Builder & Share Dispatcher', () => {
       expect(text).toContain('https://stattracker.app/matches/session-123');
     });
 
-    it('includes 7v7 Special tags and (Starter)/(Sub) badges when mode is SPECIAL_7V7', () => {
+    it('includes 7v7 Special tags and lists players cleanly without (Starter)/(Sub) in SPECIAL_7V7', () => {
       const tenPlayersA = Array.from({ length: 10 }, (_, i) => ({
         id: `a-${i + 1}`,
         username: `Player_${i + 1}`,
@@ -73,9 +73,11 @@ describe('shareUtils: WhatsApp Text Builder & Share Dispatcher', () => {
       });
 
       expect(text).toContain('🎯 *Mode:* 7v7 Special');
-      expect(text).toContain('1. Player_1 (Starter)');
-      expect(text).toContain('7. Player_7 (Starter)');
-      expect(text).toContain('8. Player_8 (Sub)');
+      expect(text).toContain('1. Player_1');
+      expect(text).toContain('7. Player_7');
+      expect(text).toContain('8. Player_8');
+      expect(text).not.toContain('(Starter)');
+      expect(text).not.toContain('(Sub)');
     });
   });
 

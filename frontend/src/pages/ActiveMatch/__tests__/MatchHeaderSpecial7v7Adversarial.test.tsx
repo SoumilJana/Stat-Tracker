@@ -337,18 +337,19 @@ describe('Empirical Challenge: Milestone 3 SPECIAL_7V7 Active Match, Headers, Ba
       expect(clipboardOutput).toContain('Alpha Hawks (Orange)');
       expect(clipboardOutput).toContain('Bravo Wolves (Blue)');
 
-      // Team A has 10 players: 7 starters, 3 subs
-      expect(clipboardOutput).toContain('1. Alpha_1 (Starter)');
-      expect(clipboardOutput).toContain('7. Alpha_7 (Starter)');
-      expect(clipboardOutput).toContain('8. Alpha_8 (Sub)');
-      expect(clipboardOutput).toContain('9. Alpha_9 (Sub)');
-      expect(clipboardOutput).toContain('10. Alpha_10 (Sub)');
+      // Team A has 10 players
+      expect(clipboardOutput).toContain('1. Alpha_1');
+      expect(clipboardOutput).toContain('7. Alpha_7');
+      expect(clipboardOutput).toContain('8. Alpha_8');
+      expect(clipboardOutput).toContain('9. Alpha_9');
+      expect(clipboardOutput).toContain('10. Alpha_10');
 
-      // Team B has exactly 7 players: all 7 starters, 0 subs
-      expect(clipboardOutput).toContain('1. Bravo_1 (Starter)');
-      expect(clipboardOutput).toContain('7. Bravo_7 (Starter)');
+      // Team B has exactly 7 players
+      expect(clipboardOutput).toContain('1. Bravo_1');
+      expect(clipboardOutput).toContain('7. Bravo_7');
       expect(clipboardOutput).not.toContain('Bravo_8');
-      expect(clipboardOutput).not.toContain('Bravo_1 (Sub)');
+      expect(clipboardOutput).not.toContain('(Starter)');
+      expect(clipboardOutput).not.toContain('(Sub)');
     });
 
     it('formats completed match stats with 🎯 Mode: 7v7 Special, winner role tags, and highlights', () => {
@@ -396,16 +397,18 @@ describe('Empirical Challenge: Milestone 3 SPECIAL_7V7 Active Match, Headers, Ba
       expect(clipboardOutput).toContain('Location: Stadium Court');
       expect(clipboardOutput).toContain('🏆 WINNER: Alpha Hawks 🏆');
 
-      // Alpha_1 (starter) has 1 G
-      expect(clipboardOutput).toContain('- Alpha_1 (Starter): 1 G');
-      // Alpha_8 (sub) has 1 G, 1 A
-      expect(clipboardOutput).toContain('- Alpha_8 (Sub): 1 G, 1 A');
+      // Alpha_1 has 1 G
+      expect(clipboardOutput).toContain('- Alpha_1: 1 G');
+      // Alpha_8 has 1 G, 1 A
+      expect(clipboardOutput).toContain('- Alpha_8: 1 G, 1 A');
 
-      // Alpha_2 is a starter on winning team with 0 stats -> rendered with (Starter) role
-      expect(clipboardOutput).toContain('- Alpha_2 (Starter)');
+      // Alpha_2 is on winning team with 0 stats -> rendered by name
+      expect(clipboardOutput).toContain('- Alpha_2');
 
-      // Bravo_2 on losing team scored 1 G -> rendered with (Starter): 1 G
-      expect(clipboardOutput).toContain('- Bravo_2 (Starter): 1 G');
+      // Bravo_2 on losing team scored 1 G -> rendered with 1 G
+      expect(clipboardOutput).toContain('- Bravo_2: 1 G');
+      expect(clipboardOutput).not.toContain('(Starter)');
+      expect(clipboardOutput).not.toContain('(Sub)');
 
       // Highlights
       expect(clipboardOutput).toContain('Top Scorer:');
