@@ -32,20 +32,10 @@
   html {
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
-    overscroll-behavior-y: none;
   }
   body {
     @apply bg-neutral-950 text-neutral-50 antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    overscroll-behavior-y: none;
-  }
-
-  /* Mobile-native: Prevent iOS double-tap delay and accidental text selection on buttons */
-  button,
-  [role="button"] {
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
   }
 
   /* Mobile-native: Prevent iOS Safari from automatically zooming into inputs < 16px */
