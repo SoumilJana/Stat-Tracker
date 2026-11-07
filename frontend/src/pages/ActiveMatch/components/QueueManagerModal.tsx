@@ -18,7 +18,7 @@ export function QueueManagerModal({
   onClose
 }: QueueManagerModalProps) {
   const shouldReduceMotion = useReducedMotion();
-  const isTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+  const isTest = import.meta.env.MODE === 'test';
   const [managedPitch, setManagedPitch] = useState<any[]>(initialPitch);
   const [managedWaiting, setManagedWaiting] = useState<any[]>(initialWaiting);
 

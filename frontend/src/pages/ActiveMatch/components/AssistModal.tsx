@@ -9,7 +9,7 @@ interface AssistModalProps {
 
 export function AssistModal({ isOpen, pendingGoal, onConfirm, onCancel }: AssistModalProps) {
   const shouldReduceMotion = useReducedMotion();
-  const isTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+  const isTest = import.meta.env.MODE === 'test';
   const scorer = pendingGoal?.teamPlayers.find(p => p.id === pendingGoal.playerId);
 
   return (

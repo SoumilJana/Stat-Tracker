@@ -17,7 +17,7 @@ export function EditMatchModal({
   onClose
 }: EditMatchModalProps) {
   const shouldReduceMotion = useReducedMotion();
-  const isTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+  const isTest = import.meta.env.MODE === 'test';
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
   const [editLocation, setEditLocation] = useState('');

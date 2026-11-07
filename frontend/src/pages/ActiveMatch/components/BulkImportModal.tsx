@@ -15,7 +15,7 @@ export function BulkImportModal({
   onClose
 }: BulkImportModalProps) {
   const shouldReduceMotion = useReducedMotion();
-  const isTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+  const isTest = import.meta.env.MODE === 'test';
   const [bulkText, setBulkText] = useState('');
   const [bulkPreview, setBulkPreview] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);

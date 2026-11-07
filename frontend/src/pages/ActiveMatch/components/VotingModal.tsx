@@ -21,7 +21,7 @@ export function VotingModal({
   onClose
 }: VotingModalProps) {
   const shouldReduceMotion = useReducedMotion();
-  const isTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+  const isTest = import.meta.env.MODE === 'test';
 
   // Ensure distinct players sorted by username
   const distinctPlayers = players
