@@ -138,7 +138,7 @@ export function buildWhatsAppShareText({
     const bibColor = bibColors[team.id] ? ` (${bibColors[team.id]})` : '';
     let teamText = isWinner ? `\n🏆 *${team.name}${bibColor} (Winner)*\n` : `\n*${team.name}${bibColor}:*\n`;
 
-    players.forEach((player, pIdx) => {
+    players.forEach((player) => {
       const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
       const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
 

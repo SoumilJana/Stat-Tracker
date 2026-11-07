@@ -143,7 +143,7 @@ export function MatchHeader({
       let hasStats = false;
       let teamText = isWinner ? `\n🏆 WINNER: ${team.name} 🏆\n` : `\n${team.name}:\n`;
 
-      players.forEach((player, pIdx) => {
+      players.forEach((player) => {
         const pGoals = events.filter(e => e.event_type === 'GOAL' && e.player_id === player.id).length;
         const pAssists = events.filter(e => e.event_type === 'GOAL' && e.assisted_by === player.id).length;
 
