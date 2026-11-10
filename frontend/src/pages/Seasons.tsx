@@ -68,42 +68,37 @@ function Avatar({ profile, size = 'sm', className = '' }: { profile: Profile | n
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-type PanelColor = 'amber' | 'blue' | 'emerald' | 'orange' | 'purple';
-const awardColors: Record<PanelColor, { bg: string; border: string; text: string; glow: string; textGrad: string }> = {
+type PanelColor = 'amber' | 'blue' | 'emerald' | 'orange' | 'rose';
+const awardColors: Record<PanelColor, { bg: string; border: string; text: string; glow: string }> = {
   amber: {
-    bg: 'from-amber-900/40 to-neutral-950',
+    bg: 'from-amber-950/40 to-neutral-950',
     border: 'border-amber-600/50',
-    text: 'text-amber-500',
-    glow: 'shadow-[0_0_30px_-10px_rgba(245,158,11,0.3)]',
-    textGrad: 'from-amber-300 to-amber-600',
+    text: 'text-amber-400',
+    glow: 'shadow-[0_0_30px_-10px_rgba(245,158,11,0.25)]',
   },
   blue: {
-    bg: 'from-blue-900/40 to-neutral-950',
+    bg: 'from-blue-950/40 to-neutral-950',
     border: 'border-blue-600/50',
-    text: 'text-blue-500',
-    glow: 'shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)]',
-    textGrad: 'from-blue-300 to-blue-600',
+    text: 'text-blue-400',
+    glow: 'shadow-[0_0_30px_-10px_rgba(59,130,246,0.25)]',
   },
   emerald: {
-    bg: 'from-emerald-900/40 to-neutral-950',
+    bg: 'from-emerald-950/40 to-neutral-950',
     border: 'border-emerald-600/50',
-    text: 'text-emerald-500',
-    glow: 'shadow-[0_0_30px_-10px_rgba(16,185,129,0.3)]',
-    textGrad: 'from-emerald-300 to-emerald-600',
+    text: 'text-emerald-400',
+    glow: 'shadow-[0_0_30px_-10px_rgba(16,185,129,0.25)]',
   },
   orange: {
-    bg: 'from-orange-900/40 to-neutral-950',
+    bg: 'from-orange-950/40 to-neutral-950',
     border: 'border-orange-600/50',
-    text: 'text-orange-500',
-    glow: 'shadow-[0_0_30px_-10px_rgba(249,115,22,0.3)]',
-    textGrad: 'from-orange-300 to-orange-600',
+    text: 'text-orange-400',
+    glow: 'shadow-[0_0_30px_-10px_rgba(249,115,22,0.25)]',
   },
-  purple: {
-    bg: 'from-purple-900/40 to-neutral-950',
-    border: 'border-purple-600/50',
-    text: 'text-purple-500',
-    glow: 'shadow-[0_0_30px_-10px_rgba(168,85,247,0.3)]',
-    textGrad: 'from-purple-300 to-purple-600',
+  rose: {
+    bg: 'from-rose-950/40 to-neutral-950',
+    border: 'border-rose-600/50',
+    text: 'text-rose-400',
+    glow: 'shadow-[0_0_30px_-10px_rgba(244,63,94,0.25)]',
   },
 };
 
@@ -113,21 +108,19 @@ function AwardCard({ title, subtitle, icon, color, profile, stat, unit }: {
   const c = awardColors[color];
   return (
     <div className={`relative overflow-hidden rounded-2xl border ${c.border} bg-gradient-to-b ${c.bg} p-6 flex flex-col items-center text-center ${c.glow}`}>
-      {/* Icon Placeholder (Since no 3D asset, we use large emoji or icon) */}
+      {/* Icon Placeholder */}
       <div className="text-6xl mb-4 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] transform hover:scale-110 transition-transform">
         {icon}
       </div>
       
       {/* Title */}
-      <h4 className={`text-sm font-black uppercase tracking-widest bg-gradient-to-b ${c.textGrad} bg-clip-text text-transparent mb-1`}>{title}</h4>
+      <h4 className={`text-sm font-black uppercase tracking-widest ${c.text} mb-1`}>{title}</h4>
       <p className="text-xs text-neutral-400 mb-6">{subtitle}</p>
       
       {/* Winner */}
       {profile ? (
         <>
           <div className="relative">
-            {/* Optional glow behind avatar */}
-            <div className={`absolute inset-0 rounded-full blur-md bg-gradient-to-b ${c.textGrad} opacity-30`} />
             <Avatar profile={profile} size="xl" className="relative z-10" />
             <div className={`absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-xs z-20`}>
               {icon === '⚽' ? '🏆' : icon === '🎯' ? '🏅' : icon === '🛡️' ? '🛡️' : icon === '⭐' ? '⭐' : '🧤'}
@@ -135,7 +128,7 @@ function AwardCard({ title, subtitle, icon, color, profile, stat, unit }: {
           </div>
           <p className="mt-4 text-lg font-black text-white">{profile.username}</p>
           <div className="mt-1 flex flex-col items-center">
-            <span className={`text-4xl font-black bg-gradient-to-b ${c.textGrad} bg-clip-text text-transparent`}>{stat}</span>
+            <span className="text-4xl font-black text-white tabular-nums drop-shadow-md">{stat}</span>
             <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest mt-1">{unit}</span>
           </div>
         </>
@@ -399,7 +392,7 @@ export default function Seasons() {
             title="Man of the Season" 
             subtitle="Most MOTM Awards" 
             icon="⭐" 
-            color="purple" 
+            color="rose" 
             profile={p(motmPid)} 
             stat={motmAwards} 
             unit="awards" 

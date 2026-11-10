@@ -241,9 +241,9 @@ export default function Leaderboard() {
                     
                     {player.best_gk_awards && player.best_gk_awards > 0 ? (
                       <div className="flex items-center justify-center">
-                        <span className="text-base sm:text-2xl font-black text-purple-400 tabular-nums leading-none tracking-tighter drop-shadow-lg flex items-center">
+                        <span className="text-base sm:text-2xl font-black text-blue-400 tabular-nums leading-none tracking-tighter drop-shadow-lg flex items-center">
                           <span className="text-sm sm:text-xl mr-0.5">🧤</span>
-                          <span className="text-[10px] sm:text-sm text-purple-400/60">x</span>
+                          <span className="text-[10px] sm:text-sm text-blue-400/60">x</span>
                           <span className="ml-0.5">{player.best_gk_awards}</span>
                         </span>
                       </div>

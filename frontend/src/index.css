@@ -86,6 +86,24 @@
     --color-primary-900: #881337;
     --color-primary-950: #4c0519;
   }
+
+  /* Outdoor Sunlight Turf Mode: Pure blacks, bright text, enhanced contrast */
+  html.sunlight-mode body {
+    background-color: #000000 !important;
+  }
+  html.sunlight-mode .text-neutral-400,
+  html.sunlight-mode .text-neutral-500 {
+    color: #e5e5e5 !important;
+  }
+  html.sunlight-mode .border-white\/5,
+  html.sunlight-mode .border-white\/10 {
+    border-color: rgba(255, 255, 255, 0.35) !important;
+  }
+  html.sunlight-mode .bg-neutral-900,
+  html.sunlight-mode .bg-neutral-900\/95,
+  html.sunlight-mode .bg-neutral-950 {
+    background-color: #000000 !important;
+  }
 }
 
 /* Skeleton Loading Shimmer */

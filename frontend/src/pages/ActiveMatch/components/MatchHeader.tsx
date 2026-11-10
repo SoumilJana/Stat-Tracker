@@ -245,19 +245,19 @@ export function MatchHeader({
       <div className="flex items-center justify-between gap-1.5 sm:gap-3 mb-2 md:mb-6 min-h-[40px] sm:min-h-[48px]">
         <Link
           to="/matches"
-          className="p-1 sm:p-0 text-neutral-400 hover:text-white flex items-center gap-1.5 sm:gap-2 transition-colors shrink-0"
+          className="min-h-[40px] min-w-[40px] sm:min-w-0 sm:min-h-0 p-1 sm:p-0 text-neutral-400 hover:text-white flex items-center gap-1.5 sm:gap-2 transition-colors shrink-0 active:scale-95"
           title="Back to Matches"
           aria-label="Back to Matches"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 h-5" />
           <span className="hidden sm:inline text-sm font-medium">Back to Matches</span>
         </Link>
-        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-wrap sm:flex-nowrap justify-end">
           {profile?.role === 'admin' && (
             <>
               <button
                 onClick={onOpenEdit}
-                className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-neutral-500/10 text-neutral-400 hover:bg-neutral-500/20 border border-neutral-500/20 transition-colors flex items-center gap-1.5 shrink-0"
+                className="min-h-[36px] min-w-[36px] px-2 sm:px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-neutral-500/10 text-neutral-400 hover:bg-neutral-500/20 active:scale-95 border border-neutral-500/20 transition-all flex items-center justify-center gap-1.5 shrink-0 touch-manipulation"
                 title="Edit Match"
                 aria-label="Edit Match"
               >
@@ -266,7 +266,7 @@ export function MatchHeader({
               </button>
               <button
                 onClick={onDeleteMatch}
-                className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors flex items-center gap-1.5 shrink-0"
+                className="min-h-[36px] min-w-[36px] px-2 sm:px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-red-500/10 text-red-400 hover:bg-red-500/20 active:scale-95 border border-red-500/20 transition-all flex items-center justify-center gap-1.5 shrink-0 touch-manipulation"
                 title="Delete Match"
                 aria-label="Delete Match"
               >
@@ -275,7 +275,7 @@ export function MatchHeader({
               </button>
               <button
                 onClick={onOpenBulk}
-                className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-colors flex items-center gap-1.5 shrink-0"
+                className="min-h-[36px] min-w-[36px] px-2 sm:px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 active:scale-95 border border-blue-500/20 transition-all flex items-center justify-center gap-1.5 shrink-0 touch-manipulation"
                 title="Bulk Import Stats"
                 aria-label="Bulk Import Stats"
               >
@@ -286,7 +286,7 @@ export function MatchHeader({
           )}
           <button
             onClick={copyStats}
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 border border-primary-500/20 transition-colors flex items-center gap-1.5 shrink-0"
+            className="min-h-[36px] min-w-[36px] px-2 sm:px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 active:scale-95 border border-primary-500/20 transition-all flex items-center justify-center gap-1.5 shrink-0 touch-manipulation"
             title={session?.status === 'COMPLETED' ? 'Copy Match Stats' : 'Copy Teams'}
             aria-label={session?.status === 'COMPLETED' ? 'Copy Match Stats' : 'Copy Teams'}
           >
@@ -297,7 +297,7 @@ export function MatchHeader({
           </button>
           <button
             onClick={handleShare}
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-colors flex items-center gap-1.5 shrink-0"
+            className="min-h-[36px] min-w-[36px] px-2 sm:px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-white/10 text-white hover:bg-white/20 active:scale-95 border border-white/10 transition-all flex items-center justify-center gap-1.5 shrink-0 touch-manipulation"
             title="Share Match Link"
             aria-label="Share Match Link"
           >

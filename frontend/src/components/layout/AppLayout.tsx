@@ -25,7 +25,7 @@ function AccountDropdown({ user, profile, signOut }: { user: any, profile: any, 
       <button 
         onClick={() => setOpen(!open)} 
         aria-label="Account Menu"
-        className="w-9 h-9 rounded-full bg-neutral-800/90 border border-white/10 hover:border-primary-500/50 flex items-center justify-center text-neutral-400 hover:text-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 active:scale-95 overflow-hidden shadow-sm ring-1 ring-black/40"
+        className="w-10 h-10 rounded-full bg-neutral-800/90 border border-white/10 hover:border-primary-500/50 flex items-center justify-center text-neutral-400 hover:text-white transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 active:scale-95 overflow-hidden shadow-sm ring-1 ring-black/40"
       >
         {profile?.photo_url ? (
           <img src={profile.photo_url} alt="Profile" className="w-full h-full rounded-full object-cover" loading="lazy" decoding="async" />
@@ -102,6 +102,7 @@ export default function AppLayout() {
   const { signOut, user, profile } = useAuth();
   const location = useLocation();
   const shouldReduceMotion = useReducedMotion();
+  const isMatchScreen = /^\/matches\/[^/]+/.test(location.pathname);
 
   useEffect(() => {
     const isAnkita = profile?.username?.toLowerCase() === 'ankita' || profile?.full_name?.toLowerCase() === 'ankita' || profile?.name?.toLowerCase() === 'ankita';
@@ -114,54 +115,56 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-neutral-950 flex flex-col md:flex-row">
-      {/* Mobile Bottom Dock Navigation (Flush with viewport bottom edge) */}
-      <nav
-        aria-label="Mobile Navigation"
-        className="fixed bottom-0 inset-x-0 z-50 flex justify-center pointer-events-none md:hidden"
-      >
-        <div className="pointer-events-auto w-full max-w-lg bg-neutral-900/95 backdrop-blur-2xl border-t border-x sm:border-x border-white/10 rounded-t-[22px] shadow-[0_-6px_24px_rgba(0,0,0,0.55)] px-1.5 pt-1.5 pb-[max(0.45rem,env(safe-area-inset-bottom))] flex items-center justify-between ring-1 ring-black/40">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              className={({ isActive }) =>
-                cn(
-                  "relative flex flex-col items-center justify-center flex-1 py-1 min-h-[42px] rounded-xl transition-all select-none active:scale-95 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50",
-                  isActive ? "text-primary-400" : "text-neutral-400 hover:text-neutral-200"
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <motion.div
-                      layoutId="mobile-nav-dock-pill"
-                      className="absolute inset-0 bg-primary-950/70 border border-primary-500/30 rounded-xl shadow-[0_0_12px_rgba(16,185,129,0.18)]"
-                      transition={shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                  <div className="relative z-10 flex flex-col items-center justify-center">
-                    <item.icon
-                      className={cn(
-                        "w-[18px] h-[18px] mb-0.5 transition-transform duration-200",
-                        isActive ? "scale-105 text-primary-400" : "group-hover:scale-105 opacity-75 group-hover:opacity-100"
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "text-[10px] tracking-tight leading-none truncate max-w-[50px] text-center",
-                        isActive ? "font-bold text-primary-300" : "font-medium"
-                      )}
-                    >
-                      {item.mobileName}
-                    </span>
-                  </div>
-                </>
-              )}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+      {/* Mobile Bottom Dock Navigation (Flush with viewport bottom edge - suppressed during active matches for Whistle Mode) */}
+      {!isMatchScreen && (
+        <nav
+          aria-label="Mobile Navigation"
+          className="fixed bottom-0 inset-x-0 z-50 flex justify-center pointer-events-none md:hidden"
+        >
+          <div className="pointer-events-auto w-full max-w-lg bg-neutral-900/95 backdrop-blur-2xl border-t border-x sm:border-x border-white/10 rounded-t-[22px] shadow-[0_-6px_24px_rgba(0,0,0,0.55)] px-1.5 pt-1.5 pb-[max(0.45rem,env(safe-area-inset-bottom))] flex items-center justify-between ring-1 ring-black/40">
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                className={({ isActive }) =>
+                  cn(
+                    "relative flex flex-col items-center justify-center flex-1 py-1 min-h-[44px] rounded-xl transition-all select-none active:scale-95 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50",
+                    isActive ? "text-primary-400" : "text-neutral-400 hover:text-neutral-200"
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <motion.div
+                        layoutId="mobile-nav-dock-pill"
+                        className="absolute inset-0 bg-primary-950/70 border border-primary-500/30 rounded-xl shadow-[0_0_12px_rgba(16,185,129,0.18)]"
+                        transition={shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <div className="relative z-10 flex flex-col items-center justify-center">
+                      <item.icon
+                        className={cn(
+                          "w-[18px] h-[18px] mb-0.5 transition-transform duration-200",
+                          isActive ? "scale-105 text-primary-400" : "group-hover:scale-105 opacity-75 group-hover:opacity-100"
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "text-[10px] tracking-tight leading-none truncate max-w-[50px] text-center",
+                          isActive ? "font-bold text-primary-300" : "font-medium"
+                        )}
+                      >
+                        {item.mobileName}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      )}
 
       {/* Desktop Sidebar Nav */}
       <nav className="hidden md:flex flex-col w-64 bg-neutral-900 border-r border-neutral-800 shrink-0">
@@ -204,8 +207,8 @@ export default function AppLayout() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col relative overflow-hidden min-h-0 h-screen">
-        {/* Seamless Top Header (Mobile Brand + Desktop Profile Bar) */}
-        <header className="h-14 sm:h-16 shrink-0 flex items-center justify-between md:justify-end px-4 sm:px-6 md:px-8 sticky top-0 z-40 bg-neutral-950/85 backdrop-blur-md md:bg-transparent">
+        {/* Seamless Top Header (Mobile Brand + Desktop Profile Bar, with safe area inset protection) */}
+        <header className="pt-[env(safe-area-inset-top)] min-h-14 sm:min-h-16 shrink-0 flex items-center justify-between md:justify-end px-4 sm:px-6 md:px-8 sticky top-0 z-40 bg-neutral-950/85 backdrop-blur-md md:bg-transparent">
           {/* Mobile Brand Lockup */}
           <div className="flex md:hidden items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-neutral-900 border border-white/10 p-1 flex items-center justify-center">
@@ -230,7 +233,7 @@ export default function AppLayout() {
         </header>
 
         <div className="flex-1 min-h-0 overflow-y-auto w-full relative">
-          <div className="p-4 md:p-8 max-w-7xl mx-auto w-full min-h-full pb-28 sm:pb-32 md:pb-8">
+          <div className={cn("p-4 md:p-8 max-w-7xl mx-auto w-full min-h-full", isMatchScreen ? "pb-6 md:pb-8" : "pb-28 sm:pb-32 md:pb-8")}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

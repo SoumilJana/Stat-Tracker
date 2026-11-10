@@ -79,6 +79,34 @@ export function WinnerStaysClock({
   const wakeLock = useWakeLock(settings.wakeLockEnabled && session?.status !== 'COMPLETED');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRecordingTimeUp, setIsRecordingTimeUp] = useState(false);
+  const [sunlightMode, setSunlightMode] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && localStorage.getItem('stattracker_sunlight_mode') === 'true';
+  });
+
+  const toggleSunlightMode = () => {
+    setSunlightMode(prev => {
+      const next = !prev;
+      localStorage.setItem('stattracker_sunlight_mode', String(next));
+      if (typeof document !== 'undefined') {
+        if (next) {
+          document.documentElement.classList.add('sunlight-mode');
+        } else {
+          document.documentElement.classList.remove('sunlight-mode');
+        }
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (sunlightMode) {
+        document.documentElement.classList.add('sunlight-mode');
+      } else {
+        document.documentElement.classList.remove('sunlight-mode');
+      }
+    }
+  }, [sunlightMode]);
 
   // 2. Track Phase Transitions for Whistles and Haptics
   const handlePhaseExpire = useCallback(
@@ -380,7 +408,7 @@ export function WinnerStaysClock({
               data-testid="record-time-up-btn"
               disabled={isRecordingTimeUp}
               onClick={handleManualRecordTimeUp}
-              className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-red-950/50 cursor-pointer disabled:opacity-50"
+              className="min-h-[44px] px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-lg shadow-red-950/50 cursor-pointer disabled:opacity-50 active:scale-95 touch-manipulation flex items-center justify-center"
             >
               {isRecordingTimeUp ? 'Recording...' : 'Record Time Up'}
             </button>
@@ -398,10 +426,10 @@ export function WinnerStaysClock({
                 type="button"
                 data-testid="pause-timer-btn"
                 onClick={handlePause}
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-6 md:py-3 md:rounded-2xl md:text-sm bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all select-none active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold md:px-6 md:py-3 md:rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all select-none active:scale-95 cursor-pointer touch-manipulation"
               >
                 <span data-testid="timer-start-pause-btn" className="flex items-center gap-1.5">
-                  <Pause className="w-3.5 h-3.5 md:w-4 md:h-4 fill-amber-300" />
+                  <Pause className="w-4 h-4 fill-amber-300" />
                   Pause
                 </span>
               </button>
@@ -410,10 +438,10 @@ export function WinnerStaysClock({
                 type="button"
                 data-testid="start-timer-btn"
                 onClick={handleStart}
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-6 md:py-3 md:rounded-2xl md:text-sm bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-all select-none active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold md:px-6 md:py-3 md:rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 shadow-[0_0_25px_rgba(16,185,129,0.35)] transition-all select-none active:scale-95 cursor-pointer touch-manipulation"
               >
                 <span data-testid="timer-start-pause-btn" className="flex items-center gap-1.5">
-                  <Play className="w-3.5 h-3.5 md:w-4 md:h-4 fill-neutral-950" />
+                  <Play className="w-4 h-4 fill-neutral-950" />
                   {isPaused ? 'Resume' : 'Start Clock'}
                 </span>
               </button>
@@ -425,10 +453,10 @@ export function WinnerStaysClock({
                 type="button"
                 data-testid="skip-buffer-btn"
                 onClick={handleSkip}
-                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold md:px-5 md:py-3 md:rounded-2xl md:text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all select-none active:scale-95 cursor-pointer"
+                className="flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold md:px-5 md:py-3 md:rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all select-none active:scale-95 cursor-pointer touch-manipulation"
               >
                 <span data-testid="timer-skip-buffer-btn" className="flex items-center gap-1.5">
-                  <FastForward className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  <FastForward className="w-4 h-4" />
                   Skip Buffer
                 </span>
               </button>
@@ -439,10 +467,10 @@ export function WinnerStaysClock({
               type="button"
               data-testid="reset-timer-btn"
               onClick={handleReset}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold md:px-5 md:py-3 md:rounded-2xl md:text-sm bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-all select-none active:scale-95 cursor-pointer"
+              className="flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold md:px-5 md:py-3 md:rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/10 transition-all select-none active:scale-95 cursor-pointer touch-manipulation"
             >
               <span data-testid="timer-reset-btn" className="flex items-center gap-1.5">
-                <RotateCcw className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                <RotateCcw className="w-4 h-4" />
                 Reset
               </span>
             </button>
@@ -561,6 +589,29 @@ export function WinnerStaysClock({
                     settings.wakeLockEnabled && wakeLock.isSupported
                       ? 'bg-emerald-500 justify-end'
                       : 'bg-neutral-700 justify-start'
+                  }`}
+                >
+                  <span className="w-4 h-4 rounded-full bg-white shadow-md" />
+                </button>
+              </div>
+
+              {/* Sunlight Turf Mode (Outdoor High-Contrast) Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <Sun className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">Sunlight Turf Mode</p>
+                    <p className="text-xs text-neutral-400">High-contrast outdoor visibility</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  data-testid="toggle-sunlight-btn"
+                  onClick={toggleSunlightMode}
+                  className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
+                    sunlightMode ? 'bg-amber-500 justify-end' : 'bg-neutral-700 justify-start'
                   }`}
                 >
                   <span className="w-4 h-4 rounded-full bg-white shadow-md" />

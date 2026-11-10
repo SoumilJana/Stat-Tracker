@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 export interface PendingGoalData {
@@ -19,6 +20,17 @@ export function AssistModal({ isOpen, pendingGoal, onConfirm, onCancel }: Assist
   const isTest = import.meta.env.MODE === 'test';
   const scorer = pendingGoal?.teamPlayers.find(p => p.id === pendingGoal.playerId);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onCancel]);
+
   return (
     <AnimatePresence>
       {isOpen && pendingGoal && (
@@ -29,7 +41,6 @@ export function AssistModal({ isOpen, pendingGoal, onConfirm, onCancel }: Assist
           exit={{ opacity: 0 }}
           transition={shouldReduceMotion || isTest ? { duration: 0 } : { duration: 0.15 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onClick={onCancel}
         >
           <motion.div
             key="assist-modal-content"
@@ -81,7 +92,7 @@ export function AssistModal({ isOpen, pendingGoal, onConfirm, onCancel }: Assist
             <button
               type="button"
               onClick={onCancel}
-              className="mt-6 w-full py-3 text-neutral-500 hover:text-white active:scale-95 text-sm font-medium transition-all select-none touch-manipulation cursor-pointer"
+              className="mt-6 w-full py-3.5 px-4 rounded-xl bg-neutral-800/80 hover:bg-neutral-800 active:scale-95 text-neutral-300 hover:text-white text-sm font-bold border border-white/5 transition-all select-none touch-manipulation cursor-pointer flex items-center justify-center"
             >
               Cancel
             </button>
