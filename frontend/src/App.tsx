@@ -15,7 +15,7 @@ const Matches = React.lazy(() => import('./pages/Matches'));
 const NewMatch = React.lazy(() => import('./pages/NewMatch'));
 const ActiveMatch = React.lazy(() => import('./pages/ActiveMatch'));
 const Leaderboard = React.lazy(() => import('./pages/Leaderboard'));
-const Drafts = React.lazy(() => import('./pages/Drafts'));
+const Payments = React.lazy(() => import('./pages/Payments'));
 const Seasons = React.lazy(() => import('./pages/Seasons'));
 const Rules = React.lazy(() => import('./pages/Rules'));
 
@@ -50,7 +50,7 @@ function AppRoutes() {
           <Route path="matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
           <Route path="matches/new" element={<ProtectedRoute><NewMatch /></ProtectedRoute>} />
           <Route path="players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
-          <Route path="drafts" element={<ProtectedRoute><Drafts /></ProtectedRoute>} />
+          <Route path="payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
           <Route path="leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="seasons" element={<ProtectedRoute><Seasons /></ProtectedRoute>} />
           <Route path="rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />

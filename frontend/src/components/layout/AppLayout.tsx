@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Home, Users, LogOut, Activity, Trophy, User as UserIcon, ClipboardList, Award } from 'lucide-react';
+import { Home, Users, LogOut, Activity, Trophy, User as UserIcon, CreditCard, Award } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../lib/utils';
 import { useState, useEffect } from 'react';
@@ -92,7 +92,7 @@ function AccountDropdown({ user, profile, signOut }: { user: any, profile: any, 
 const NAV_ITEMS = [
   { name: 'Dashboard', mobileName: 'Home', path: '/', icon: Home },
   { name: 'Matches', mobileName: 'Matches', path: '/matches', icon: Activity },
-  { name: 'Drafts', mobileName: 'Drafts', path: '/drafts', icon: ClipboardList },
+  { name: 'Payments', mobileName: 'Payments', path: '/payments', icon: CreditCard },
   { name: 'Players', mobileName: 'Players', path: '/players', icon: Users },
   { name: 'Leaderboard', mobileName: 'Ranking', path: '/leaderboard', icon: Trophy },
   { name: 'Hall of Fame', mobileName: 'Awards', path: '/seasons', icon: Award },
