@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
-import { Copy, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Copy, CheckCircle2, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { SessionMode } from '../types/session';
 
 /* oxlint-disable-next-line react/only-export-components */
@@ -24,6 +24,7 @@ export default function NewMatch() {
   const [time, setTime] = useState('19:00');
   const [mode, setMode] = useState<SessionMode>('STANDARD');
   const [numTeams, setNumTeams] = useState(3);
+  const [confirmedRosterLoaded, setConfirmedRosterLoaded] = useState(false);
   
   const [teamA, setTeamA] = useState<string[]>([]);
   const [teamB, setTeamB] = useState<string[]>([]);
@@ -35,9 +36,60 @@ export default function NewMatch() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    supabase.from('profiles').select('*').neq('role', 'manager').order('username').then(({ data }) => {
-      if (data) setPlayers(data);
-    });
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const gameId = searchParams ? searchParams.get('game_id') : null;
+
+    if (gameId) {
+      // Load specific confirmed game roster from Payments
+      Promise.all([
+        supabase.from('games').select('*').eq('id', gameId).single(),
+        supabase.from('game_registrations')
+          .select(`
+            user_id,
+            joined_at,
+            response,
+            profile:profiles (*)
+          `)
+          .eq('game_id', gameId)
+          .eq('response', 'IN')
+          .order('joined_at', { ascending: true })
+      ]).then(([gameRes, regRes]) => {
+        if (gameRes.data) {
+          const game = gameRes.data;
+          if (game.game_date) setDate(game.game_date);
+          if (game.start_time) setTime(game.start_time);
+          if (game.location) setLocation(game.location);
+          if (game.mode === 'WINNER_STAYS') {
+            setMode('WINNER_STAYS');
+            setNumTeams(3);
+          } else {
+            setMode('STANDARD');
+          }
+        }
+
+        if (regRes.data && regRes.data.length > 0) {
+          // Rule (Case 2): 15 players = all 15 active; fewer than 15 = strictly top 10 verified players
+          const maxSquad = regRes.data.length >= 15 ? 15 : 10;
+          const filteredProfiles = regRes.data
+            .slice(0, maxSquad)
+            .map((r: any) => r.profile)
+            .filter((p: any) => p && p.role !== 'manager');
+
+          setPlayers(filteredProfiles);
+          setConfirmedRosterLoaded(true);
+          return;
+        }
+
+        // Fallback if no specific registrations found
+        supabase.from('profiles').select('*').neq('role', 'manager').order('username').then(({ data }) => {
+          if (data) setPlayers(data);
+        });
+      });
+    } else {
+      supabase.from('profiles').select('*').neq('role', 'manager').order('username').then(({ data }) => {
+        if (data) setPlayers(data);
+      });
+    }
   }, []);
 
   // When mode or numTeams changes, clear unused teams
@@ -252,6 +304,12 @@ export default function NewMatch() {
       <div>
         <h2 className="text-2xl font-bold text-white">Start New Match</h2>
         <p className="mt-1 text-sm text-neutral-400">Set up teams and details to begin.</p>
+        {confirmedRosterLoaded && (
+          <div className="mt-3 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold inline-flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4" />
+            Confirmed Payments Roster Loaded ({players.length} Players Verified)
+          </div>
+        )}
       </div>
 
       <div className="bg-black border border-white/5 rounded-3xl p-6 sm:p-10 space-y-8 shadow-2xl">
