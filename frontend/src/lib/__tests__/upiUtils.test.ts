@@ -91,12 +91,17 @@ describe('Phase 2: UPI Utilities & Vector QR Generator', () => {
   });
 
   describe('DEFAULT_PAYMENT_PROFILES', () => {
-    it('contains Soumil Jana super.money profile as default seed', () => {
-      expect(DEFAULT_PAYMENT_PROFILES).toHaveLength(1);
+    it('contains Soumil Jana and Asmit Ghosh as default payment recipients', () => {
+      expect(DEFAULT_PAYMENT_PROFILES).toHaveLength(2);
       expect(DEFAULT_PAYMENT_PROFILES[0].display_name).toBe('Soumil Jana');
       expect(DEFAULT_PAYMENT_PROFILES[0].upi_id).toBe('9432938110@superyes');
       expect(DEFAULT_PAYMENT_PROFILES[0].qr_image_url).toBe('/qr/soumil-qr.png');
       expect(DEFAULT_PAYMENT_PROFILES[0].active).toBe(true);
+
+      expect(DEFAULT_PAYMENT_PROFILES[1].display_name).toBe('Asmit Ghosh');
+      expect(DEFAULT_PAYMENT_PROFILES[1].upi_id).toBe('8777389218@superyes');
+      expect(DEFAULT_PAYMENT_PROFILES[1].qr_image_url).toBe('/qr/asmit-qr.jpg');
+      expect(DEFAULT_PAYMENT_PROFILES[1].active).toBe(true);
     });
   });
 });

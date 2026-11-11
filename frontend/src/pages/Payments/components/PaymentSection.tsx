@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CreditCard, Banknote, Clock, CheckCircle2, ArrowRight, ShieldAlert, Sparkles } from 'lucide-react';
 import { DynamicQRCode } from '../../../components/payments/DynamicQRCode';
 import type { Game, GamePayment, PaymentProfile, PaymentMethod } from '../../../types/gamePayment';
@@ -31,6 +31,12 @@ export function PaymentSection({
   const [utrInput, setUtrInput] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!selectedRecipientId && paymentProfiles.length > 0) {
+      setSelectedRecipientId(paymentProfiles[0].id);
+    }
+  }, [paymentProfiles, selectedRecipientId]);
 
   const selectedProfile = paymentProfiles.find((p) => p.id === selectedRecipientId) || paymentProfiles[0];
   const amount = game.amount_per_player || 80.0;

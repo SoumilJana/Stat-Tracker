@@ -28,6 +28,14 @@ export const DEFAULT_PAYMENT_PROFILES: PaymentProfile[] = [
     qr_image_url: '/qr/soumil-qr.png',
     active: true,
     sort_order: 1
+  },
+  {
+    id: 'seed-asmit-superyes',
+    display_name: 'Asmit Ghosh',
+    upi_id: '8777389218@superyes',
+    qr_image_url: '/qr/asmit-qr.jpg',
+    active: true,
+    sort_order: 2
   }
 ];
 
