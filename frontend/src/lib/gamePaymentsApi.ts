@@ -364,3 +364,52 @@ export function buildPlayerRoster(
 
   return { activeSquad, waitingList, outList };
 }
+
+/**
+ * Admin manually register/enlist a player into the game
+ */
+export async function adminRegisterPlayer(
+  gameId: string,
+  userId: string,
+  markAsPaid = false,
+  paymentMethod: PaymentMethod = 'CASH'
+): Promise<{ success: boolean; active_count: number; game_status: string; paid: boolean }> {
+  const { data, error } = await supabase.rpc('admin_register_player', {
+    p_game_id: gameId,
+    p_user_id: userId,
+    p_mark_as_paid: markAsPaid,
+    p_payment_method: paymentMethod
+  });
+
+  if (error) {
+    console.error('Error admin registering player:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+/**
+ * Fetch profiles available to be enlisted (exclude players already marked IN)
+ */
+export async function fetchAvailableProfilesForGame(
+  alreadyInUserIds: string[]
+): Promise<Array<{ id: string; username: string; photo_url?: string; jersey_number?: number }>> {
+  let query = supabase
+    .from('profiles')
+    .select('id, username, photo_url, jersey_number')
+    .order('username', { ascending: true });
+
+  if (alreadyInUserIds.length > 0) {
+    query = query.not('id', 'in', `(${alreadyInUserIds.join(',')})`);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching available profiles:', error);
+    throw new Error(error.message);
+  }
+
+  return data || [];
+}
+

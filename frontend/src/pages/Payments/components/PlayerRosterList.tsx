@@ -1,4 +1,4 @@
-import { Check, Clock, XCircle, User, ShieldCheck } from 'lucide-react';
+import { Check, Clock, XCircle, User, ShieldCheck, UserPlus } from 'lucide-react';
 import type { PlayerRosterItem } from '../../../types/gamePayment';
 
 export interface PlayerRosterListProps {
@@ -8,6 +8,7 @@ export interface PlayerRosterListProps {
   isAdmin?: boolean;
   onQuickVerify?: (userId: string) => void;
   currentUserId?: string;
+  onOpenAddPlayer?: () => void;
 }
 
 export function PlayerRosterList({
@@ -16,7 +17,8 @@ export function PlayerRosterList({
   outList,
   isAdmin = false,
   onQuickVerify,
-  currentUserId
+  currentUserId,
+  onOpenAddPlayer
 }: PlayerRosterListProps) {
   const renderPaymentBadge = (item: PlayerRosterItem) => {
     const status = item.payment?.status;
@@ -75,6 +77,17 @@ export function PlayerRosterList({
               Players ordered strictly by response timestamp
             </p>
           </div>
+
+          {isAdmin && onOpenAddPlayer && (
+            <button
+              type="button"
+              onClick={onOpenAddPlayer}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>+ Enlist Player</span>
+            </button>
+          )}
         </div>
 
         {activeSquad.length === 0 ? (

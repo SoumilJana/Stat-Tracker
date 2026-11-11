@@ -27,6 +27,7 @@ import { PlayerRosterList } from './Payments/components/PlayerRosterList';
 import { WhatsAppSummaryModal } from './Payments/components/WhatsAppSummaryModal';
 import { AdminReconciliationModal } from './Payments/components/AdminReconciliationModal';
 import { CreateGameModal } from './Payments/components/CreateGameModal';
+import { AdminAddPlayerModal } from './Payments/components/AdminAddPlayerModal';
 import type {
   Game,
   GameRegistration,
@@ -54,6 +55,7 @@ export default function Payments() {
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [showReconciliationModal, setShowReconciliationModal] = useState(false);
   const [showCreateGameModal, setShowCreateGameModal] = useState(false);
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
 
   // Load all initial game & payment data
   const loadData = useCallback(async (isSilent = false) => {
@@ -383,9 +385,21 @@ export default function Payments() {
         isAdmin={isAdmin}
         onQuickVerify={handleQuickVerify}
         currentUserId={user?.id}
+        onOpenAddPlayer={() => setShowAddPlayerModal(true)}
       />
 
       {/* Modals */}
+      {showAddPlayerModal && game && (
+        <AdminAddPlayerModal
+          isOpen={showAddPlayerModal}
+          onClose={() => setShowAddPlayerModal(false)}
+          gameId={game.id}
+          alreadyInUserIds={activeSquad.concat(waitingList).map((p) => p.user_id)}
+          amountPerPlayer={Number(game.amount_per_player)}
+          onPlayerAdded={() => loadData(true)}
+        />
+      )}
+
       {showWhatsAppModal && (
         <WhatsAppSummaryModal
           game={game}
