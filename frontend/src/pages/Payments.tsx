@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, PlusCircle, ShieldCheck, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -57,6 +57,9 @@ export default function Payments() {
   const [showCreateGameModal, setShowCreateGameModal] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
 
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
   // Load all initial game & payment data
   const loadData = useCallback(async (isSilent = false) => {
     try {
@@ -81,12 +84,12 @@ export default function Payments() {
       }
     } catch (err: any) {
       console.error('Failed to load payments data:', err);
-      toast.error('Failed to load match & payment data. Please try again.');
+      toastRef.current.error('Failed to load match & payment data. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     loadData();

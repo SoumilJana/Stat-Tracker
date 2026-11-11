@@ -47,3 +47,5 @@ Thumbs.db
 skills-lock.json
 DESIGN.md
 PRODUCT.md
+.cache/
+product-video/

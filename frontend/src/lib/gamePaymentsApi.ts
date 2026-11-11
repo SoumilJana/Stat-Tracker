@@ -390,6 +390,30 @@ export async function adminRegisterPlayer(
 }
 
 /**
+ * Admin manually register/enlist multiple players into the game in a batch
+ */
+export async function adminRegisterPlayers(
+  gameId: string,
+  userIds: string[],
+  markAsPaid = false,
+  paymentMethod: PaymentMethod = 'CASH'
+): Promise<{ success: boolean; enlisted_count: number; active_count: number; game_status: string; paid: boolean }> {
+  const { data, error } = await supabase.rpc('admin_register_players', {
+    p_game_id: gameId,
+    p_user_ids: userIds,
+    p_mark_as_paid: markAsPaid,
+    p_payment_method: paymentMethod
+  });
+
+  if (error) {
+    console.error('Error admin batch registering players:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+/**
  * Fetch profiles available to be enlisted (exclude players already marked IN)
  */
 export async function fetchAvailableProfilesForGame(

@@ -6,7 +6,9 @@ import {
   adminVerifyPayment,
   adminQuickVerifyPlayer,
   adminConfirmRoster,
-  adminSettleRefund
+  adminSettleRefund,
+  adminRegisterPlayer,
+  adminRegisterPlayers
 } from '../gamePaymentsApi';
 import { supabase } from '../supabase';
 import type { GameRegistration, GamePayment } from '../../types/gamePayment';
@@ -226,6 +228,38 @@ describe('Phase 1: Game Management & Payment API + Roster Logic', () => {
         p_payment_id: 'p-1'
       });
       expect(res.status).toBe('REFUNDED');
+    });
+
+    it('adminRegisterPlayer calls admin_register_player RPC', async () => {
+      (supabase.rpc as any).mockResolvedValue({
+        data: { success: true, user_id: 'u-1', active_count: 5, game_status: 'REGISTRATION_OPEN', paid: true },
+        error: null
+      });
+
+      const res = await adminRegisterPlayer('game-1', 'u-1', true, 'CASH');
+      expect(supabase.rpc).toHaveBeenCalledWith('admin_register_player', {
+        p_game_id: 'game-1',
+        p_user_id: 'u-1',
+        p_mark_as_paid: true,
+        p_payment_method: 'CASH'
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('adminRegisterPlayers calls admin_register_players RPC for batch enlistment', async () => {
+      (supabase.rpc as any).mockResolvedValue({
+        data: { success: true, enlisted_count: 3, active_count: 8, game_status: 'REGISTRATION_OPEN', paid: true },
+        error: null
+      });
+
+      const res = await adminRegisterPlayers('game-1', ['u-1', 'u-2', 'u-3'], true, 'UPI');
+      expect(supabase.rpc).toHaveBeenCalledWith('admin_register_players', {
+        p_game_id: 'game-1',
+        p_user_ids: ['u-1', 'u-2', 'u-3'],
+        p_mark_as_paid: true,
+        p_payment_method: 'UPI'
+      });
+      expect(res.enlisted_count).toBe(3);
     });
 
     it('throws error when RPC encounters failure', async () => {

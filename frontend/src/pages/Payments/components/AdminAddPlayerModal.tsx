@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Search, CheckCircle, Loader2 } from 'lucide-react';
-import { fetchAvailableProfilesForGame, adminRegisterPlayer } from '../../../lib/gamePaymentsApi';
+import { X, UserPlus, Search, CheckCircle, Loader2, CheckSquare, Square } from 'lucide-react';
+import { fetchAvailableProfilesForGame, adminRegisterPlayers } from '../../../lib/gamePaymentsApi';
 import type { PaymentMethod } from '../../../types/gamePayment';
 import { useToast } from '../../../contexts/ToastContext';
 
@@ -24,7 +24,7 @@ export const AdminAddPlayerModal: React.FC<AdminAddPlayerModalProps> = ({
   const toast = useToast();
   const [profiles, setProfiles] = useState<Array<{ id: string; username: string; photo_url?: string; jersey_number?: number }>>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [markAsPaid, setMarkAsPaid] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
@@ -39,9 +39,7 @@ export const AdminAddPlayerModal: React.FC<AdminAddPlayerModalProps> = ({
       .then((data) => {
         if (isMounted) {
           setProfiles(data);
-          if (data.length > 0) {
-            setSelectedUserId(data[0].id);
-          }
+          setSelectedUserIds([]);
         }
       })
       .catch((err) => {
@@ -63,30 +61,47 @@ export const AdminAddPlayerModal: React.FC<AdminAddPlayerModalProps> = ({
     p.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedUserIds.length === filteredProfiles.length) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(filteredProfiles.map((p) => p.id));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUserId) {
-      toast.error('Please select a player to enlist.');
+    if (selectedUserIds.length === 0) {
+      toast.error('Please select at least one player to enlist.');
       return;
     }
 
     try {
       setSubmitting(true);
-      await adminRegisterPlayer(gameId, selectedUserId, markAsPaid, paymentMethod);
-      toast.success('Player successfully added to match roster!');
+      await adminRegisterPlayers(gameId, selectedUserIds, markAsPaid, paymentMethod);
+      const count = selectedUserIds.length;
+      toast.success(`${count} player${count > 1 ? 's' : ''} successfully added to match roster!`);
       onPlayerAdded();
       onClose();
     } catch (err: any) {
-      console.error('Error enlisting player:', err);
-      toast.error(err.message || 'Failed to enlist player.');
+      console.error('Error enlisting players:', err);
+      toast.error(err.message || 'Failed to enlist players.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const totalFeePreview = amountPerPlayer * selectedUserIds.length;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-zinc-800 bg-zinc-950/50">
           <div className="flex items-center gap-3">
@@ -94,8 +109,15 @@ export const AdminAddPlayerModal: React.FC<AdminAddPlayerModalProps> = ({
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Enlist Player to Match</h2>
-              <p className="text-xs text-zinc-400">Manually add offline or WhatsApp enlisted players</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-white">Enlist Players to Match</h2>
+                {selectedUserIds.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 border border-emerald-500/30 text-emerald-400">
+                    {selectedUserIds.length} selected
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-zinc-400">Select one or multiple players to add to the roster</p>
             </div>
           </div>
           <button
@@ -107,12 +129,23 @@ export const AdminAddPlayerModal: React.FC<AdminAddPlayerModalProps> = ({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-5">
-          {/* Search Box */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Search Box & Select All Toggle */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Search Player
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Search Player
+              </label>
+              {filteredProfiles.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  {selectedUserIds.length === filteredProfiles.length ? 'Deselect All' : 'Select All'}
+                </button>
+              )}
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input
@@ -125,29 +158,34 @@ export const AdminAddPlayerModal: React.FC<AdminAddPlayerModalProps> = ({
             </div>
           </div>
 
-          {/* Select Player List */}
+          {/* Select Player List (Multi-Select) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Select Player ({filteredProfiles.length} Available)
-            </label>
+            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              <span>Available Players ({filteredProfiles.length})</span>
+              {selectedUserIds.length > 0 && (
+                <span className="text-emerald-400 normal-case font-bold">
+                  {selectedUserIds.length} player{selectedUserIds.length > 1 ? 's' : ''} chosen
+                </span>
+              )}
+            </div>
             {loadingProfiles ? (
-              <div className="flex items-center justify-center py-6 text-zinc-500 gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
+              <div className="flex items-center justify-center py-8 text-zinc-500 gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
                 <span className="text-sm">Loading players...</span>
               </div>
             ) : filteredProfiles.length === 0 ? (
               <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-center text-sm text-zinc-400">
-                No matching players found.
+                No matching players available to enlist.
               </div>
             ) : (
-              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 border border-zinc-800/80 rounded-xl p-2 bg-zinc-950/60">
+              <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1 border border-zinc-800/80 rounded-xl p-2 bg-zinc-950/60">
                 {filteredProfiles.map((p) => {
-                  const isSelected = selectedUserId === p.id;
+                  const isSelected = selectedUserIds.includes(p.id);
                   return (
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => setSelectedUserId(p.id)}
+                      onClick={() => toggleUserSelection(p.id)}
                       className={`w-full flex items-center justify-between p-2.5 rounded-lg border text-left transition-all ${
                         isSelected
                           ? 'bg-emerald-500/15 border-emerald-500/50 text-white'
@@ -155,6 +193,13 @@ export const AdminAddPlayerModal: React.FC<AdminAddPlayerModalProps> = ({
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="shrink-0 text-zinc-500">
+                          {isSelected ? (
+                            <CheckSquare className="w-4 h-4 text-emerald-400" />
+                          ) : (
+                            <Square className="w-4 h-4 text-zinc-600" />
+                          )}
+                        </div>
                         {p.photo_url ? (
                           <img
                             src={p.photo_url}
@@ -187,7 +232,13 @@ export const AdminAddPlayerModal: React.FC<AdminAddPlayerModalProps> = ({
               <div className="space-y-0.5">
                 <span className="text-sm font-semibold text-white">Mark as Already Paid</span>
                 <p className="text-xs text-zinc-400">
-                  Instantly verify ₹{amountPerPlayer} payment without awaiting review
+                  {selectedUserIds.length > 0 ? (
+                    <>
+                      Verify <span className="text-emerald-400 font-bold">₹{totalFeePreview}</span> (₹{amountPerPlayer} × {selectedUserIds.length}) immediately
+                    </>
+                  ) : (
+                    `Instantly verify ₹${amountPerPlayer}/player without awaiting review`
+                  )}
                 </p>
               </div>
               <input
@@ -239,18 +290,22 @@ export const AdminAddPlayerModal: React.FC<AdminAddPlayerModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={submitting || !selectedUserId || filteredProfiles.length === 0}
+              disabled={submitting || selectedUserIds.length === 0}
               className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-sm font-bold shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Enlisting...</span>
+                  <span>Enlisting {selectedUserIds.length} Player{selectedUserIds.length > 1 ? 's' : ''}...</span>
                 </>
               ) : (
                 <>
                   <UserPlus className="w-4 h-4" />
-                  <span>Add to Roster</span>
+                  <span>
+                    {selectedUserIds.length === 0
+                      ? 'Select Players'
+                      : `Enlist ${selectedUserIds.length} Player${selectedUserIds.length > 1 ? 's' : ''}`}
+                  </span>
                 </>
               )}
             </button>

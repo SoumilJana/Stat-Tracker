@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
@@ -130,16 +130,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const value: ToastContextValue = {
-    toast: {
-      success: (msg, opts) => addToast('success', msg, opts),
-      error: (msg, opts) => addToast('error', msg, opts),
-      warning: (msg, opts) => addToast('warning', msg, opts),
-      info: (msg, opts) => addToast('info', msg, opts),
-      dismiss,
-      clearAll,
-    },
-  };
+  const value: ToastContextValue = useMemo(
+    () => ({
+      toast: {
+        success: (msg, opts) => addToast('success', msg, opts),
+        error: (msg, opts) => addToast('error', msg, opts),
+        warning: (msg, opts) => addToast('warning', msg, opts),
+        info: (msg, opts) => addToast('info', msg, opts),
+        dismiss,
+        clearAll,
+      },
+    }),
+    [addToast, dismiss, clearAll]
+  );
 
   return (
     <ToastContext.Provider value={value}>
