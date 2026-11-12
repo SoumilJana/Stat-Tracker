@@ -50,24 +50,101 @@ export function generateUpiUri(params: UpiIntentParams): string {
     throw new Error('UPI ID and Payee Name are required to generate UPI URI');
   }
 
-  const cleanUpi = upiId.trim();
-  const cleanName = payeeName.trim();
   const formattedAmount = amount > 0 ? amount.toFixed(2) : '80.00';
 
-  const searchParams = new URLSearchParams();
-  searchParams.set('pa', cleanUpi);
-  searchParams.set('pn', cleanName);
-  searchParams.set('am', formattedAmount);
-  searchParams.set('cu', 'INR');
+  // Built by hand instead of URLSearchParams: that encodes spaces as "+" and "@" as "%40",
+  // which many UPI apps do not decode (GPay showed the note as "StatTracker+Match+...").
+  const pairs: Array<[string, string]> = [
+    ['pa', upiId.trim()],
+    ['pn', payeeName.trim()],
+    ['am', formattedAmount],
+    ['cu', 'INR']
+  ];
+  if (note) pairs.push(['tn', note.trim()]);
+  if (transactionRef) pairs.push(['tr', transactionRef.trim()]);
 
-  if (note) {
-    searchParams.set('tn', note.trim());
-  }
-  if (transactionRef) {
-    searchParams.set('tr', transactionRef.trim());
-  }
+  return `upi://pay?${pairs.map(([k, v]) => `${k}=${encodeUpiValue(v)}`).join('&')}`;
+}
 
-  return `upi://pay?${searchParams.toString()}`;
+/** Percent-encode a UPI query value, keeping "@" readable (spaces become %20, never "+"). */
+export function encodeUpiValue(value: string): string {
+  return encodeURIComponent(value).replace(/%40/g, '@');
+}
+
+export type UpiApp = 'gpay' | 'phonepe' | 'paytm';
+
+export const UPI_APP_LABELS: Record<UpiApp, string> = {
+  gpay: 'Google Pay',
+  phonepe: 'PhonePe',
+  paytm: 'Paytm'
+};
+
+const UPI_APP_PREFIXES: Record<UpiApp, string> = {
+  gpay: 'gpay://upi/pay?',
+  phonepe: 'phonepe://pay?',
+  paytm: 'paytmmp://pay?'
+};
+
+/**
+ * Re-target a generic upi:// URI at a specific app. Used on iOS, where upi:// opens whichever
+ * app last claimed the scheme (often WhatsApp) instead of showing a chooser.
+ */
+export function toAppSpecificUri(upiUri: string, app: UpiApp): string {
+  const query = upiUri.slice(upiUri.indexOf('?') + 1);
+  return `${UPI_APP_PREFIXES[app]}${query}`;
+}
+
+export type DevicePlatform = 'android' | 'ios' | 'other';
+
+export function detectPlatform(
+  ua: string = typeof navigator !== 'undefined' ? navigator.userAgent : '',
+  maxTouchPoints: number = typeof navigator !== 'undefined' ? navigator.maxTouchPoints || 0 : 0
+): DevicePlatform {
+  if (/android/i.test(ua)) return 'android';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  // iPadOS reports a desktop Mac user agent; touch support gives it away
+  if (/Macintosh/i.test(ua) && maxTouchPoints > 1) return 'ios';
+  return 'other';
+}
+
+/** Convert a data: URL to a File synchronously (keeps navigator.share inside the tap gesture). */
+export function dataUrlToFile(dataUrl: string, fileName: string): File {
+  const [header, base64] = dataUrl.split(',');
+  const mime = header.match(/data:(.*?);/)?.[1] || 'image/png';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], fileName, { type: mime });
+}
+
+export type ShareResult = 'shared' | 'cancelled' | 'unsupported';
+
+/**
+ * Open the OS share sheet with the QR image so the player can send it straight to their UPI app,
+ * which reads it as a scanned QR (not blocked like web-launched upi:// links to personal UPI IDs).
+ * Must be called synchronously from a click handler.
+ */
+export async function shareQrImage(file: File, text: string): Promise<ShareResult> {
+  const nav = typeof navigator !== 'undefined' ? navigator : undefined;
+  if (!nav?.share || !nav.canShare?.({ files: [file] })) return 'unsupported';
+  try {
+    await nav.share({ files: [file], text });
+    return 'shared';
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
+    console.error('QR share failed:', err);
+    return 'unsupported';
+  }
+}
+
+/** Save a data: URL as a file download (fallback when sharing files is not supported). */
+export function downloadDataUrl(dataUrl: string, fileName: string): void {
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 /**

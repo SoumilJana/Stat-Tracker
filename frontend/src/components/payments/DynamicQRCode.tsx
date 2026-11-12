@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react';
 import { QrCode, Copy, Check, ExternalLink, Sparkles } from 'lucide-react';
-import { generateUpiUri, generateQrDataUrl, copyToClipboard } from '../../lib/upiUtils';
+import {
+  generateUpiUri,
+  generateQrDataUrl,
+  copyToClipboard,
+  detectPlatform,
+  dataUrlToFile,
+  shareQrImage,
+  downloadDataUrl,
+  toAppSpecificUri,
+  UPI_APP_LABELS,
+  type DevicePlatform,
+  type UpiApp
+} from '../../lib/upiUtils';
 import type { PaymentProfile } from '../../types/gamePayment';
 
 export interface DynamicQRCodeProps {
@@ -22,6 +34,9 @@ export function DynamicQRCode({
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<'dynamic' | 'static'>('dynamic');
+  const [platform] = useState<DevicePlatform>(() => detectPlatform());
+  const [showAppPicker, setShowAppPicker] = useState(false);
+  const [payHint, setPayHint] = useState<'shared' | 'saved' | null>(null);
 
   const upiUri = generateUpiUri({
     upiId: recipient.upi_id,
@@ -59,9 +74,36 @@ export function DynamicQRCode({
     }
   };
 
+  const openUri = (uri: string) => {
+    onPayNowClick?.();
+    window.location.href = uri;
+  };
+
+  // Share the QR image to the UPI app (read as a scanned QR); fall back to saving it.
+  const shareOrSaveQr = async () => {
+    if (!qrDataUrl) {
+      openUri(upiUri);
+      return;
+    }
+    const fileName = `pay-${recipient.display_name.replace(/\s+/g, '-').toLowerCase()}-${amount}.png`;
+    const file = dataUrlToFile(qrDataUrl, fileName);
+    const result = await shareQrImage(file, `Scan to pay ₹${amount} to ${recipient.display_name}`);
+    if (result === 'cancelled') return;
+    if (result === 'unsupported') {
+      downloadDataUrl(qrDataUrl, fileName);
+      setPayHint('saved');
+    } else {
+      setPayHint('shared');
+    }
+    onPayNowClick?.();
+  };
+
   const handlePayNow = () => {
-    if (onPayNowClick) onPayNowClick();
-    window.location.href = upiUri;
+    if (platform === 'ios') {
+      setShowAppPicker((v) => !v);
+      return;
+    }
+    void shareOrSaveQr();
   };
 
   return (
@@ -167,9 +209,53 @@ export function DynamicQRCode({
           <ExternalLink className="w-4 h-4" />
           Pay Now via UPI App (₹{amount})
         </button>
-        <p className="text-[10px] text-neutral-400 mt-1.5">
-          Opens payment app with ₹{amount} pre-filled
-        </p>
+        {platform === 'ios' && showAppPicker ? (
+          <div className="mt-3 space-y-2" role="group" aria-label="Choose your UPI app">
+            <div className="grid grid-cols-3 gap-2">
+              {(Object.keys(UPI_APP_LABELS) as UpiApp[]).map((app) => (
+                <button
+                  key={app}
+                  type="button"
+                  onClick={() => openUri(toAppSpecificUri(upiUri, app))}
+                  className="py-2 px-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-semibold border border-white/10 active:scale-95 transition-all"
+                >
+                  {UPI_APP_LABELS[app]}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => void shareOrSaveQr()}
+              className="w-full py-2 px-3 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-neutral-300 text-xs font-medium border border-white/10 transition-colors"
+            >
+              App didn't work? Save QR image
+            </button>
+          </div>
+        ) : (
+          <p className="text-[10px] text-neutral-400 mt-1.5">
+            {platform === 'ios'
+              ? 'Choose your UPI app'
+              : 'Choose GPay, PhonePe or Paytm from the share menu'}
+          </p>
+        )}
+
+        {payHint && (
+          <p role="status" className="text-[11px] text-primary-300 mt-2 bg-primary-950/40 border border-primary-500/20 rounded-lg px-3 py-2">
+            {payHint === 'saved'
+              ? 'QR saved. Open your UPI app → Scan → pick the QR from your gallery. Come back here after paying.'
+              : 'Finish the payment in your UPI app, then come back here to confirm.'}
+          </p>
+        )}
+
+        {platform === 'android' && (
+          <button
+            type="button"
+            onClick={() => openUri(upiUri)}
+            className="mt-2 text-[11px] text-neutral-400 underline underline-offset-2 hover:text-white"
+          >
+            Or open UPI app directly
+          </button>
+        )}
       </div>
     </div>
   );

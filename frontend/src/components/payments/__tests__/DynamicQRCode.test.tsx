@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { DynamicQRCode } from '../DynamicQRCode';
 import type { PaymentProfile } from '../../../types/gamePayment';
@@ -45,13 +45,72 @@ describe('Phase 2: DynamicQRCode Component', () => {
     expect(originalImg).toHaveAttribute('src', '/qr/soumil-qr.png');
   });
 
-  it('triggers onPayNowClick when Pay Now button is pressed', async () => {
-    const handlePayNow = vi.fn();
-    render(<DynamicQRCode recipient={mockProfile} amount={80} onPayNowClick={handlePayNow} />);
+  describe('Pay Now', () => {
+    const originalUA = navigator.userAgent;
+    const setUA = (ua: string) => Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
 
-    const payNowBtn = screen.getByRole('button', { name: /Pay Now via UPI App/i });
-    fireEvent.click(payNowBtn);
+    afterEach(() => {
+      setUA(originalUA);
+      Object.assign(navigator, { share: undefined, canShare: undefined });
+    });
 
-    expect(handlePayNow).toHaveBeenCalledTimes(1);
+    const renderReady = async (onPayNowClick = vi.fn()) => {
+      render(<DynamicQRCode recipient={mockProfile} amount={80} onPayNowClick={onPayNowClick} />);
+      await screen.findByRole('img', { name: /UPI QR code for Soumil Jana/i });
+      return onPayNowClick;
+    };
+
+    it('on Android, shares the QR image and then notifies the parent', async () => {
+      setUA('Mozilla/5.0 (Linux; Android 14; Pixel 8)');
+      const share = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { share, canShare: () => true });
+      const handlePayNow = await renderReady();
+
+      fireEvent.click(screen.getByRole('button', { name: /Pay Now via UPI App/i }));
+
+      await waitFor(() => expect(handlePayNow).toHaveBeenCalledTimes(1));
+      const shared = share.mock.calls[0][0];
+      expect(shared.files[0]).toBeInstanceOf(File);
+      expect(shared.files[0].type).toBe('image/png');
+      expect(screen.getByRole('status')).toHaveTextContent(/come back here/i);
+    });
+
+    it('does not notify the parent when the share sheet is dismissed', async () => {
+      setUA('Mozilla/5.0 (Linux; Android 14; Pixel 8)');
+      const share = vi.fn().mockRejectedValue(new DOMException('cancelled', 'AbortError'));
+      Object.assign(navigator, { share, canShare: () => true });
+      const handlePayNow = await renderReady();
+
+      fireEvent.click(screen.getByRole('button', { name: /Pay Now via UPI App/i }));
+
+      await waitFor(() => expect(share).toHaveBeenCalled());
+      expect(handlePayNow).not.toHaveBeenCalled();
+    });
+
+    it('falls back to saving the QR when sharing files is unsupported', async () => {
+      setUA('Mozilla/5.0 (Linux; Android 14; Pixel 8)');
+      const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+      const handlePayNow = await renderReady();
+
+      fireEvent.click(screen.getByRole('button', { name: /Pay Now via UPI App/i }));
+
+      await waitFor(() => expect(handlePayNow).toHaveBeenCalledTimes(1));
+      expect(clickSpy).toHaveBeenCalled();
+      expect(screen.getByRole('status')).toHaveTextContent(/QR saved/i);
+      clickSpy.mockRestore();
+    });
+
+    it('on iOS, shows UPI app choices instead of opening upi:// directly', async () => {
+      setUA('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)');
+      const handlePayNow = await renderReady();
+
+      fireEvent.click(screen.getByRole('button', { name: /Pay Now via UPI App/i }));
+
+      expect(screen.getByRole('button', { name: 'Google Pay' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'PhonePe' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Paytm' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Save QR image/i })).toBeInTheDocument();
+      expect(handlePayNow).not.toHaveBeenCalled();
+    });
   });
 });

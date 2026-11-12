@@ -3,6 +3,40 @@ import { CreditCard, Banknote, Clock, CheckCircle2, ArrowRight, ShieldAlert, Spa
 import { DynamicQRCode } from '../../../components/payments/DynamicQRCode';
 import type { Game, GamePayment, PaymentProfile, PaymentMethod } from '../../../types/gamePayment';
 
+const PENDING_UPI_TTL_MS = 30 * 60 * 1000;
+const pendingUpiKey = (gameId: string) => `stattracker:pendingUpiPayment:${gameId}`;
+
+function savePendingUpiPayment(gameId: string, recipientId: string) {
+  try {
+    sessionStorage.setItem(pendingUpiKey(gameId), JSON.stringify({ recipientId, at: Date.now() }));
+  } catch {
+    /* storage unavailable (private mode); the in-memory flag still works without a reload */
+  }
+}
+
+function readPendingUpiPayment(gameId: string): { recipientId: string; at: number } | null {
+  try {
+    const raw = sessionStorage.getItem(pendingUpiKey(gameId));
+    if (!raw) return null;
+    const pending = JSON.parse(raw);
+    if (typeof pending?.at !== 'number' || Date.now() - pending.at > PENDING_UPI_TTL_MS) {
+      sessionStorage.removeItem(pendingUpiKey(gameId));
+      return null;
+    }
+    return pending;
+  } catch {
+    return null;
+  }
+}
+
+function clearPendingUpiPayment(gameId: string) {
+  try {
+    sessionStorage.removeItem(pendingUpiKey(gameId));
+  } catch {
+    /* ignore */
+  }
+}
+
 export interface PaymentSectionProps {
   game: Game;
   userPayment?: GamePayment | null;
@@ -31,6 +65,47 @@ export function PaymentSection({
   const [utrInput, setUtrInput] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Set when the player leaves for their UPI app; the confirm prompt opens when they come back.
+  // Also kept in sessionStorage because the browser often reloads the page on return from the
+  // UPI app, which would otherwise lose this state.
+  const [awaitingReturn, setAwaitingReturn] = useState(false);
+  const canReport = userPayment?.status !== 'VERIFIED' && userPayment?.status !== 'AWAITING_VERIFICATION';
+
+  const openConfirmPrompt = (recipientId?: string) => {
+    clearPendingUpiPayment(game.id);
+    setAwaitingReturn(false);
+    if (recipientId && paymentProfiles.some((p) => p.id === recipientId)) {
+      setSelectedRecipientId(recipientId);
+    }
+    setSelectedMethod('UPI');
+    setShowReportModal(true);
+  };
+
+  // After a reload: reopen the prompt if the player left to pay within the last 30 minutes
+  useEffect(() => {
+    if (!canReport) return;
+    const pending = readPendingUpiPayment(game.id);
+    if (!pending) return;
+    if (document.visibilityState === 'visible') {
+      openConfirmPrompt(pending.recipientId);
+    } else {
+      setAwaitingReturn(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game.id, canReport]);
+
+  useEffect(() => {
+    if (!awaitingReturn) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        openConfirmPrompt(readPendingUpiPayment(game.id)?.recipientId);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awaitingReturn, game.id]);
 
   useEffect(() => {
     if (!selectedRecipientId && paymentProfiles.length > 0) {
@@ -254,7 +329,10 @@ export function PaymentSection({
               recipient={selectedProfile}
               amount={amount}
               note={`StatTracker Match ${game.game_date}`}
-              onPayNowClick={() => setShowReportModal(true)}
+              onPayNowClick={() => {
+                savePendingUpiPayment(game.id, selectedRecipientId);
+                setAwaitingReturn(true);
+              }}
             />
           )}
 
@@ -265,7 +343,7 @@ export function PaymentSection({
               onClick={() => setShowReportModal(true)}
               className="w-full py-3 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700/80 text-white font-bold text-sm border border-white/10 transition-all flex items-center justify-center gap-2 active:scale-95"
             >
-              <span>I Have Made This Payment (Report UTR)</span>
+              <span>I Have Made This Payment</span>
               <ArrowRight className="w-4 h-4 text-primary-400" />
             </button>
           </div>
@@ -324,7 +402,8 @@ export function PaymentSection({
           <div className="bg-neutral-900 border border-white/10 rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
             <h3 className="text-lg font-bold text-white tracking-tight">Confirm Payment Submission</h3>
             <p className="text-xs text-neutral-400 mt-1">
-              Confirm that you have transferred ₹{amount.toFixed(0)} to {selectedProfile?.display_name}.
+              Did you complete the payment of ₹{amount.toFixed(0)} to {selectedProfile?.display_name}? The admin will
+              verify it and add you to the final list.
             </p>
 
             <div className="mt-4">
@@ -351,7 +430,7 @@ export function PaymentSection({
                 onClick={() => setShowReportModal(false)}
                 className="flex-1 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-semibold text-xs transition-colors"
               >
-                Cancel
+                Not yet
               </button>
               <button
                 type="button"

@@ -1,6 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   generateUpiUri,
+  toAppSpecificUri,
+  detectPlatform,
+  dataUrlToFile,
+  shareQrImage,
   generateQrDataUrl,
   generateQrSvg,
   copyToClipboard,
@@ -17,12 +21,19 @@ describe('Phase 2: UPI Utilities & Vector QR Generator', () => {
         note: 'StatTracker Match Fee'
       });
 
-      expect(uri).toContain('upi://pay?');
-      expect(uri).toContain('pa=9432938110%40superyes');
-      expect(uri).toContain('pn=Soumil+Jana');
-      expect(uri).toContain('am=80.00');
-      expect(uri).toContain('cu=INR');
-      expect(uri).toContain('tn=StatTracker+Match+Fee');
+      expect(uri).toBe(
+        'upi://pay?pa=9432938110@superyes&pn=Soumil%20Jana&am=80.00&cu=INR&tn=StatTracker%20Match%20Fee'
+      );
+      expect(uri).not.toContain('+');
+      expect(uri).not.toContain('%40');
+    });
+
+    it('re-targets the URI at specific UPI apps for iOS', () => {
+      const uri = generateUpiUri({ upiId: 'a@b', payeeName: 'A B', amount: 80 });
+      const query = 'pa=a@b&pn=A%20B&am=80.00&cu=INR';
+      expect(toAppSpecificUri(uri, 'gpay')).toBe(`gpay://upi/pay?${query}`);
+      expect(toAppSpecificUri(uri, 'phonepe')).toBe(`phonepe://pay?${query}`);
+      expect(toAppSpecificUri(uri, 'paytm')).toBe(`paytmmp://pay?${query}`);
     });
 
     it('formats amount to 2 decimal places properly', () => {
@@ -74,6 +85,47 @@ describe('Phase 2: UPI Utilities & Vector QR Generator', () => {
       const svg = await generateQrSvg('upi://pay?pa=9432938110@superyes&am=80.00');
       expect(svg).toContain('<svg');
       expect(svg).toContain('</svg>');
+    });
+  });
+
+  describe('detectPlatform', () => {
+    it('detects Android, iPhone, iPadOS and desktop', () => {
+      expect(detectPlatform('Mozilla/5.0 (Linux; Android 14; Pixel 8)', 5)).toBe('android');
+      expect(detectPlatform('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)', 5)).toBe('ios');
+      expect(detectPlatform('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 5)).toBe('ios');
+      expect(detectPlatform('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 0)).toBe('other');
+      expect(detectPlatform('Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 0)).toBe('other');
+    });
+  });
+
+  describe('dataUrlToFile & shareQrImage', () => {
+    const dataUrl = 'data:image/png;base64,iVBORw0KGgo=';
+
+    afterEach(() => {
+      Object.assign(navigator, { share: undefined, canShare: undefined });
+    });
+
+    it('converts a data URL to a PNG File', () => {
+      const file = dataUrlToFile(dataUrl, 'qr.png');
+      expect(file.name).toBe('qr.png');
+      expect(file.type).toBe('image/png');
+      expect(file.size).toBe(8);
+    });
+
+    it('returns unsupported when file sharing is unavailable', async () => {
+      Object.assign(navigator, { share: undefined, canShare: undefined });
+      expect(await shareQrImage(dataUrlToFile(dataUrl, 'qr.png'), 'x')).toBe('unsupported');
+    });
+
+    it('shares the file when supported, and reports a cancelled share', async () => {
+      const share = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { share, canShare: () => true });
+      const file = dataUrlToFile(dataUrl, 'qr.png');
+      expect(await shareQrImage(file, 'pay')).toBe('shared');
+      expect(share).toHaveBeenCalledWith({ files: [file], text: 'pay' });
+
+      share.mockRejectedValueOnce(new DOMException('cancelled', 'AbortError'));
+      expect(await shareQrImage(file, 'pay')).toBe('cancelled');
     });
   });
 

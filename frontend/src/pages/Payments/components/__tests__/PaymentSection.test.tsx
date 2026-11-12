@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { PaymentSection } from '../PaymentSection';
 import type { Game, PaymentProfile } from '../../../../types/gamePayment';
 
@@ -34,6 +34,7 @@ const mockProfiles: PaymentProfile[] = [
 describe('Phase 4: PaymentSection Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
   });
 
   it('renders locked message when user is on the waiting list', () => {
@@ -160,5 +161,82 @@ describe('Phase 4: PaymentSection Component', () => {
     fireEvent.click(confirmBtn);
 
     expect(handleSubmit).toHaveBeenCalledWith('UPI', 'p-1', '987654321012');
+  });
+
+  it('opens the confirm prompt when the player returns from their UPI app', async () => {
+    const originalUA = navigator.userAgent;
+    Object.defineProperty(navigator, 'userAgent', { value: 'Mozilla/5.0 (Linux; Android 14)', configurable: true });
+    Object.assign(navigator, { share: vi.fn().mockResolvedValue(undefined), canShare: () => true });
+
+    render(
+      <PaymentSection
+        game={mockGame}
+        paymentProfiles={mockProfiles}
+        isUserInSquad={true}
+        isUserWaitlisted={false}
+        isPaymentUnlocked={true}
+        onSubmitPayment={vi.fn()}
+      />
+    );
+
+    await screen.findByRole('img', { name: /UPI QR code for Soumil Jana/i });
+    fireEvent.click(screen.getByRole('button', { name: /Pay Now via UPI App/i }));
+    await waitFor(() => expect(screen.getByRole('status')).toBeInTheDocument());
+
+    // Prompt is not shown yet; it appears once the page becomes visible again
+    expect(screen.queryByText('Confirm Payment Submission')).not.toBeInTheDocument();
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(screen.getByText('Confirm Payment Submission')).toBeInTheDocument();
+
+    Object.defineProperty(navigator, 'userAgent', { value: originalUA, configurable: true });
+    Object.assign(navigator, { share: undefined, canShare: undefined });
+  });
+
+  it('reopens the confirm prompt for the chosen recipient after the page reloads', () => {
+    const profiles: PaymentProfile[] = [
+      ...mockProfiles,
+      { id: 'p-2', display_name: 'Asmit Ghosh', upi_id: '8777389218@superyes', active: true, sort_order: 2 }
+    ];
+    sessionStorage.setItem(
+      'stattracker:pendingUpiPayment:game-1',
+      JSON.stringify({ recipientId: 'p-2', at: Date.now() })
+    );
+
+    render(
+      <PaymentSection
+        game={mockGame}
+        paymentProfiles={profiles}
+        isUserInSquad={true}
+        isUserWaitlisted={false}
+        isPaymentUnlocked={true}
+        onSubmitPayment={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Confirm Payment Submission')).toBeInTheDocument();
+    expect(screen.getByText(/₹80 to Asmit Ghosh/)).toBeInTheDocument();
+    expect(sessionStorage.getItem('stattracker:pendingUpiPayment:game-1')).toBeNull();
+  });
+
+  it('ignores a stale pending payment older than 30 minutes', () => {
+    sessionStorage.setItem(
+      'stattracker:pendingUpiPayment:game-1',
+      JSON.stringify({ recipientId: 'p-1', at: Date.now() - 31 * 60 * 1000 })
+    );
+
+    render(
+      <PaymentSection
+        game={mockGame}
+        paymentProfiles={mockProfiles}
+        isUserInSquad={true}
+        isUserWaitlisted={false}
+        isPaymentUnlocked={true}
+        onSubmitPayment={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByText('Confirm Payment Submission')).not.toBeInTheDocument();
   });
 });
