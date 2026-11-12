@@ -34,7 +34,8 @@ export function AdminReconciliationModal({
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmingRoster, setConfirmingRoster] = useState(false);
 
-  const targetCount = activeSquad.length >= 15 ? 15 : 10;
+  // Squad is capped at capacity (10 or sticky 15); every squad slot must be verified.
+  const targetCount = Math.max(10, activeSquad.length);
   const verifiedCount = activeSquad.filter((p) => p.payment?.status === 'VERIFIED').length;
   const allVerified = activeSquad.length >= targetCount && verifiedCount >= targetCount;
   const isRosterConfirmed = game.status === 'ROSTER_CONFIRMED';

@@ -2,11 +2,14 @@ import { Users, CheckCircle, Zap } from 'lucide-react';
 
 export interface ThresholdProgressBarProps {
   activeCount: number;
+  /** 15 once the game has ever reached 15 players (sticky), else 10 */
+  squadCapacity?: number;
 }
 
-export function ThresholdProgressBar({ activeCount }: ThresholdProgressBarProps) {
+export function ThresholdProgressBar({ activeCount, squadCapacity }: ThresholdProgressBarProps) {
   const isThresholdMet = activeCount >= 10;
-  const is15PlayerMode = activeCount >= 15;
+  const isCapacityLocked15 = (squadCapacity ?? 10) >= 15;
+  const is15PlayerMode = activeCount >= 15 || (isCapacityLocked15 && isThresholdMet);
 
   let progressPercent = 0;
   let statusText = '';
@@ -16,6 +19,11 @@ export function ThresholdProgressBar({ activeCount }: ThresholdProgressBarProps)
     progressPercent = Math.min((activeCount / 10) * 100, 100);
     statusText = `${activeCount} / 10 Players`;
     subText = `Need ${10 - activeCount} more player${10 - activeCount > 1 ? 's' : ''} to confirm turf & unlock payments`;
+  } else if (activeCount < 15 && isCapacityLocked15) {
+    const open = 15 - activeCount;
+    progressPercent = ((activeCount - 10) / 5) * 100;
+    statusText = `${activeCount} / 15 Players (3 Teams)`;
+    subText = `3 Teams Winner Stays stays locked in. ${open} spot${open > 1 ? 's' : ''} open — paid players keep their place.`;
   } else if (activeCount < 15) {
     progressPercent = ((activeCount - 10) / 5) * 100;
     statusText = `${activeCount} Players Joined`;

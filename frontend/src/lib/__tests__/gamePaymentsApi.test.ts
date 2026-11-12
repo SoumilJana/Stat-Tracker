@@ -130,6 +130,50 @@ describe('Phase 1: Game Management & Payment API + Roster Logic', () => {
       expect(activeSquad[0].payment?.utr).toBe('123456789012');
     });
 
+    const makePay = (userId: string, status: GamePayment['status']): GamePayment => ({
+      id: `pay-${userId}`,
+      game_id: 'game-1',
+      user_id: userId,
+      amount: 80,
+      method: 'UPI',
+      status
+    });
+    const joinAt = (i: number) => `2026-11-11T10:${i.toString().padStart(2, '0')}:00Z`;
+
+    it('keeps verified payers in the squad over earlier unpaid joiners after a dropout (sticky 15)', () => {
+      // 15 joined, then u1 marked OUT -> 14 IN. u12 and u13 had paid & been verified.
+      const registrations = Array.from({ length: 15 }, (_, i) =>
+        makeReg(`u${i + 1}`, `Player ${i + 1}`, joinAt(i), i === 0 ? 'OUT' : 'IN')
+      );
+      const payments = [makePay('u12', 'VERIFIED'), makePay('u13', 'VERIFIED')];
+
+      const { activeSquad, waitingList } = buildPlayerRoster(registrations, payments, 15);
+      // Capacity stays at 15, so all 14 remain in the squad
+      expect(activeSquad).toHaveLength(14);
+      expect(waitingList).toHaveLength(0);
+      expect(activeSquad.slice(0, 2).map((p) => p.user_id)).toEqual(['u12', 'u13']);
+    });
+
+    it('waitlists unpaid players before paid ones when capacity is 10', () => {
+      const registrations = Array.from({ length: 12 }, (_, i) => makeReg(`u${i + 1}`, `Player ${i + 1}`, joinAt(i)));
+      const payments = [makePay('u11', 'VERIFIED'), makePay('u12', 'AWAITING_VERIFICATION'), makePay('u9', 'PENDING')];
+
+      const { activeSquad, waitingList } = buildPlayerRoster(registrations, payments, 10);
+      expect(activeSquad).toHaveLength(10);
+      expect(activeSquad[0].user_id).toBe('u11');
+      expect(activeSquad[1].user_id).toBe('u12');
+      // Unpaid / pay-later players keep join order; the last two by join order are waitlisted
+      expect(waitingList.map((p) => p.user_id)).toEqual(['u9', 'u10']);
+      expect(waitingList[0].slot_number).toBe(11);
+    });
+
+    it('defaults to capacity 10 when the game never reached 15', () => {
+      const registrations = Array.from({ length: 14 }, (_, i) => makeReg(`u${i + 1}`, `Player ${i + 1}`, joinAt(i)));
+      const { activeSquad, waitingList } = buildPlayerRoster(registrations, [], 10);
+      expect(activeSquad).toHaveLength(10);
+      expect(waitingList).toHaveLength(4);
+    });
+
     it('correctly tracks OUT players in outList', () => {
       const registrations = [
         makeReg('u1', 'Soumil', '2026-11-11T10:00:00Z', 'IN'),

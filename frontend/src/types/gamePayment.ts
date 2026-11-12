@@ -42,6 +42,8 @@ export interface Game {
   mode: 'STANDARD' | 'WINNER_STAYS' | 'SPECIAL_7V7';
   min_players: number;
   max_players: number;
+  /** 15 once the game has ever reached 15 IN players, else 10 */
+  squad_capacity?: number;
   status: GameStatus;
   payment_opened_at?: string | null;
   registration_closed_at?: string | null;

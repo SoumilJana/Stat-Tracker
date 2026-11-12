@@ -299,11 +299,32 @@ export async function createOrUpdateGame(
 }
 
 /**
- * Merge registrations and payments into an ordered player roster view
+ * Squad priority for a payment: verified payers first, then claims awaiting
+ * verification, then everyone else. Mirrors admin_confirm_roster in SQL.
+ */
+export function paymentPriority(payment?: GamePayment | null): number {
+  if (payment?.status === 'VERIFIED') return 0;
+  if (payment?.status === 'AWAITING_VERIFICATION') return 1;
+  return 2;
+}
+
+/**
+ * Squad size: 15 once the game has ever reached 15 IN players (sticky via
+ * games.squad_capacity), otherwise 10.
+ */
+export function resolveSquadCapacity(inCount: number, squadCapacity?: number | null): number {
+  return inCount >= 15 || (squadCapacity ?? 10) >= 15 ? 15 : 10;
+}
+
+/**
+ * Merge registrations and payments into an ordered player roster view.
+ * Squad = top `capacity` IN players by (payment priority, join time);
+ * anyone beyond that is on the waiting list.
  */
 export function buildPlayerRoster(
   registrations: GameRegistration[],
-  payments: GamePayment[]
+  payments: GamePayment[],
+  squadCapacity?: number | null
 ): {
   activeSquad: PlayerRosterItem[];
   waitingList: PlayerRosterItem[];
@@ -312,55 +333,38 @@ export function buildPlayerRoster(
   const paymentsByUserId = new Map<string, GamePayment>();
   payments.forEach((p) => paymentsByUserId.set(p.user_id, p));
 
+  const toItem = (r: GameRegistration, slot: number, isWaitlist: boolean): PlayerRosterItem => ({
+    user_id: r.user_id,
+    username: r.profile?.username || 'Unknown Player',
+    photo_url: r.profile?.photo_url,
+    jersey_number: r.profile?.jersey_number,
+    position: r.profile?.position,
+    response: r.response,
+    joined_at: r.joined_at,
+    slot_number: slot,
+    is_waitlist: isWaitlist,
+    payment: paymentsByUserId.get(r.user_id) || null
+  });
+
   const inRegistrations = registrations
     .filter((r) => r.response === 'IN')
-    .sort((a, b) => new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime());
+    .sort(
+      (a, b) =>
+        paymentPriority(paymentsByUserId.get(a.user_id)) - paymentPriority(paymentsByUserId.get(b.user_id)) ||
+        new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
+    );
 
   const outRegistrations = registrations
     .filter((r) => r.response === 'OUT')
     .sort((a, b) => new Date(b.updated_at || b.joined_at).getTime() - new Date(a.updated_at || a.joined_at).getTime());
 
-  // Determine active threshold: 15 if 15 joined, otherwise top 10
-  const activeCapacity = inRegistrations.length >= 15 ? 15 : 10;
+  const activeCapacity = resolveSquadCapacity(inRegistrations.length, squadCapacity);
 
-  const activeSquad: PlayerRosterItem[] = inRegistrations.slice(0, activeCapacity).map((r, idx) => ({
-    user_id: r.user_id,
-    username: r.profile?.username || 'Unknown Player',
-    photo_url: r.profile?.photo_url,
-    jersey_number: r.profile?.jersey_number,
-    position: r.profile?.position,
-    response: 'IN',
-    joined_at: r.joined_at,
-    slot_number: idx + 1,
-    is_waitlist: false,
-    payment: paymentsByUserId.get(r.user_id) || null
-  }));
-
-  const waitingList: PlayerRosterItem[] = inRegistrations.slice(activeCapacity).map((r, idx) => ({
-    user_id: r.user_id,
-    username: r.profile?.username || 'Unknown Player',
-    photo_url: r.profile?.photo_url,
-    jersey_number: r.profile?.jersey_number,
-    position: r.profile?.position,
-    response: 'IN',
-    joined_at: r.joined_at,
-    slot_number: activeCapacity + idx + 1,
-    is_waitlist: true,
-    payment: paymentsByUserId.get(r.user_id) || null
-  }));
-
-  const outList: PlayerRosterItem[] = outRegistrations.map((r, idx) => ({
-    user_id: r.user_id,
-    username: r.profile?.username || 'Unknown Player',
-    photo_url: r.profile?.photo_url,
-    jersey_number: r.profile?.jersey_number,
-    position: r.profile?.position,
-    response: 'OUT',
-    joined_at: r.joined_at,
-    slot_number: idx + 1,
-    is_waitlist: false,
-    payment: paymentsByUserId.get(r.user_id) || null
-  }));
+  const activeSquad = inRegistrations.slice(0, activeCapacity).map((r, idx) => toItem(r, idx + 1, false));
+  const waitingList = inRegistrations
+    .slice(activeCapacity)
+    .map((r, idx) => toItem(r, activeCapacity + idx + 1, true));
+  const outList = outRegistrations.map((r, idx) => toItem(r, idx + 1, false));
 
   return { activeSquad, waitingList, outList };
 }

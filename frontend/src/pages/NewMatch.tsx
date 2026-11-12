@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { buildPlayerRoster } from '../lib/gamePaymentsApi';
 import { useToast } from '../contexts/ToastContext';
 import { Copy, CheckCircle2, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { SessionMode } from '../types/session';
@@ -52,8 +53,9 @@ export default function NewMatch() {
           `)
           .eq('game_id', gameId)
           .eq('response', 'IN')
-          .order('joined_at', { ascending: true })
-      ]).then(([gameRes, regRes]) => {
+          .order('joined_at', { ascending: true }),
+        supabase.from('game_payments').select('user_id, status').eq('game_id', gameId)
+      ]).then(([gameRes, regRes, payRes]) => {
         if (gameRes.data) {
           const game = gameRes.data;
           if (game.game_date) setDate(game.game_date);
@@ -68,11 +70,15 @@ export default function NewMatch() {
         }
 
         if (regRes.data && regRes.data.length > 0) {
-          // Rule (Case 2): 15 players = all 15 active; fewer than 15 = strictly top 10 verified players
-          const maxSquad = regRes.data.length >= 15 ? 15 : 10;
-          const filteredProfiles = regRes.data
-            .slice(0, maxSquad)
-            .map((r: any) => r.profile)
+          // Same squad rules as the Payments page: paid players first, sticky 15 capacity
+          const { activeSquad } = buildPlayerRoster(
+            regRes.data as any[],
+            (payRes.data as any[]) || [],
+            gameRes.data?.squad_capacity
+          );
+          const profileByUser = new Map(regRes.data.map((r: any) => [r.user_id, r.profile]));
+          const filteredProfiles = activeSquad
+            .map((p) => profileByUser.get(p.user_id))
             .filter((p: any) => p && p.role !== 'manager');
 
           setPlayers(filteredProfiles);

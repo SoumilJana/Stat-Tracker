@@ -55,6 +55,12 @@ describe('Phase 5: NewMatch Payments Bridge Integration', () => {
           single: vi.fn().mockResolvedValue({ data: mockGame, error: null })
         };
       }
+      if (table === 'game_payments') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: [], error: null })
+        };
+      }
       if (table === 'game_registrations') {
         return {
           select: vi.fn().mockReturnThis(),
@@ -122,6 +128,12 @@ describe('Phase 5: NewMatch Payments Bridge Integration', () => {
           single: vi.fn().mockResolvedValue({ data: mockGame, error: null })
         };
       }
+      if (table === 'game_payments') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: [], error: null })
+        };
+      }
       if (table === 'game_registrations') {
         return {
           select: vi.fn().mockReturnThis(),
@@ -181,6 +193,12 @@ describe('Phase 5: NewMatch Payments Bridge Integration', () => {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           single: vi.fn().mockResolvedValue({ data: mockGame, error: null })
+        };
+      }
+      if (table === 'game_payments') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: [], error: null })
         };
       }
       if (table === 'game_registrations') {

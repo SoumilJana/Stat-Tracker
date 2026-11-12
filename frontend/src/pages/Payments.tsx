@@ -131,8 +131,8 @@ export default function Payments() {
 
   // Build ordered roster
   const { activeSquad, waitingList, outList } = useMemo(() => {
-    return buildPlayerRoster(registrations, payments);
-  }, [registrations, payments]);
+    return buildPlayerRoster(registrations, payments, game?.squad_capacity);
+  }, [registrations, payments, game?.squad_capacity]);
 
   // Current user states
   const currentRegistration = registrations.find((r) => r.user_id === user?.id);
@@ -353,7 +353,7 @@ export default function Payments() {
       />
 
       {/* 2. Threshold Progress Bar */}
-      <ThresholdProgressBar activeCount={activeSquad.length} />
+      <ThresholdProgressBar activeCount={activeSquad.length} squadCapacity={game.squad_capacity} />
 
       {/* 3. Player Attendance Dock */}
       <RegistrationDock
