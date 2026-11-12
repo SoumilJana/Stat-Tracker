@@ -70,11 +70,20 @@ export function PaymentSection({
   // Also kept in sessionStorage because the browser often reloads the page on return from the
   // UPI app, which would otherwise lose this state.
   const [awaitingReturn, setAwaitingReturn] = useState(false);
-  const canReport = userPayment?.status !== 'VERIFIED' && userPayment?.status !== 'AWAITING_VERIFICATION';
+  // Lets a player with an unverified claim (e.g. chose Cash, or UPI not received) pay again.
+  // A new submission replaces the earlier claim (submit_game_payment upserts per game/user).
+  const [payingAgain, setPayingAgain] = useState(false);
+  const canReport = userPayment?.status !== 'VERIFIED';
+
+  const submitClaim = async (...args: Parameters<typeof onSubmitPayment>) => {
+    await onSubmitPayment(...args);
+    setPayingAgain(false);
+  };
 
   const openConfirmPrompt = (recipientId?: string) => {
     clearPendingUpiPayment(game.id);
     setAwaitingReturn(false);
+    setPayingAgain(true);
     if (recipientId && paymentProfiles.some((p) => p.id === recipientId)) {
       setSelectedRecipientId(recipientId);
     }
@@ -187,7 +196,7 @@ export function PaymentSection({
   }
 
   // Case 5: Payment AWAITING_VERIFICATION
-  if (userPayment?.status === 'AWAITING_VERIFICATION') {
+  if (userPayment?.status === 'AWAITING_VERIFICATION' && !payingAgain) {
     return (
       <div className="bg-neutral-900 border border-amber-500/30 rounded-2xl p-6 text-center shadow-2xl">
         <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto mb-3">
@@ -205,6 +214,23 @@ export function PaymentSection({
             Ref/UTR: {userPayment.utr}
           </p>
         )}
+        <div className="mt-5 pt-4 border-t border-white/5">
+          <p className="text-xs text-neutral-400 mb-2">
+            {userPayment.method === 'CASH'
+              ? 'Want to pay online instead?'
+              : 'Payment failed or not received by the admin?'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedMethod('UPI');
+              setPayingAgain(true);
+            }}
+            className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-semibold text-xs border border-white/10 transition-all active:scale-95"
+          >
+            Pay Again / Change Method
+          </button>
+        </div>
       </div>
     );
   }
@@ -213,7 +239,7 @@ export function PaymentSection({
   const handleReportPayment = async () => {
     try {
       setSubmitting(true);
-      await onSubmitPayment(selectedMethod, selectedRecipientId, utrInput);
+      await submitClaim(selectedMethod, selectedRecipientId, utrInput);
       setShowReportModal(false);
       setUtrInput('');
     } catch (err) {
@@ -238,6 +264,23 @@ export function PaymentSection({
           <p className="text-2xl font-black text-primary-400">₹{amount.toFixed(0)}</p>
         </div>
       </div>
+
+      {/* Paying again over an unverified claim */}
+      {payingAgain && userPayment?.status === 'AWAITING_VERIFICATION' && (
+        <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs flex items-start justify-between gap-3">
+          <p className="text-neutral-300">
+            Your earlier <span className="font-bold text-amber-400">{userPayment.method}</span> claim is still
+            pending. Submitting a new payment will replace it.
+          </p>
+          <button
+            type="button"
+            onClick={() => setPayingAgain(false)}
+            className="shrink-0 text-amber-400 font-semibold underline underline-offset-2 hover:text-amber-300"
+          >
+            Keep earlier claim
+          </button>
+        </div>
+      )}
 
       {/* Show rejection alert if previous payment was rejected */}
       {userPayment?.status === 'REJECTED' && (
@@ -365,7 +408,7 @@ export function PaymentSection({
           <button
             type="button"
             disabled={submitting}
-            onClick={() => onSubmitPayment('CASH')}
+            onClick={() => void submitClaim('CASH')}
             className="w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-400 text-neutral-950 font-bold text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
           >
             {submitting ? 'Submitting...' : `Submit Cash Request (₹${amount.toFixed(0)})`}
@@ -388,7 +431,7 @@ export function PaymentSection({
           <button
             type="button"
             disabled={submitting}
-            onClick={() => onSubmitPayment('LATER')}
+            onClick={() => void submitClaim('LATER')}
             className="w-full py-3 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-sm border border-white/10 active:scale-95 transition-all"
           >
             {submitting ? 'Submitting...' : 'Record as Pay Later'}

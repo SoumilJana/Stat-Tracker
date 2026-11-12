@@ -220,6 +220,69 @@ describe('Phase 4: PaymentSection Component', () => {
     expect(sessionStorage.getItem('stattracker:pendingUpiPayment:game-1')).toBeNull();
   });
 
+  it('lets a player with a pending cash claim switch to paying online', async () => {
+    const handleSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <PaymentSection
+        game={mockGame}
+        userPayment={{
+          id: 'pay-1',
+          game_id: 'game-1',
+          user_id: 'u-1',
+          amount: 80,
+          method: 'CASH',
+          status: 'AWAITING_VERIFICATION',
+          created_at: '2026-11-11T10:00:00Z',
+          updated_at: '2026-11-11T10:00:00Z'
+        }}
+        paymentProfiles={mockProfiles}
+        isUserInSquad={true}
+        isUserWaitlisted={false}
+        isPaymentUnlocked={true}
+        onSubmitPayment={handleSubmit}
+      />
+    );
+
+    expect(screen.getByText('Payment Claim Submitted')).toBeInTheDocument();
+    expect(screen.getByText(/Want to pay online instead/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Pay Again \/ Change Method/i }));
+
+    // Payment options are back, with a note that the earlier claim gets replaced
+    expect(screen.getByText(/claim is still\s+pending/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /I Have Made This Payment/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Mark as Paid/i }));
+
+    await waitFor(() => expect(handleSubmit).toHaveBeenCalledWith('UPI', 'p-1', ''));
+  });
+
+  it('can go back to the earlier claim without resubmitting', () => {
+    render(
+      <PaymentSection
+        game={mockGame}
+        userPayment={{
+          id: 'pay-1',
+          game_id: 'game-1',
+          user_id: 'u-1',
+          amount: 80,
+          method: 'UPI',
+          status: 'AWAITING_VERIFICATION',
+          created_at: '2026-11-11T10:00:00Z',
+          updated_at: '2026-11-11T10:00:00Z'
+        }}
+        paymentProfiles={mockProfiles}
+        isUserInSquad={true}
+        isUserWaitlisted={false}
+        isPaymentUnlocked={true}
+        onSubmitPayment={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Payment failed or not received/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Pay Again \/ Change Method/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Keep earlier claim/i }));
+    expect(screen.getByText('Payment Claim Submitted')).toBeInTheDocument();
+  });
+
   it('ignores a stale pending payment older than 30 minutes', () => {
     sessionStorage.setItem(
       'stattracker:pendingUpiPayment:game-1',
