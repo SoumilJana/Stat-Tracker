@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "5.4.0",
+  "version": "6.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "release": "node ../scripts/release.mjs",
+    "version:check": "node ../scripts/release.mjs check",
     "test:watch": "vitest"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, PlusCircle, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Calendar, PlusCircle, ShieldCheck, RefreshCw, CalendarClock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { supabase } from '../lib/supabase';
@@ -28,6 +28,7 @@ import { WhatsAppSummaryModal } from './Payments/components/WhatsAppSummaryModal
 import { AdminReconciliationModal } from './Payments/components/AdminReconciliationModal';
 import { CreateGameModal } from './Payments/components/CreateGameModal';
 import { AdminAddPlayerModal } from './Payments/components/AdminAddPlayerModal';
+import { WeeklyScheduleModal } from './Payments/components/WeeklyScheduleModal';
 import type {
   Game,
   GameRegistration,
@@ -56,6 +57,7 @@ export default function Payments() {
   const [showReconciliationModal, setShowReconciliationModal] = useState(false);
   const [showCreateGameModal, setShowCreateGameModal] = useState(false);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   const toastRef = useRef(toast);
   toastRef.current = toast;
@@ -120,6 +122,9 @@ export default function Payments() {
         { event: '*', schema: 'public', table: 'games', filter: `id=eq.${game.id}` },
         (payload) => {
           if (payload.new) setGame(payload.new as Game);
+          // Payment changes bump games.updated_at; non-admins can't see other
+          // players' game_payments events, so refresh statuses from here too.
+          fetchGamePayments(game.id).then(setPayments).catch(console.error);
         }
       )
       .subscribe();
@@ -286,14 +291,24 @@ export default function Payments() {
           </p>
 
           {isAdmin && (
-            <button
-              type="button"
-              onClick={() => setShowCreateGameModal(true)}
-              className="mt-6 px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-400 text-neutral-950 font-bold text-sm shadow-lg shadow-primary-500/20 inline-flex items-center gap-2 active:scale-95 transition-all"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Schedule Match Day
-            </button>
+            <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
+              <button
+                type="button"
+                onClick={() => setShowCreateGameModal(true)}
+                className="px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-400 text-neutral-950 font-bold text-sm shadow-lg shadow-primary-500/20 inline-flex items-center justify-center gap-2 active:scale-95 transition-all"
+              >
+                <PlusCircle className="w-4 h-4" />
+                Schedule Match Day
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowScheduleModal(true)}
+                className="px-6 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-semibold text-sm inline-flex items-center justify-center gap-2 transition-all"
+              >
+                <CalendarClock className="w-4 h-4" />
+                Weekly Schedule
+              </button>
+            </div>
           )}
         </div>
 
@@ -302,6 +317,14 @@ export default function Payments() {
             existingGame={null}
             onSave={handleSaveGame}
             onClose={() => setShowCreateGameModal(false)}
+          />
+        )}
+
+        {showScheduleModal && (
+          <WeeklyScheduleModal
+            notify={toast}
+            onGameCreated={() => loadData(true)}
+            onClose={() => setShowScheduleModal(false)}
           />
         )}
       </div>
@@ -329,6 +352,18 @@ export default function Payments() {
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary-400' : ''}`} />
           </button>
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowScheduleModal(true)}
+              className="p-2.5 rounded-xl bg-neutral-900 border border-white/10 text-neutral-400 hover:text-white transition-colors"
+              title="Weekly Schedule"
+              aria-label="Weekly Schedule"
+            >
+              <CalendarClock className="w-4 h-4" />
+            </button>
+          )}
 
           {isAdmin && (
             <button
@@ -392,6 +427,14 @@ export default function Payments() {
       />
 
       {/* Modals */}
+      {showScheduleModal && (
+        <WeeklyScheduleModal
+          notify={toast}
+          onGameCreated={() => loadData(true)}
+          onClose={() => setShowScheduleModal(false)}
+        />
+      )}
+
       {showAddPlayerModal && game && (
         <AdminAddPlayerModal
           isOpen={showAddPlayerModal}

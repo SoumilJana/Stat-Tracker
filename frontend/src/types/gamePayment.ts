@@ -130,3 +130,20 @@ export interface PlayerRosterItem {
   is_waitlist: boolean;
   payment?: GamePayment | null;
 }
+
+/**
+ * Single-row weekly schedule used to auto-create the usual game
+ * (default: Saturday 07:00). weekday: 0=Sun … 6=Sat.
+ */
+export interface GameSchedule {
+  active: boolean;
+  weekday: number;
+  start_time: string;
+  location: string;
+  amount_per_player: number;
+  total_turf_cost: number;
+  duration_minutes: number;
+  open_days_before: number;
+  timezone?: string;
+  updated_at?: string;
+}

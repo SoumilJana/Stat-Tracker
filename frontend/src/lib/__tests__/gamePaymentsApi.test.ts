@@ -8,7 +8,9 @@ import {
   adminConfirmRoster,
   adminSettleRefund,
   adminRegisterPlayer,
-  adminRegisterPlayers
+  adminRegisterPlayers,
+  fetchGamePayments,
+  nextScheduledDate
 } from '../gamePaymentsApi';
 import { supabase } from '../supabase';
 import type { GameRegistration, GamePayment } from '../../types/gamePayment';
@@ -16,7 +18,8 @@ import type { GameRegistration, GamePayment } from '../../types/gamePayment';
 vi.mock('../supabase', () => ({
   supabase: {
     from: vi.fn(),
-    rpc: vi.fn()
+    rpc: vi.fn(),
+    functions: { invoke: vi.fn().mockResolvedValue({ data: null, error: null }) }
   }
 }));
 
@@ -313,6 +316,85 @@ describe('Phase 1: Game Management & Payment API + Roster Logic', () => {
       });
 
       await expect(registerForGame('game-1', 'IN')).rejects.toThrow('Database constraint violation');
+    });
+  });
+  describe('Push notifications on admin actions', () => {
+    const flush = () => new Promise((r) => setTimeout(r, 0));
+
+    it('sends PAYMENT_VERIFIED after verifying a payment, not after rejecting', async () => {
+      (supabase.rpc as any).mockResolvedValue({ data: { success: true, status: 'VERIFIED' }, error: null });
+      await adminVerifyPayment('p-1', 'VERIFY');
+      await adminVerifyPayment('p-2', 'REJECT', 'no money');
+      await flush();
+      expect(supabase.functions.invoke).toHaveBeenCalledTimes(1);
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('send-push-notification', {
+        body: { notificationType: 'PAYMENT_VERIFIED', paymentId: 'p-1' }
+      });
+    });
+
+    it('sends PAYMENT_VERIFIED with the payment id returned by quick verify', async () => {
+      (supabase.rpc as any).mockResolvedValue({ data: { success: true, payment_id: 'pay-9', status: 'VERIFIED' }, error: null });
+      await adminQuickVerifyPlayer('game-1', 'user-1');
+      await flush();
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('send-push-notification', {
+        body: { notificationType: 'PAYMENT_VERIFIED', paymentId: 'pay-9' }
+      });
+    });
+
+    it('sends ROSTER_CONFIRMED after confirming the roster', async () => {
+      (supabase.rpc as any).mockResolvedValue({ data: { success: true, status: 'ROSTER_CONFIRMED' }, error: null });
+      await adminConfirmRoster('game-1');
+      await flush();
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('send-push-notification', {
+        body: { notificationType: 'ROSTER_CONFIRMED', gameId: 'game-1' }
+      });
+    });
+
+    it('does not send when the RPC fails', async () => {
+      (supabase.rpc as any).mockResolvedValue({ data: null, error: { message: 'nope' } });
+      await expect(adminConfirmRoster('game-1')).rejects.toThrow('nope');
+      await flush();
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
+    });
+  });
+  describe('fetchGamePayments privacy merge', () => {
+    it('keeps full rows the user can see and fills others from status-only RPC', async () => {
+      const own = { id: 'pay-own', game_id: 'g1', user_id: 'me', amount: 80, method: 'UPI', status: 'VERIFIED', utr: '111' };
+      (supabase.from as any).mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: [own], error: null })
+      });
+      (supabase.rpc as any).mockResolvedValue({
+        data: [
+          { user_id: 'me', status: 'VERIFIED', method: 'UPI', amount: 80 },
+          { user_id: 'other', status: 'AWAITING_VERIFICATION', method: 'UPI', amount: '80.00' }
+        ],
+        error: null
+      });
+
+      const result = await fetchGamePayments('g1');
+      expect(supabase.rpc).toHaveBeenCalledWith('get_game_payment_statuses', { p_game_id: 'g1' });
+      expect(result).toHaveLength(2);
+      expect(result.find((p) => p.user_id === 'me')?.utr).toBe('111');
+      const other = result.find((p) => p.user_id === 'other');
+      expect(other?.status).toBe('AWAITING_VERIFICATION');
+      expect(other?.amount).toBe(80);
+      expect(other?.utr).toBeUndefined();
+    });
+  });
+  describe('nextScheduledDate (weekly Saturday 07:00)', () => {
+    const sat7 = { weekday: 6, start_time: '07:00' };
+    it('returns the coming Saturday from a weekday', () => {
+      expect(nextScheduledDate(sat7, new Date(2026, 10, 12, 16, 0))).toBe('2026-11-14'); // Thu
+    });
+    it('returns today on Saturday before kick-off', () => {
+      expect(nextScheduledDate(sat7, new Date(2026, 10, 14, 6, 30))).toBe('2026-11-14');
+    });
+    it('rolls to next week on Saturday after kick-off', () => {
+      expect(nextScheduledDate(sat7, new Date(2026, 10, 14, 7, 0))).toBe('2026-11-21');
+    });
+    it('handles Sunday games', () => {
+      expect(nextScheduledDate({ weekday: 0, start_time: '18:00' }, new Date(2026, 10, 14, 9, 0))).toBe('2026-11-15');
     });
   });
 });

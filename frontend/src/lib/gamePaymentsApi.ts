@@ -14,8 +14,22 @@ import type {
   PaymentProfile,
   PlayerRosterItem,
   RegistrationResponse,
-  PaymentMethod
+  PaymentMethod,
+  GameSchedule
 } from '../types/gamePayment';
+
+/**
+ * Fire-and-forget push notification (admin-only types). Never blocks or
+ * fails the admin action that triggered it.
+ */
+export function sendGamePush(
+  notificationType: 'PAYMENT_VERIFIED' | 'ROSTER_CONFIRMED',
+  body: { paymentId?: string; gameId?: string }
+): void {
+  Promise.resolve()
+    .then(() => supabase.functions.invoke('send-push-notification', { body: { notificationType, ...body } }))
+    .catch((err) => console.error(`Failed to send ${notificationType} notification`, err));
+}
 
 /**
  * Fetch the latest active or upcoming game
@@ -90,26 +104,50 @@ export async function fetchGameRegistrations(gameId: string): Promise<GameRegist
 }
 
 /**
- * Fetch all payments recorded for a game
+ * Fetch all payments recorded for a game.
+ *
+ * RLS only returns full rows (UTR, recipient, verifier) for the current user's
+ * own payment, or every row for admins. Everyone else's payment is filled in
+ * from get_game_payment_statuses(), which exposes status/method/amount only.
  */
 export async function fetchGamePayments(gameId: string): Promise<GamePayment[]> {
-  const { data, error } = await supabase
-    .from('game_payments')
-    .select(`
-      *,
-      recipient:payment_profiles (*),
-      verifier:profiles!game_payments_verified_by_fkey (
-        username
-      )
-    `)
-    .eq('game_id', gameId);
+  const [fullRes, statusRes] = await Promise.all([
+    supabase
+      .from('game_payments')
+      .select(`
+        *,
+        recipient:payment_profiles (*),
+        verifier:profiles!game_payments_verified_by_fkey (
+          username
+        )
+      `)
+      .eq('game_id', gameId),
+    supabase.rpc('get_game_payment_statuses', { p_game_id: gameId })
+  ]);
 
-  if (error) {
-    console.error('Error fetching payments:', error);
-    throw new Error(error.message);
+  if (fullRes.error) {
+    console.error('Error fetching payments:', fullRes.error);
+    throw new Error(fullRes.error.message);
+  }
+  if (statusRes.error) {
+    console.error('Error fetching payment statuses:', statusRes.error);
+    throw new Error(statusRes.error.message);
   }
 
-  return (data as any[]) || [];
+  const full = (fullRes.data as GamePayment[]) || [];
+  const seen = new Set(full.map((p) => p.user_id));
+  const statusOnly: GamePayment[] = ((statusRes.data as Array<Pick<GamePayment, 'user_id' | 'status' | 'method' | 'amount'>>) || [])
+    .filter((s) => !seen.has(s.user_id))
+    .map((s) => ({
+      id: `status-${s.user_id}`,
+      game_id: gameId,
+      user_id: s.user_id,
+      status: s.status,
+      method: s.method,
+      amount: Number(s.amount)
+    }));
+
+  return [...full, ...statusOnly];
 }
 
 /**
@@ -195,6 +233,7 @@ export async function adminVerifyPayment(
     throw new Error(error.message);
   }
 
+  if (action === 'VERIFY') sendGamePush('PAYMENT_VERIFIED', { paymentId });
   return data;
 }
 
@@ -214,6 +253,7 @@ export async function adminQuickVerifyPlayer(
     throw new Error(error.message);
   }
 
+  if (data?.payment_id) sendGamePush('PAYMENT_VERIFIED', { paymentId: data.payment_id });
   return data;
 }
 
@@ -231,6 +271,7 @@ export async function adminConfirmRoster(
     throw new Error(error.message);
   }
 
+  sendGamePush('ROSTER_CONFIRMED', { gameId });
   return data;
 }
 
@@ -441,3 +482,60 @@ export async function fetchAvailableProfilesForGame(
   return data || [];
 }
 
+
+/**
+ * Weekly schedule (single row) used by the daily auto-create job
+ */
+export async function fetchGameSchedule(): Promise<GameSchedule | null> {
+  const { data, error } = await supabase.from('game_schedule').select('*').maybeSingle();
+  if (error) {
+    console.error('Error fetching game schedule:', error);
+    throw new Error(error.message);
+  }
+  return data;
+}
+
+export async function saveGameSchedule(schedule: GameSchedule): Promise<GameSchedule> {
+  const { data, error } = await supabase
+    .from('game_schedule')
+    .update({
+      active: schedule.active,
+      weekday: schedule.weekday,
+      start_time: schedule.start_time,
+      location: schedule.location,
+      amount_per_player: schedule.amount_per_player,
+      total_turf_cost: schedule.total_turf_cost,
+      duration_minutes: schedule.duration_minutes,
+      open_days_before: schedule.open_days_before,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', true)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/**
+ * Admin: run the schedule now. Returns the new game id, or null when nothing
+ * was due (too early, schedule paused, or that week already has a game).
+ */
+export async function runGameScheduleNow(): Promise<string | null> {
+  const { data, error } = await supabase.rpc('admin_run_game_schedule');
+  if (error) throw new Error(error.message);
+  return data ?? null;
+}
+
+/**
+ * Next usual game date from a schedule (local dates, YYYY-MM-DD). Mirrors
+ * next_scheduled_game_date() in SQL for display purposes.
+ */
+export function nextScheduledDate(schedule: Pick<GameSchedule, 'weekday' | 'start_time'>, now = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let add = (schedule.weekday - d.getDay() + 7) % 7;
+  const [h, m] = schedule.start_time.split(':').map(Number);
+  if (add === 0 && now.getHours() * 60 + now.getMinutes() >= h * 60 + m) add = 7;
+  d.setDate(d.getDate() + add);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}

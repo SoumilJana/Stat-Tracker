@@ -19,6 +19,99 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+const ICON = '/pwa-192x192.png';
+const BADGE = '/notification-badge.png';
+
+// Format a game's wall-clock date/time, e.g. "Sat, 14 Nov · 7:00 AM"
+function formatGameSlot(gameDate: string, startTime: string): string {
+  const d = new Date(`${gameDate}T${(startTime || '00:00').slice(0, 5)}:00Z`);
+  const day = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' });
+  return `${day} · ${time}`;
+}
+
+// Only admins may trigger payment/roster notifications
+async function requireAdmin(req: Request): Promise<void> {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  const { data: { user } } = await supabase.auth.getUser(token);
+  if (!user) throw new Error('Unauthorized');
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') throw new Error('Only admins can send this notification');
+}
+
+// Send a per-user payload to every push subscription of those users
+async function sendToUsers(payloadByUser: Map<string, Record<string, unknown>>) {
+  const userIds = [...payloadByUser.keys()];
+  if (userIds.length === 0) return [];
+  const { data: subs, error } = await supabase
+    .from('push_subscriptions')
+    .select('endpoint, p256dh, auth, user_id')
+    .in('user_id', userIds);
+  if (error) throw error;
+
+  return Promise.all((subs || []).map(async (sub) => {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        JSON.stringify(payloadByUser.get(sub.user_id))
+      );
+      return { success: true, endpoint: sub.endpoint };
+    } catch (err: any) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+      }
+      return { success: false, endpoint: sub.endpoint, error: err.message };
+    }
+  }));
+}
+
+// PAYMENT_VERIFIED: tell the payer their spot is secured
+async function handlePaymentVerified(paymentId: string) {
+  const { data: payment } = await supabase
+    .from('game_payments')
+    .select('user_id, status, game:games(game_date, start_time, location)')
+    .eq('id', paymentId)
+    .single();
+  if (!payment || payment.status !== 'VERIFIED') throw new Error('Payment not found or not verified');
+
+  const game: any = payment.game;
+  const where = game.location ? ` at ${game.location}` : '';
+  const payloads = new Map<string, Record<string, unknown>>([[payment.user_id, {
+    title: '✅ Payment verified',
+    body: `You're locked in for ${formatGameSlot(game.game_date, game.start_time)}${where}. See you there!`,
+    icon: ICON, badge: BADGE, url: '/payments'
+  }]]);
+  return sendToUsers(payloads);
+}
+
+// ROSTER_CONFIRMED: tell the confirmed squad, and let unconfirmed IN players know
+async function handleRosterConfirmed(gameId: string) {
+  const { data: game } = await supabase
+    .from('games')
+    .select('id, game_date, start_time, location, status, mode')
+    .eq('id', gameId)
+    .single();
+  if (!game || game.status !== 'ROSTER_CONFIRMED') throw new Error('Game not found or roster not confirmed');
+
+  const [{ data: regs }, { data: pays }] = await Promise.all([
+    supabase.from('game_registrations').select('user_id').eq('game_id', gameId).eq('response', 'IN'),
+    supabase.from('game_payments').select('user_id, status').eq('game_id', gameId)
+  ]);
+  const verified = new Set((pays || []).filter((p) => p.status === 'VERIFIED').map((p) => p.user_id));
+  const slot = formatGameSlot(game.game_date, game.start_time);
+  const where = game.location ? ` at ${game.location}` : '';
+  const squadSize = (regs || []).filter((r) => verified.has(r.user_id)).length;
+  const modeText = game.mode === 'WINNER_STAYS' ? '3 Teams Winner Stays' : `${squadSize}-player squad`;
+
+  const payloads = new Map<string, Record<string, unknown>>();
+  for (const r of regs || []) {
+    payloads.set(r.user_id, verified.has(r.user_id)
+      ? { title: '🔒 Roster confirmed', body: `You're in! ${modeText} · ${slot}${where}.`, icon: ICON, badge: BADGE, url: '/payments' }
+      : { title: 'Roster confirmed', body: `The squad for ${slot} is locked. You're on the waiting list in case a spot opens.`, icon: ICON, badge: BADGE, url: '/payments' });
+  }
+  return sendToUsers(payloads);
+}
+
 serve(async (req) => {
   // CORS Headers
   const corsHeaders = {
@@ -31,10 +124,21 @@ serve(async (req) => {
   }
 
   try {
-    const { notificationType, sessionId, targetUserIds, timeZone: requestedTimeZone } = await req.json();
+    const { notificationType, sessionId, targetUserIds, timeZone: requestedTimeZone, paymentId, gameId } = await req.json();
 
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
       throw new Error("VAPID keys not configured in Edge Function environment");
+    }
+
+    if (notificationType === 'PAYMENT_VERIFIED' || notificationType === 'ROSTER_CONFIRMED') {
+      await requireAdmin(req);
+      const results = notificationType === 'PAYMENT_VERIFIED'
+        ? await handlePaymentVerified(paymentId)
+        : await handleRosterConfirmed(gameId);
+      return new Response(JSON.stringify({ success: true, results }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
     let globalPayload: any = null;

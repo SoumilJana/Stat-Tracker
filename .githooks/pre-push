@@ -1,0 +1,24 @@
+#!/bin/sh
+# Blocks pushes to main that don't bump the app version or leave the version
+# files out of sync. Enable once per clone:  git config core.hooksPath .githooks
+ROOT="$(git rev-parse --show-toplevel)"
+ZERO=0000000000000000000000000000000000000000
+
+node "$ROOT/scripts/release.mjs" check || exit 1
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$remote_ref" = "refs/heads/main" ] || continue
+  [ "$local_sha" = "$ZERO" ] && continue
+  [ "$remote_sha" = "$ZERO" ] && continue
+  git cat-file -e "$remote_sha" 2>/dev/null || continue
+
+  old=$(git show "$remote_sha:frontend/src/version.ts" 2>/dev/null)
+  new=$(git show "$local_sha:frontend/src/version.ts" 2>/dev/null)
+  if [ "$old" = "$new" ]; then
+    echo "✗ Push to main without a version bump."
+    echo "  Commit with: npm run release --prefix frontend -- \"fix: what changed\""
+    echo "  (or bypass deliberately with: git push --no-verify)"
+    exit 1
+  fi
+done
+exit 0

@@ -54,7 +54,7 @@ export default function NewMatch() {
           .eq('game_id', gameId)
           .eq('response', 'IN')
           .order('joined_at', { ascending: true }),
-        supabase.from('game_payments').select('user_id, status').eq('game_id', gameId)
+        supabase.rpc('get_game_payment_statuses', { p_game_id: gameId })
       ]).then(([gameRes, regRes, payRes]) => {
         if (gameRes.data) {
           const game = gameRes.data;
