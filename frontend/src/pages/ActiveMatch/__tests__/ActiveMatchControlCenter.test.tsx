@@ -677,14 +677,16 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
   // 7. Secondary Controls Below the Fold
   // =========================================================================
   describe('7. Secondary Controls Below the Fold', () => {
-    it('renders "Match Operations & Queue" section with Manage Queue, Swap Team, Time Up, End Match Day, and Event Timeline', async () => {
+    it('renders "Teams & Queue" panel with Reorder queue, Swap Team, Time Up, End Match Day, and Event Timeline', async () => {
       renderActiveMatch();
 
       // 1. Heading and Queue section present below the fold
-      expect(screen.getByText('Match Operations & Queue')).toBeInTheDocument();
+      expect(screen.getByText('Teams & Queue')).toBeInTheDocument();
+      // Every team listed in play order: two on the pitch, then the queue
+      expect(screen.getByTestId('match-day-team-team-c')).toHaveTextContent(/Next/);
 
       // 2. Manage Queue button is present (since waiting teams exist and profile is admin)
-      const manageQueueBtn = screen.getByRole('button', { name: 'Manage Queue' });
+      const manageQueueBtn = screen.getByRole('button', { name: /Reorder queue/i });
       expect(manageQueueBtn).toBeInTheDocument();
 
       // Clicking Manage Queue opens QueueManagerModal
@@ -731,7 +733,8 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
       renderActiveMatch();
 
       // Spectator cannot see admin secondary controls
-      expect(screen.queryByRole('button', { name: 'Manage Queue' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Reorder queue/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Swap Out' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /No Goal \/ Time Up/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'END MATCH DAY' })).not.toBeInTheDocument();

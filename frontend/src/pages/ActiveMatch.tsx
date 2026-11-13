@@ -219,7 +219,7 @@ export default function ActiveMatch() {
           )}
 
           {/* Secondary Content Below the Fold */}
-          <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-white/5 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="mt-4 md:mt-8 pt-4 md:pt-8 border-t border-white/5 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
             <PitchBoard
               session={session}
               profile={profile}
@@ -237,6 +237,7 @@ export default function ActiveMatch() {
               onEndSession={handleEndSession}
               onBibColorChange={(tId, col) => setBibColors(prev => ({ ...prev, [tId]: col }))}
               onOpenQueueManager={() => setIsManagingQueue(true)}
+              teamScores={teamScores}
             />
 
             <EventTimeline

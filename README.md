@@ -41,6 +41,7 @@ StatTracker uses a two-tier **Major.Minor (`X.Y`)** versioning system:
 - The timer is now a slim strip (countdown, Start/Pause, Reset, settings), and the separate score box and team tabs are gone.
 - A "Next up" row shows the waiting teams in order, with "No Goal / Time Up" (now confirmed first) and "Undo last goal" under the board.
 - Teams keep their side of the screen when they rotate, so the winner no longer jumps to the left.
+- The section under the board is a compact "Teams & Queue" card: every team in play order with its goals and bib colour, a Reorder queue button and End Match Day.
 
 ### v6.7
 - Live match screen is compact: both teams sit side by side, each with its score on top. The separate score box is gone.
