@@ -1,4 +1,4 @@
-import { Check, Clock, XCircle, User, ShieldCheck, UserPlus } from 'lucide-react';
+import { Check, Clock, XCircle, User, ShieldCheck, UserPlus, Banknote } from 'lucide-react';
 import type { PlayerRosterItem } from '../../../types/gamePayment';
 
 export interface PlayerRosterListProps {
@@ -44,6 +44,14 @@ export function PlayerRosterList({
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
           <XCircle className="w-3 h-3" />
           Rejected
+        </span>
+      );
+    }
+    if (status === 'PENDING' && item.payment?.method === 'CASH') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-500/10 text-orange-300 border border-orange-500/20">
+          <Banknote className="w-3 h-3" />
+          Cash Due
         </span>
       );
     }
@@ -144,7 +152,7 @@ export function PlayerRosterList({
                         type="button"
                         onClick={() => onQuickVerify(player.user_id)}
                         className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all active:scale-95 flex items-center gap-1"
-                        title="Mark as Paid (Cash / In-Person)"
+                        title={player.payment?.method === 'CASH' ? 'Cash received: mark as paid' : 'Mark as Paid (Cash / In-Person)'}
                         aria-label={`Mark ${player.username} as paid`}
                       >
                         <ShieldCheck className="w-4 h-4" />

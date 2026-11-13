@@ -103,4 +103,25 @@ describe('Phase 3: PlayerRosterList Component', () => {
     fireEvent.click(quickCheckBtn);
     expect(handleQuickVerify).toHaveBeenCalledWith('u2');
   });
+
+  it('shows a cash choice as Cash Due, not paid', () => {
+    const squad: PlayerRosterItem[] = [
+      {
+        ...mockActiveSquad[1],
+        payment: {
+          id: 'pay-2',
+          game_id: 'g-1',
+          user_id: 'u2',
+          amount: 80,
+          method: 'CASH',
+          status: 'PENDING'
+        }
+      }
+    ];
+    render(<PlayerRosterList activeSquad={squad} waitingList={[]} outList={[]} isAdmin onQuickVerify={vi.fn()} />);
+
+    expect(screen.getByText('Cash Due')).toBeInTheDocument();
+    expect(screen.queryByText('Paid')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Mark Souvik Roy as paid/i })).toBeInTheDocument();
+  });
 });

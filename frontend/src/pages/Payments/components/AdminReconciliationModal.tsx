@@ -166,7 +166,12 @@ export function AdminReconciliationModal({
                           <span className="text-sm font-bold text-white truncate">{player.username}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5 text-[11px] text-neutral-400">
-                          <span>Method: {payment?.method || 'None'}</span>
+                          <span>
+                            Method: {payment?.method || 'None'}
+                            {payment?.method === 'CASH' && payment.status === 'PENDING' && (
+                              <span className="text-orange-300"> · due on game day</span>
+                            )}
+                          </span>
                           {payment?.utr && (
                             <span className="font-mono text-neutral-300 bg-neutral-900 px-1.5 py-0.5 rounded border border-white/5">
                               UTR: {payment.utr}
@@ -217,7 +222,7 @@ export function AdminReconciliationModal({
                             </button>
                           </div>
                         ) : (
-                          // Unreported or Pay Later: provide quick cash verify checkmark
+                          // Unreported, Cash Due or Pay Later: confirm once the cash is in hand
                           <button
                             type="button"
                             disabled={actionLoading}

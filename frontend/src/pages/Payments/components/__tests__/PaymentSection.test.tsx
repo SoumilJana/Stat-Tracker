@@ -128,7 +128,7 @@ describe('Phase 4: PaymentSection Component', () => {
     fireEvent.click(cashTab);
 
     // Submit Cash
-    const submitBtn = screen.getByRole('button', { name: /Submit Cash Request/i });
+    const submitBtn = screen.getByRole('button', { name: /Pay Cash on Game Day/i });
     fireEvent.click(submitBtn);
 
     expect(handleSubmit).toHaveBeenCalledWith('CASH');
@@ -231,7 +231,7 @@ describe('Phase 4: PaymentSection Component', () => {
           user_id: 'u-1',
           amount: 80,
           method: 'CASH',
-          status: 'AWAITING_VERIFICATION',
+          status: 'PENDING',
           created_at: '2026-11-11T10:00:00Z',
           updated_at: '2026-11-11T10:00:00Z'
         }}
@@ -243,12 +243,14 @@ describe('Phase 4: PaymentSection Component', () => {
       />
     );
 
-    expect(screen.getByText('Payment Claim Submitted')).toBeInTheDocument();
+    // Cash is due on game day, not a payment awaiting review
+    expect(screen.getByText('Cash Due')).toBeInTheDocument();
+    expect(screen.queryByText('Payment Claim Submitted')).not.toBeInTheDocument();
     expect(screen.getByText(/Want to pay online instead/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Pay Again \/ Change Method/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Pay with UPI Instead/i }));
 
-    // Payment options are back, with a note that the earlier claim gets replaced
-    expect(screen.getByText(/claim is still\s+pending/i)).toBeInTheDocument();
+    // Payment options are back, with a note that the cash choice gets replaced
+    expect(screen.getByText(/Paying now will replace it/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /I Have Made This Payment/i }));
     fireEvent.click(screen.getByRole('button', { name: /Mark as Paid/i }));
 

@@ -176,7 +176,7 @@ export default function Payments() {
         method === 'UPI'
           ? 'UPI payment claim submitted! Awaiting admin verification.'
           : method === 'CASH'
-          ? 'Cash request recorded. Please hand over cash to admin.'
+          ? 'Marked as cash due. Message the admin and pay at the turf on game day.'
           : 'Pay later recorded.'
       );
       await loadData(true);

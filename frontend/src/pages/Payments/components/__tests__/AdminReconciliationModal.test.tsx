@@ -173,4 +173,26 @@ describe('Phase 5: AdminReconciliationModal Component', () => {
     expect(screen.getByText(/Refunds to Settle \(1\)/i)).toBeInTheDocument();
     expect(screen.getByText(/The following players paid earlier but switched to OUT/i)).toBeInTheDocument();
   });
+
+  it('shows cash players as due on game day with a Confirm Cash action', () => {
+    const squad = makeSquad(10, 9);
+    squad[9].payment = { ...squad[9].payment!, method: 'CASH', status: 'PENDING', utr: null };
+    render(
+      <AdminReconciliationModal
+        game={mockGame}
+        activeSquad={squad}
+        allPayments={squad.map((p) => p.payment!).filter(Boolean)}
+        onVerifyPayment={vi.fn()}
+        onRejectPayment={vi.fn()}
+        onRevertPayment={vi.fn()}
+        onQuickVerifyPlayer={vi.fn()}
+        onConfirmRoster={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/due on game day/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Mark Player 10 cash verified/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Confirm & Lock Match Roster/i })).toBeDisabled();
+  });
 });

@@ -195,6 +195,37 @@ export function PaymentSection({
     );
   }
 
+  // Case 5a: Chose cash. Nothing is paid until game day, so it stays due until the admin confirms.
+  if (userPayment?.status === 'PENDING' && userPayment.method === 'CASH' && !payingAgain) {
+    return (
+      <div className="bg-neutral-900 border border-orange-500/30 rounded-2xl p-6 text-center shadow-2xl">
+        <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-300 mx-auto mb-3">
+          <Banknote className="w-8 h-8" />
+        </div>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-orange-300 bg-orange-950/80 border border-orange-500/30 px-3 py-1 rounded-full inline-block mb-2">
+          Cash Due
+        </span>
+        <h3 className="text-xl font-bold text-white tracking-tight">₹{amount.toFixed(0)} due on game day</h3>
+        <p className="text-sm text-neutral-300 mt-1 max-w-sm mx-auto">
+          Message the admin to confirm you're paying cash, then hand it over at the turf. You'll stay marked as due until the admin confirms they received it.
+        </p>
+        <div className="mt-5 pt-4 border-t border-white/5">
+          <p className="text-xs text-neutral-400 mb-2">Want to pay online instead?</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedMethod('UPI');
+              setPayingAgain(true);
+            }}
+            className="w-full py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-semibold text-xs border border-white/10 transition-all active:scale-95"
+          >
+            Pay with UPI Instead
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Case 5: Payment AWAITING_VERIFICATION
   if (userPayment?.status === 'AWAITING_VERIFICATION' && !payingAgain) {
     return (
@@ -266,11 +297,17 @@ export function PaymentSection({
       </div>
 
       {/* Paying again over an unverified claim */}
-      {payingAgain && userPayment?.status === 'AWAITING_VERIFICATION' && (
+      {payingAgain && (userPayment?.status === 'AWAITING_VERIFICATION' || (userPayment?.status === 'PENDING' && userPayment.method === 'CASH')) && (
         <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs flex items-start justify-between gap-3">
           <p className="text-neutral-300">
-            Your earlier <span className="font-bold text-amber-400">{userPayment.method}</span> claim is still
-            pending. Submitting a new payment will replace it.
+            {userPayment.method === 'CASH' ? (
+              <>You chose <span className="font-bold text-amber-400">cash</span> earlier. Paying now will replace it.</>
+            ) : (
+              <>
+                Your earlier <span className="font-bold text-amber-400">{userPayment.method}</span> claim is still
+                pending. Submitting a new payment will replace it.
+              </>
+            )}
           </p>
           <button
             type="button"
@@ -402,7 +439,7 @@ export function PaymentSection({
           <div>
             <h4 className="text-base font-bold text-white">Cash Payment at Turf</h4>
             <p className="text-xs text-neutral-400 mt-1 max-w-sm mx-auto">
-              Please hand over ₹{amount.toFixed(0)} cash directly to the match organizer before kickoff. The admin will verify your cash receipt.
+              Cash is paid on game day, so you'll show as <span className="font-semibold text-orange-300">Cash Due</span> until then. Message the admin to confirm, then hand over ₹{amount.toFixed(0)} at the turf.
             </p>
           </div>
           <button
@@ -411,7 +448,7 @@ export function PaymentSection({
             onClick={() => void submitClaim('CASH')}
             className="w-full py-3 px-4 rounded-xl bg-primary-500 hover:bg-primary-400 text-neutral-950 font-bold text-sm shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
           >
-            {submitting ? 'Submitting...' : `Submit Cash Request (₹${amount.toFixed(0)})`}
+            {submitting ? 'Submitting...' : `I'll Pay Cash on Game Day (₹${amount.toFixed(0)})`}
           </button>
         </div>
       )}
