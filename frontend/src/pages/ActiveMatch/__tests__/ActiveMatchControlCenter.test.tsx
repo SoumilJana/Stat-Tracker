@@ -189,7 +189,7 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
   // 1. Single-Screen Mobile Layout Assembly
   // =========================================================================
   describe('1. Single-Screen Mobile Layout Assembly', () => {
-    it('renders compact MatchHeader, compact Scoreboard, WinnerStaysClock, and WinnerStaysGoalEntry simultaneously in Winner Stays in-progress match', () => {
+    it('renders compact MatchHeader, slim clock and the side-by-side board in a Winner Stays in-progress match', () => {
       renderActiveMatch();
 
       // Compact Header present with back link, branding actions, and status
@@ -198,9 +198,10 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
       expect(screen.getByRole('button', { name: /Edit Match/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Delete Match/i })).toBeInTheDocument();
 
-      // Compact Scoreboard present with both active teams and scores
-      expect(screen.getByText('VS')).toBeInTheDocument();
-      expect(screen.getByText('Next: Team Orange')).toBeInTheDocument();
+      // The separate score box is replaced by scores inside the board
+      expect(screen.queryByText('VS')).not.toBeInTheDocument();
+      expect(screen.getByLabelText(/Team Green score/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Team Blue score/i)).toBeInTheDocument();
 
       // Winner Stays Clock present with countdown display and control action
       const timerDisplay = screen.getByTestId('timer-display');
@@ -208,104 +209,64 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
       expect(timerDisplay).toHaveTextContent('10:00');
       expect(screen.getByTestId('start-timer-btn')).toBeInTheDocument();
 
-      // Winner Stays Goal Entry present with Team Switcher tabs and player cards
-      const teamSwitcher = screen.getByRole('tablist', { name: /Team Switcher/i });
-      expect(teamSwitcher).toBeInTheDocument();
+      // Both teams visible at once, no tabs
+      expect(screen.queryByRole('tablist', { name: /Team Switcher/i })).not.toBeInTheDocument();
       expect(screen.getByTestId('player-card-p1')).toBeInTheDocument();
-      expect(screen.getByTestId('player-card-p2')).toBeInTheDocument();
+      expect(screen.getByTestId('player-card-p5')).toBeInTheDocument();
     });
 
     it('positions control center elements in primary screen area above the below-the-fold divider', () => {
       const { container } = renderActiveMatch();
 
-      // The below-the-fold divider exists separating primary control center from secondary content
       const belowFoldDivider = container.querySelector('.border-t.border-white\\/5.grid');
       expect(belowFoldDivider).toBeInTheDocument();
 
-      // Verify that Clock and GoalEntry are situated preceding the below-the-fold divider
       const timerSection = screen.getByTestId('winner-stays-clock');
-      const goalEntrySection = screen.getByRole('tablist', { name: /Team Switcher/i });
-
+      const board = screen.getByTestId('live-column-A');
       expect(timerSection).toBeInTheDocument();
-      expect(goalEntrySection).toBeInTheDocument();
 
-      expect(belowFoldDivider?.compareDocumentPosition(goalEntrySection)).toBe(
-        Node.DOCUMENT_POSITION_PRECEDING
-      );
+      expect(belowFoldDivider?.compareDocumentPosition(board)).toBe(Node.DOCUMENT_POSITION_PRECEDING);
+      expect(belowFoldDivider?.compareDocumentPosition(timerSection)).toBe(Node.DOCUMENT_POSITION_PRECEDING);
     });
 
-    it('displays integrated waiting-team badge in scoreboard without vertical sprawl', () => {
+    it('shows the waiting teams in a Next up row under the board', () => {
       renderActiveMatch();
-      const waitingBadge = screen.getByText('Next: Team Orange');
-      expect(waitingBadge).toBeInTheDocument();
-      expect(waitingBadge.className).toContain('whitespace-nowrap');
-      expect(waitingBadge.className).toContain('text-amber-400');
+      const nextUp = screen.getByTestId('next-up');
+      expect(nextUp).toHaveTextContent(/Next up/i);
+      expect(nextUp).toHaveTextContent('Team Orange');
     });
   });
 
   // =========================================================================
-  // 2. Team Switcher & 2-Column Grid
+  // 2. Side-by-side board
   // =========================================================================
-  describe('2. Team Switcher & 2-Column Grid', () => {
-    it('toggles active team roster immediately on tab click with green and blue color identities', () => {
+  describe('2. Side-by-side board', () => {
+    it('shows both teams at once with green and blue identities', () => {
       renderActiveMatch();
 
-      const tabTeamA = screen.getByRole('tab', { name: /Team Green/i });
-      const tabTeamB = screen.getByRole('tab', { name: /Team Blue/i });
+      const colA = screen.getByTestId('live-column-A');
+      const colB = screen.getByTestId('live-column-B');
+      expect(colA).toHaveTextContent(/Team Green/i);
+      expect(colB).toHaveTextContent(/Team Blue/i);
+      expect(colA.querySelector('h4')?.className).toContain('text-primary-400');
+      expect(colB.querySelector('h4')?.className).toContain('text-blue-400');
 
-      // Initially Team A (Green) is active
-      expect(tabTeamA).toHaveAttribute('aria-selected', 'true');
-      expect(tabTeamA.className).toContain('bg-primary-500');
-      expect(tabTeamB).toHaveAttribute('aria-selected', 'false');
-
-      // Team A players visible in goal entry
-      expect(screen.getByTestId('player-card-p1')).toBeInTheDocument(); // Alice
-      expect(screen.getByTestId('player-card-p2')).toBeInTheDocument(); // Bob
-      expect(screen.queryByTestId('player-card-p5')).not.toBeInTheDocument(); // Eve (Team B)
-
-      // Click Team B tab
-      fireEvent.click(tabTeamB);
-
-      // Team B (Blue) is now active
-      expect(tabTeamB).toHaveAttribute('aria-selected', 'true');
-      expect(tabTeamB.className).toContain('bg-blue-500');
-      expect(tabTeamA).toHaveAttribute('aria-selected', 'false');
-
-      // Team B players immediately visible in goal entry
-      expect(screen.getByTestId('player-card-p5')).toBeInTheDocument(); // Eve
-      expect(screen.getByTestId('player-card-p6')).toBeInTheDocument(); // Frank
-      expect(screen.getByTestId('player-card-p7')).toBeInTheDocument(); // Grace
-      expect(screen.getByTestId('player-card-p8')).toBeInTheDocument(); // Heidi
-      expect(screen.getByTestId('player-card-p9')).toBeInTheDocument(); // Ivan
-      expect(screen.queryByTestId('player-card-p1')).not.toBeInTheDocument(); // Alice hidden
+      ['p1', 'p2'].forEach((id) => expect(within(colA).getByTestId(`player-card-${id}`)).toBeInTheDocument());
+      ['p5', 'p6', 'p7', 'p8', 'p9'].forEach((id) =>
+        expect(within(colB).getByTestId(`player-card-${id}`)).toBeInTheDocument()
+      );
     });
 
-    it('adapts responsive 2-column grid dynamically across 4, 5, and 6 player rosters with min-h-[44px] touch targets', () => {
+    it('keeps 44px touch targets for 4, 5 and 6 player rosters', () => {
       renderActiveMatch();
 
-      // Team A has 4 players: panel is grid-cols-2, 4 player cards with min-h-[44px]
-      const teamAPanel = screen.getByRole('tabpanel', { name: /Team Green Roster/i });
-      expect(teamAPanel.className).toContain('grid-cols-2');
+      const cardsIn = (side: 'A' | 'B') =>
+        screen.getByTestId(`live-column-${side}`).querySelectorAll('button[data-testid^="player-card-"]');
 
-      const teamAPlayerCards = teamAPanel.querySelectorAll('button[data-testid^="player-card-"]');
-      expect(teamAPlayerCards).toHaveLength(4);
-      teamAPlayerCards.forEach((card) => {
-        expect(card.className).toContain('min-h-[44px]');
-      });
+      expect(cardsIn('A')).toHaveLength(4);
+      expect(cardsIn('B')).toHaveLength(5);
+      [...cardsIn('A'), ...cardsIn('B')].forEach((card) => expect(card.className).toContain('min-h-[44px]'));
 
-      // Switch to Team B (5 players)
-      const tabTeamB = screen.getByRole('tab', { name: /Team Blue/i });
-      fireEvent.click(tabTeamB);
-
-      const teamBPanel = screen.getByRole('tabpanel', { name: /Team Blue Roster/i });
-      expect(teamBPanel.className).toContain('grid-cols-2');
-      const teamBPlayerCards = teamBPanel.querySelectorAll('button[data-testid^="player-card-"]');
-      expect(teamBPlayerCards).toHaveLength(5);
-      teamBPlayerCards.forEach((card) => {
-        expect(card.className).toContain('min-h-[44px]');
-      });
-
-      // Test 6-player roster by updating teamPlayers for team-a dynamically
       updateMockData({
         teamPlayers: {
           ...baseTeamPlayers,
@@ -313,15 +274,8 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
         },
       });
 
-      const tabTeamA = screen.getByRole('tab', { name: /Team Green/i });
-      fireEvent.click(tabTeamA);
-
-      const updatedTeamAPanel = screen.getByRole('tabpanel', { name: /Team Green Roster/i });
-      const sixPlayerCards = updatedTeamAPanel.querySelectorAll('button[data-testid^="player-card-"]');
-      expect(sixPlayerCards).toHaveLength(6);
-      sixPlayerCards.forEach((card) => {
-        expect(card.className).toContain('min-h-[44px]');
-      });
+      expect(cardsIn('A')).toHaveLength(6);
+      cardsIn('A').forEach((card) => expect(card.className).toContain('min-h-[44px]'));
     });
 
     it('displays match goal count badges accurately on player cards', () => {
@@ -337,12 +291,12 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
       // Alice (p1) has 2G badge
       const aliceBadge = screen.getByTestId('goal-badge-p1');
       expect(aliceBadge).toBeInTheDocument();
-      expect(aliceBadge).toHaveTextContent('2G');
+      expect(aliceBadge).toHaveTextContent('⚽2');
 
       // Bob (p2) has 1G badge
       const bobBadge = screen.getByTestId('goal-badge-p2');
       expect(bobBadge).toBeInTheDocument();
-      expect(bobBadge).toHaveTextContent('1G');
+      expect(bobBadge).toHaveTextContent('⚽1');
 
       // Charlie (p3) has 0 goals -> no badge rendered
       expect(screen.queryByTestId('goal-badge-p3')).not.toBeInTheDocument();
@@ -353,7 +307,7 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
   // 3. Existing AssistModal Integration
   // =========================================================================
   describe('3. Existing AssistModal Integration', () => {
-    it('opens existing AssistModal with correct player and team context when + GOAL is clicked', () => {
+    it('opens existing AssistModal with correct player and team context when a player name is tapped', () => {
       renderActiveMatch();
 
       // Click + GOAL on Alice (p1)
@@ -748,7 +702,8 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
       });
       expect(currentMockData.recordSwapTeam).toHaveBeenCalledWith('team-a');
 
-      // 4. Time Up ("No Goal / Time Up") button present
+      // 4. Time Up ("No Goal / Time Up") button under the board, confirmed before rotating
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
       const timeUpBtn = screen.getByRole('button', { name: /No Goal \/ Time Up/i });
       expect(timeUpBtn).toBeInTheDocument();
 

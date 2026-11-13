@@ -95,4 +95,29 @@ describe('LiveGoalBoard', () => {
     expect(props.onInitiateGoal).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /Undo last goal/ })).toBeNull();
   });
+
+  it('Winner Stays: shows who is next and rotates on No Goal / Time Up after confirming', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const onRecordTimeUp = vi.fn();
+    renderBoard({
+      session: { status: 'IN_PROGRESS', mode: 'WINNER_STAYS' },
+      waiting: [{ id: 'tC', name: 'Team C' }, { id: 'tD', name: 'Team D' }],
+      onRecordTimeUp
+    });
+    expect(screen.getByTestId('next-up')).toHaveTextContent('Team C → Team D');
+    fireEvent.click(screen.getByRole('button', { name: /No Goal \/ Time Up/ }));
+    await Promise.resolve();
+    expect(onRecordTimeUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('standard matches have no Next up row or Time Up button', () => {
+    renderBoard({ waiting: [{ id: 'tC', name: 'Team C' }], onRecordTimeUp: vi.fn() });
+    expect(screen.queryByTestId('next-up')).toBeNull();
+    expect(screen.queryByRole('button', { name: /No Goal/ })).toBeNull();
+  });
+
+  it('locks the names while a goal is saving', () => {
+    renderBoard({ isSubmitting: true });
+    expect(screen.getByTestId('player-card-abhi')).toBeDisabled();
+  });
 });

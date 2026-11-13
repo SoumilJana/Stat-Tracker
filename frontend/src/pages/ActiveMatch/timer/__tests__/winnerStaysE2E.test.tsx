@@ -236,7 +236,7 @@ describe('Milestone 5: Comprehensive Winner Stays E2E Integration Suite', () => 
         expect(screen.getByTestId('status-badge-idle')).toBeInTheDocument();
         // 3. Start button available
         const startBtn = screen.getByTestId('start-timer-btn');
-        expect(startBtn).toHaveTextContent(/start clock/i);
+        expect(startBtn).toHaveTextContent(/start/i);
 
         // 4. Advance time without clicking start -> time remains 10:00
         await act(async () => {

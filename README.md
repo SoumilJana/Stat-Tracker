@@ -1,4 +1,4 @@
-# StatTracker [![Version](https://img.shields.io/badge/version-v6.7-10b981.svg?style=flat-square)](#)
+# StatTracker [![Version](https://img.shields.io/badge/version-v6.8-10b981.svg?style=flat-square)](#)
 
 A high-performance football & futsal match tracking Progressive Web App (PWA) built with **React 19**, **Supabase**, **Tailwind CSS v4**, and **Framer Motion**.
 
@@ -35,6 +35,12 @@ StatTracker uses a two-tier **Major.Minor (`X.Y`)** versioning system:
 ---
 
 ## 📝 Changelog
+
+### v6.8
+- Winner Stays (3/4 teams) uses the same side-by-side board: both teams on the pitch at once, scores on top, tap a name to record a goal.
+- The timer is now a slim strip (countdown, Start/Pause, Reset, settings), and the separate score box and team tabs are gone.
+- A "Next up" row shows the waiting teams in order, with "No Goal / Time Up" (now confirmed first) and "Undo last goal" under the board.
+- Teams keep their side of the screen when they rotate, so the winner no longer jumps to the left.
 
 ### v6.7
 - Live match screen is compact: both teams sit side by side, each with its score on top. The separate score box is gone.

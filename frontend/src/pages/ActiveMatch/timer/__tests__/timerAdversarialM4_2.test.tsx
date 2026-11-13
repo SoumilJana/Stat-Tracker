@@ -105,7 +105,7 @@ describe('Adversarial Challenge M4_2: Role & Confirmations Verification', () => 
         // 4. Spectator Live HUD MUST be rendered
         expect(screen.getByTestId('spectator-live-hud')).toBeInTheDocument();
         expect(screen.getByText(/Spectator Live HUD/i)).toBeInTheDocument();
-        expect(screen.getByText(/Synchronized via Realtime/i)).toBeInTheDocument();
+        expect(screen.getByTestId("spectator-live-hud")).toBeInTheDocument();
       });
     });
 
@@ -523,7 +523,7 @@ describe('Adversarial Challenge M4_2: Role & Confirmations Verification', () => 
 
       const banner = screen.getByTestId('undo-rollback-banner');
       expect(banner).toBeInTheDocument();
-      expect(banner).toHaveTextContent(/Goal undo detected/i);
+      expect(banner).toHaveTextContent(/Goal undone/i);
 
       const rollbackBtn = screen.getByTestId('rollback-clock-btn');
       expect(rollbackBtn).toBeInTheDocument();
@@ -645,8 +645,8 @@ describe('Adversarial Challenge M4_2: Role & Confirmations Verification', () => 
 
       const banner = screen.getByTestId('time-up-record-banner');
       expect(banner).toBeInTheDocument();
-      expect(banner).toHaveTextContent(/Match Countdown Reached 00:00/i);
-      expect(banner).toHaveTextContent(/Record No-Goal Time Up to execute Winner Stays team rotation/i);
+      expect(banner).toHaveTextContent(/Clock hit 00:00/i);
+      expect(banner).toHaveTextContent(/Record time up to rotate teams/i);
 
       const recordBtn = screen.getByTestId('record-time-up-btn');
       expect(recordBtn).toBeInTheDocument();

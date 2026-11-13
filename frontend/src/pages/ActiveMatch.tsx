@@ -16,6 +16,8 @@ import { BulkImportModal } from './ActiveMatch/components/BulkImportModal';
 import { EditMatchModal } from './ActiveMatch/components/EditMatchModal';
 import { WinnerStaysClock } from './ActiveMatch/timer/WinnerStaysClock';
 import { WinnerStaysGoalEntry } from './ActiveMatch/components/WinnerStaysGoalEntry';
+import { LiveGoalBoard } from './ActiveMatch/components/LiveGoalBoard';
+import { useStablePitchSides } from './ActiveMatch/utils/stablePitchSides';
 
 export default function ActiveMatch() {
   const { profile } = useAuth();
@@ -50,6 +52,8 @@ export default function ActiveMatch() {
     session,
     teams
   );
+  // Teams keep their side of the screen when Winner Stays rotates them
+  const pitchSides = useStablePitchSides(onPitch);
 
   // UI Modal & Interaction States
   const [pendingGoal, setPendingGoal] = useState<{
@@ -127,9 +131,10 @@ export default function ActiveMatch() {
     return <div className="text-red-400 p-8 text-center">Match not found or invalid teams.</div>;
   }
 
-  const teamA = onPitch[0];
-  const teamB = onPitch[1];
-  const isCompactLiveBoard = session.mode !== 'WINNER_STAYS' && session.status === 'IN_PROGRESS';
+  const teamA = pitchSides[0] || onPitch[0];
+  const teamB = pitchSides[1] || onPitch[1];
+  // Live matches show the score inside the side-by-side board instead of the score box
+  const isCompactLiveBoard = session.status === 'IN_PROGRESS';
 
   return (
     <div className="max-w-5xl mx-auto pb-24 md:pb-8">
@@ -154,8 +159,7 @@ export default function ActiveMatch() {
         onOpenBulk={() => setShowBulkImport(true)}
       />
 
-      {/* Live Active Match Scoreboard or Post-Match Podium.
-          Standard / 7v7 live matches show the score inside the side-by-side board instead. */}
+      {/* Score box / post-match podium (live matches show scores in the board below) */}
       {!isCompactLiveBoard && (
       <Scoreboard
         session={session}
@@ -182,18 +186,37 @@ export default function ActiveMatch() {
             onRecordTimeUp={handleRecordTimeUp}
           />
 
-          <WinnerStaysGoalEntry
-            session={session}
-            profile={profile}
-            teamA={teamA}
-            teamB={teamB}
-            teamPlayers={teamPlayers}
-            events={events}
-            waiting={waiting}
-            isSubmitting={isSubmittingGoal}
-            onInitiateGoal={handleInitiateGoal}
-            onSwapTeam={recordSwapTeam}
-          />
+          {isCompactLiveBoard ? (
+            <LiveGoalBoard
+              session={session}
+              profile={profile}
+              teamA={teamA}
+              teamB={teamB}
+              teamPlayers={teamPlayers}
+              teamScores={teamScores}
+              goalAnim={goalAnim}
+              events={events}
+              waiting={waiting}
+              onInitiateGoal={handleInitiateGoal}
+              onSwapTeam={recordSwapTeam}
+              onUndoEvent={undoEvent}
+              onRecordTimeUp={handleRecordTimeUp}
+              isSubmitting={isSubmittingGoal}
+            />
+          ) : (
+            <WinnerStaysGoalEntry
+              session={session}
+              profile={profile}
+              teamA={teamA}
+              teamB={teamB}
+              teamPlayers={teamPlayers}
+              events={events}
+              waiting={waiting}
+              isSubmitting={isSubmittingGoal}
+              onInitiateGoal={handleInitiateGoal}
+              onSwapTeam={recordSwapTeam}
+            />
+          )}
 
           {/* Secondary Content Below the Fold */}
           <div className="mt-6 md:mt-8 pt-6 md:pt-8 border-t border-white/5 grid grid-cols-1 lg:grid-cols-3 gap-8">

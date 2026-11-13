@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { Clock, SkipForward } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { LiveGoalBoard } from './LiveGoalBoard';
 
 interface PitchBoardProps {
@@ -15,7 +15,8 @@ interface PitchBoardProps {
   onPitch: any[];
   onInitiateGoal: (playerId: string, teamId: string, playersList: any[]) => void;
   onSwapTeam: (teamId: string) => void;
-  onRecordTimeUp: () => void;
+  /** No longer used here: Winner Stays shows No Goal / Time Up under the live board */
+  onRecordTimeUp?: () => void;
   onEndSession: () => void;
   onBibColorChange: (teamId: string, color: string) => void;
   onOpenQueueManager: () => void;
@@ -37,7 +38,6 @@ export function PitchBoard({
   onPitch,
   onInitiateGoal,
   onSwapTeam,
-  onRecordTimeUp,
   onEndSession,
   onBibColorChange,
   onOpenQueueManager,
@@ -45,8 +45,6 @@ export function PitchBoard({
   goalAnim = null,
   onUndoEvent
 }: PitchBoardProps) {
-  const teamAPlayersList = teamPlayers[teamA?.id] || [];
-  const teamBPlayersList = teamPlayers[teamB?.id] || [];
 
   return (
     <>
@@ -79,7 +77,7 @@ export function PitchBoard({
                   Match Operations & Queue
                 </h3>
                 <p className="text-xs text-neutral-400 mt-0.5">
-                  Secondary rotation controls, bib colors, and matchday management
+                  Queue order, bib colours and ending the match day
                 </p>
               </div>
               {waiting.length > 0 && profile?.role === 'admin' && (
@@ -109,53 +107,6 @@ export function PitchBoard({
                 )}
               </div>
             )}
-
-            {/* On-Pitch Teams & Quick Swap Section */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Team A Card */}
-              <div className="p-4 bg-neutral-900/60 border border-primary-500/20 rounded-xl flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-primary-400 font-bold text-sm uppercase">{teamA?.name}</span>
-                    <span className="bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded text-[10px] font-semibold">Active</span>
-                  </div>
-                  <span className="text-xs text-neutral-400 mt-1 block">
-                    {teamAPlayersList.length} Players on Pitch
-                  </span>
-                </div>
-                {waiting.length > 0 && profile?.role === 'admin' && (
-                  <button
-                    onClick={() => onSwapTeam(teamA.id)}
-                    className="text-xs bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer"
-                    title="Swap this team out for the next waiting team"
-                  >
-                    Swap Out
-                  </button>
-                )}
-              </div>
-
-              {/* Team B Card */}
-              <div className="p-4 bg-neutral-900/60 border border-blue-500/20 rounded-xl flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-blue-400 font-bold text-sm uppercase">{teamB?.name}</span>
-                    <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-[10px] font-semibold">Active</span>
-                  </div>
-                  <span className="text-xs text-neutral-400 mt-1 block">
-                    {teamBPlayersList.length} Players on Pitch
-                  </span>
-                </div>
-                {waiting.length > 0 && profile?.role === 'admin' && (
-                  <button
-                    onClick={() => onSwapTeam(teamB.id)}
-                    className="text-xs bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer"
-                    title="Swap this team out for the next waiting team"
-                  >
-                    Swap Out
-                  </button>
-                )}
-              </div>
-            </div>
 
             {/* Bib Color Selection for Teams */}
             {profile?.role === 'admin' && (
@@ -188,15 +139,6 @@ export function PitchBoard({
             {/* Admin Operations Row */}
             {profile?.role === 'admin' && (
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-neutral-800">
-                {waiting.length > 0 && (
-                  <button
-                    onClick={onRecordTimeUp}
-                    className="bg-neutral-800 text-white border border-neutral-700 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-neutral-700 hover:border-neutral-500 transition-colors w-full sm:w-auto flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <SkipForward className="w-4 h-4" />
-                    No Goal / Time Up
-                  </button>
-                )}
 
                 <button
                   onClick={onEndSession}

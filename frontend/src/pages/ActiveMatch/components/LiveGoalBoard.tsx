@@ -1,11 +1,12 @@
 import { Fragment, useContext } from 'react';
-import { Undo2, Repeat } from 'lucide-react';
+import { Undo2, Repeat, SkipForward } from 'lucide-react';
 import { ConfirmContext } from '../../../contexts/ConfirmContext';
 
 /**
- * Compact live board for standard and 7v7 matches: both teams side by side,
- * each with its score on top. Admins tap a name to record a goal (the assist /
- * own goal prompt opens), and can undo the last goal from below the board.
+ * Compact live board for every match format: the two teams on the pitch side
+ * by side, each with its score on top. Admins tap a name to record a goal (the
+ * assist / own goal prompt opens), and can undo the last goal from below the
+ * board. Winner Stays also shows who is next and a No Goal / Time Up button.
  */
 export interface LiveGoalBoardProps {
   session: any;
@@ -20,6 +21,10 @@ export interface LiveGoalBoardProps {
   onInitiateGoal: (playerId: string, teamId: string, playersList: any[]) => void;
   onSwapTeam: (teamId: string) => void;
   onUndoEvent?: (eventId: string) => void;
+  /** Winner Stays: rotate teams when nobody scored before time ran out */
+  onRecordTimeUp?: () => void | Promise<void>;
+  /** A goal is being saved: lock the names so it can't be recorded twice */
+  isSubmitting?: boolean;
 }
 
 const STARTERS_7V7 = 7;
@@ -51,12 +56,32 @@ export function LiveGoalBoard({
   waiting,
   onInitiateGoal,
   onSwapTeam,
-  onUndoEvent
+  onUndoEvent,
+  onRecordTimeUp,
+  isSubmitting = false
 }: LiveGoalBoardProps) {
   const confirmCtx = useContext(ConfirmContext);
   const isAdmin = profile?.role === 'admin';
   const canScore = isAdmin && session?.status === 'IN_PROGRESS';
+  const tapEnabled = canScore && !isSubmitting;
   const is7v7 = session?.mode === 'SPECIAL_7V7';
+  const isWinnerStays = session?.mode === 'WINNER_STAYS';
+
+  const askConfirm = async (title: string, description: string, confirmText: string) =>
+    confirmCtx
+      ? confirmCtx.confirm({ title, description, confirmText, variant: 'danger', isDestructive: true })
+      : window.confirm(description);
+
+  const handleTimeUp = async () => {
+    if (!onRecordTimeUp) return;
+    const next = waiting[0]?.name || 'the next team';
+    const ok = await askConfirm(
+      'No goal / time up?',
+      `Nobody scored. ${teamA?.name} and ${teamB?.name} rotate and ${next} comes on.`,
+      'Rotate Teams'
+    );
+    if (ok) await onRecordTimeUp();
+  };
 
   const allPlayers = Object.values(teamPlayers || {}).flat();
   const lastEvent = events?.[0];
@@ -71,15 +96,7 @@ export function LiveGoalBoard({
   const handleUndo = async () => {
     if (!lastGoal || !onUndoEvent) return;
     const message = `Remove ${lastGoalName}'s goal${lastGoal.is_own_goal ? ' (own goal)' : ''}?`;
-    const ok = confirmCtx
-      ? await confirmCtx.confirm({
-          title: 'Undo last goal?',
-          description: message,
-          confirmText: 'Undo Goal',
-          variant: 'danger',
-          isDestructive: true
-        })
-      : window.confirm(message);
+    const ok = await askConfirm('Undo last goal?', message, 'Undo Goal');
     if (ok) onUndoEvent(lastGoal.id);
   };
 
@@ -136,17 +153,26 @@ export function LiveGoalBoard({
                 )}
                 <button
                   type="button"
-                  disabled={!canScore}
+                  disabled={!tapEnabled}
+                  data-testid={`player-card-${player.id}`}
                   onClick={() => onInitiateGoal(player.id, team.id, players)}
                   aria-label={canScore ? `Record goal for ${player.username}` : player.username}
                   className={`w-full min-h-[44px] flex items-center justify-between gap-1 px-2.5 py-2 bg-neutral-900/70 border border-white/5 rounded-xl text-left transition-all ${
-                    canScore ? `${rowHover} active:scale-[0.97] cursor-pointer` : 'cursor-default'
+                    tapEnabled
+                      ? `${rowHover} active:scale-[0.97] cursor-pointer`
+                      : canScore
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'cursor-default'
                   }`}
                 >
                   <span className="text-sm font-semibold text-white truncate min-w-0">{player.username}</span>
                   <span className="flex items-center gap-1 shrink-0 text-[10px] font-black">
                     {goals > 0 && (
-                      <span className="px-1 py-0.5 rounded bg-white/10 text-white" title={`${goals} goals`}>
+                      <span
+                        data-testid={`goal-badge-${player.id}`}
+                        className="px-1 py-0.5 rounded bg-white/10 text-white"
+                        title={`${goals} goals`}
+                      >
                         ⚽{goals}
                       </span>
                     )}
@@ -188,7 +214,29 @@ export function LiveGoalBoard({
         {canScore && (
           <p className="text-center text-[10px] text-neutral-500 mt-3">Tap a player to record a goal</p>
         )}
+        {isWinnerStays && waiting.length > 0 && (
+          <div
+            data-testid="next-up"
+            className="mt-3 pt-2 border-t border-white/10 flex items-center gap-2 text-xs min-w-0"
+          >
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 shrink-0">Next up</span>
+            <span className="text-neutral-200 font-semibold truncate">
+              {waiting.map((t) => t.name).join(' → ')}
+            </span>
+          </div>
+        )}
       </div>
+
+      {canScore && isWinnerStays && onRecordTimeUp && waiting.length > 0 && (
+        <button
+          type="button"
+          onClick={handleTimeUp}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-neutral-900 border border-white/10 text-sm font-semibold text-neutral-200 hover:text-white hover:border-amber-500/40 active:scale-[0.98] transition-all"
+        >
+          <SkipForward className="w-4 h-4" />
+          No Goal / Time Up
+        </button>
+      )}
 
       {canScore && lastGoal && onUndoEvent && (
         <button
