@@ -675,9 +675,10 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
       // Winner Stays Goal Entry NOT mounted
       expect(screen.queryByRole('tablist', { name: /Team Switcher/i })).not.toBeInTheDocument();
 
-      // Standard PitchBoard rendered (showing standard pitch rosters with team headers)
-      expect(screen.getByText(/Team Green Goal/i)).toBeInTheDocument();
-      expect(screen.getByText(/Team Blue Goal/i)).toBeInTheDocument();
+      // Compact side-by-side live board rendered, with each team's score in its column
+      expect(screen.getByTestId('live-column-A')).toHaveTextContent(/Team Green/i);
+      expect(screen.getByTestId('live-column-B')).toHaveTextContent(/Team Blue/i);
+      expect(screen.getByLabelText(/Team Green score/i)).toBeInTheDocument();
     });
 
     it('bypasses WinnerStaysClock and WinnerStaysGoalEntry for ROUND_ROBIN mode', () => {
@@ -693,7 +694,7 @@ describe('ActiveMatchControlCenter Integration Suite', () => {
 
       expect(screen.queryByTestId('winner-stays-clock')).not.toBeInTheDocument();
       expect(screen.queryByRole('tablist', { name: /Team Switcher/i })).not.toBeInTheDocument();
-      expect(screen.getByText(/Team Green Goal/i)).toBeInTheDocument();
+      expect(screen.getByTestId('live-column-A')).toHaveTextContent(/Team Green/i);
     });
 
     it('shows post-match podium and does not render live control center when Winner Stays match is COMPLETED', () => {

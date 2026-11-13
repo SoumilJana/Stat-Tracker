@@ -1,4 +1,4 @@
-# StatTracker [![Version](https://img.shields.io/badge/version-v6.6-10b981.svg?style=flat-square)](#)
+# StatTracker [![Version](https://img.shields.io/badge/version-v6.7-10b981.svg?style=flat-square)](#)
 
 A high-performance football & futsal match tracking Progressive Web App (PWA) built with **React 19**, **Supabase**, **Tailwind CSS v4**, and **Framer Motion**.
 
@@ -35,6 +35,12 @@ StatTracker uses a two-tier **Major.Minor (`X.Y`)** versioning system:
 ---
 
 ## 📝 Changelog
+
+### v6.7
+- Live match screen is compact: both teams sit side by side, each with its score on top. The separate score box is gone.
+- Tap a player's name to record a goal. The assist / own goal prompt opens as before.
+- Goals, assists and own goals show next to each name, and a large "Undo last goal" button sits under the board.
+- Works the same for 7v7 (substitutes under a divider); players see the board read-only.
 
 ### v6.6
 - The app updates itself: it checks for a new version when reopened and every 30 minutes, then reloads on its own.

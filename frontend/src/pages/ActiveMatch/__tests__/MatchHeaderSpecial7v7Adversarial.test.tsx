@@ -649,7 +649,7 @@ describe('Empirical Challenge: Milestone 3 SPECIAL_7V7 Active Match, Headers, Ba
       );
 
       // All 7 should be Starters
-      expect(screen.getAllByText('Starter')).toHaveLength(14); // 7 for side A, 7 for side B
+      expect(screen.getAllByRole('button', { name: /Record goal for/ })).toHaveLength(14); // 7 for side A, 7 for side B
       expect(screen.queryByText('Sub')).toBeNull();
       expect(screen.queryByText(/Substitutes/)).toBeNull();
     });

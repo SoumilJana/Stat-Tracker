@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { Clock, SkipForward } from 'lucide-react';
+import { LiveGoalBoard } from './LiveGoalBoard';
 
 interface PitchBoardProps {
   session: any;
@@ -18,6 +19,9 @@ interface PitchBoardProps {
   onEndSession: () => void;
   onBibColorChange: (teamId: string, color: string) => void;
   onOpenQueueManager: () => void;
+  teamScores?: Record<string, number>;
+  goalAnim?: { teamId: string; id: number } | null;
+  onUndoEvent?: (eventId: string) => void;
 }
 
 export function PitchBoard({
@@ -36,7 +40,10 @@ export function PitchBoard({
   onRecordTimeUp,
   onEndSession,
   onBibColorChange,
-  onOpenQueueManager
+  onOpenQueueManager,
+  teamScores = {},
+  goalAnim = null,
+  onUndoEvent
 }: PitchBoardProps) {
   const teamAPlayersList = teamPlayers[teamA?.id] || [];
   const teamBPlayersList = teamPlayers[teamB?.id] || [];
@@ -276,126 +283,21 @@ export function PitchBoard({
             })}
           </div>
         ) : (
-          /* Standard IN_PROGRESS PitchBoard for Non-Winner-Stays Modes */
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Team A Players */}
-            <div className="bg-black border border-primary-500/20 rounded-2xl p-5 shadow-lg shadow-primary-900/10 relative overflow-hidden">
-              <h4 className="text-primary-400 font-bold mb-4 uppercase tracking-wider text-sm flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span>{teamA?.name} Goal</span>
-                  <span className="bg-primary-500/20 px-2 py-0.5 rounded text-xs">Active</span>
-                </div>
-                {waiting.length > 0 && profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
-                  <button
-                    onClick={() => onSwapTeam(teamA.id)}
-                    className="text-xs bg-neutral-800 hover:bg-neutral-700 text-white px-2 py-1 rounded transition-colors"
-                    title="Swap this team out for the next waiting team"
-                  >
-                    Swap Out
-                  </button>
-                )}
-              </h4>
-              <div className="space-y-2.5 sm:space-y-3 relative z-10">
-                {teamAPlayersList.map((player, index) => (
-                  <Fragment key={player.id}>
-                    {session.mode === 'SPECIAL_7V7' && teamAPlayersList.length > 7 && index === 7 && (
-                      <div className="pt-2 pb-1 border-t border-white/10 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-amber-400/80">
-                        <span>Substitutes ({teamAPlayersList.length - 7})</span>
-                      </div>
-                    )}
-                    <button
-                      disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
-                      onClick={() => onInitiateGoal(player.id, teamA.id, teamAPlayersList)}
-                      className={`w-full flex items-center justify-between p-2.5 sm:p-3 md:p-3.5 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${
-                        session.status === 'IN_PROGRESS' && profile?.role === 'admin'
-                          ? 'hover:bg-primary-900/40 hover:border-primary-500/50 group active:scale-95'
-                          : 'disabled:opacity-75 disabled:cursor-default'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0 pr-2">
-                        <span className="text-white font-medium text-left truncate">{player.username}</span>
-                        {session.mode === 'SPECIAL_7V7' && (
-                          <span
-                            className={`shrink-0 ${
-                              index < 7
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
-                                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
-                            }`}
-                          >
-                            {index < 7 ? 'Starter' : 'Sub'}
-                          </span>
-                        )}
-                      </div>
-                      {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
-                        <span className="bg-primary-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                          + GOAL
-                        </span>
-                      )}
-                    </button>
-                  </Fragment>
-                ))}
-              </div>
-            </div>
-
-            {/* Team B Players */}
-            <div className="bg-black border border-blue-500/20 rounded-2xl p-5 shadow-lg shadow-blue-900/10 relative overflow-hidden">
-              <h4 className="text-blue-400 font-bold mb-4 uppercase tracking-wider text-sm flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span>{teamB?.name} Goal</span>
-                  <span className="bg-blue-500/20 px-2 py-0.5 rounded text-xs">Active</span>
-                </div>
-                {waiting.length > 0 && profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
-                  <button
-                    onClick={() => onSwapTeam(teamB.id)}
-                    className="text-xs bg-neutral-800 hover:bg-neutral-700 text-white px-2 py-1 rounded transition-colors"
-                    title="Swap this team out for the next waiting team"
-                  >
-                    Swap Out
-                  </button>
-                )}
-              </h4>
-              <div className="space-y-2.5 sm:space-y-3 relative z-10">
-                {teamBPlayersList.map((player, index) => (
-                  <Fragment key={player.id}>
-                    {session.mode === 'SPECIAL_7V7' && teamBPlayersList.length > 7 && index === 7 && (
-                      <div className="pt-2 pb-1 border-t border-white/10 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-amber-400/80">
-                        <span>Substitutes ({teamBPlayersList.length - 7})</span>
-                      </div>
-                    )}
-                    <button
-                      disabled={session.status !== 'IN_PROGRESS' || profile?.role !== 'admin'}
-                      onClick={() => onInitiateGoal(player.id, teamB.id, teamBPlayersList)}
-                      className={`w-full flex items-center justify-between p-2.5 sm:p-3 md:p-3.5 bg-neutral-900/50 border border-white/5 rounded-xl transition-all shadow-sm ${
-                        session.status === 'IN_PROGRESS' && profile?.role === 'admin'
-                          ? 'hover:bg-blue-900/40 hover:border-blue-500/50 group active:scale-95'
-                          : 'disabled:opacity-75 disabled:cursor-default'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0 pr-2">
-                        <span className="text-white font-medium text-left truncate">{player.username}</span>
-                        {session.mode === 'SPECIAL_7V7' && (
-                          <span
-                            className={`shrink-0 ${
-                              index < 7
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
-                                : 'bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded'
-                            }`}
-                          >
-                            {index < 7 ? 'Starter' : 'Sub'}
-                          </span>
-                        )}
-                      </div>
-                      {profile?.role === 'admin' && session.status === 'IN_PROGRESS' && (
-                        <span className="bg-blue-500 text-black text-xs font-bold px-2 py-1 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                          + GOAL
-                        </span>
-                      )}
-                    </button>
-                  </Fragment>
-                ))}
-              </div>
-            </div>
-          </div>
+          /* Standard / 7v7 IN_PROGRESS: compact side-by-side board */
+          <LiveGoalBoard
+            session={session}
+            profile={profile}
+            teamA={teamA}
+            teamB={teamB}
+            teamPlayers={teamPlayers}
+            teamScores={teamScores}
+            goalAnim={goalAnim}
+            events={events}
+            waiting={waiting}
+            onInitiateGoal={onInitiateGoal}
+            onSwapTeam={onSwapTeam}
+            onUndoEvent={onUndoEvent}
+          />
         )}
 
         {/* Action bar for standard Non-Winner-Stays mode when in progress */}

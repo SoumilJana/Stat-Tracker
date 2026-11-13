@@ -129,6 +129,7 @@ export default function ActiveMatch() {
 
   const teamA = onPitch[0];
   const teamB = onPitch[1];
+  const isCompactLiveBoard = session.mode !== 'WINNER_STAYS' && session.status === 'IN_PROGRESS';
 
   return (
     <div className="max-w-5xl mx-auto pb-24 md:pb-8">
@@ -153,7 +154,9 @@ export default function ActiveMatch() {
         onOpenBulk={() => setShowBulkImport(true)}
       />
 
-      {/* Live Active Match Scoreboard or Post-Match Podium */}
+      {/* Live Active Match Scoreboard or Post-Match Podium.
+          Standard / 7v7 live matches show the score inside the side-by-side board instead. */}
+      {!isCompactLiveBoard && (
       <Scoreboard
         session={session}
         teamA={teamA}
@@ -167,6 +170,7 @@ export default function ActiveMatch() {
         onPitch={onPitch}
         waiting={waiting}
       />
+      )}
 
       {/* Winner Stays Dedicated Match Clock & Goal Entry or Standard Layout */}
       {session?.mode === 'WINNER_STAYS' && session?.status !== 'COMPLETED' ? (
@@ -244,6 +248,9 @@ export default function ActiveMatch() {
             onEndSession={handleEndSession}
             onBibColorChange={(tId, col) => setBibColors(prev => ({ ...prev, [tId]: col }))}
             onOpenQueueManager={() => setIsManagingQueue(true)}
+            teamScores={teamScores}
+            goalAnim={goalAnim}
+            onUndoEvent={undoEvent}
           />
 
           <EventTimeline

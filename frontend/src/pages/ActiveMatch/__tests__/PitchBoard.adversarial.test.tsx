@@ -83,8 +83,8 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
         />
       );
 
-      // 7 Starters per team * 2 teams = 14 Starters
-      const starters = screen.getAllByText('Starter');
+      // Live board: one tap-to-score button per player, no Starter/Sub badges
+      const starters = screen.getAllByRole('button', { name: /Record goal for/ });
       expect(starters).toHaveLength(14);
 
       // Zero Subs and zero Substitutes dividers
@@ -124,8 +124,8 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
         />
       );
 
-      expect(screen.getAllByText('Starter')).toHaveLength(14);
-      expect(screen.getAllByText('Sub')).toHaveLength(2);
+      expect(screen.getAllByRole('button', { name: /Record goal for/ })).toHaveLength(16);
+      expect(screen.queryByText('Sub')).toBeNull();
 
       const dividers = screen.getAllByText('Substitutes (1)');
       expect(dividers).toHaveLength(2);
@@ -162,8 +162,8 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
         />
       );
 
-      expect(screen.getAllByText('Starter')).toHaveLength(14);
-      expect(screen.getAllByText('Sub')).toHaveLength(4);
+      expect(screen.getAllByRole('button', { name: /Record goal for/ })).toHaveLength(18);
+      expect(screen.queryByText('Sub')).toBeNull();
 
       const dividers = screen.getAllByText('Substitutes (2)');
       expect(dividers).toHaveLength(2);
@@ -202,8 +202,8 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
         />
       );
 
-      expect(screen.getAllByText('Starter')).toHaveLength(14);
-      expect(screen.getAllByText('Sub')).toHaveLength(6);
+      expect(screen.getAllByRole('button', { name: /Record goal for/ })).toHaveLength(20);
+      expect(screen.queryByText('Sub')).toBeNull();
       expect(screen.getAllByText('Substitutes (3)')).toHaveLength(2);
     });
 
@@ -233,10 +233,10 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
         />
       );
 
-      // Starters: 7 from Team A + 7 from Team B = 14
-      expect(screen.getAllByText('Starter')).toHaveLength(14);
+      // Players: 7 from Team A + 10 from Team B = 17
+      expect(screen.getAllByRole('button', { name: /Record goal for/ })).toHaveLength(17);
       // Subs: 0 from Team A + 3 from Team B = 3
-      expect(screen.getAllByText('Sub')).toHaveLength(3);
+      expect(screen.queryByText('Sub')).toBeNull();
       // Only 1 divider for Team B
       const divider = screen.getByText('Substitutes (3)');
       expect(divider).toBeInTheDocument();
@@ -402,7 +402,7 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
       expect(screen.queryByText('END MATCH DAY')).toBeNull();
     });
 
-    it('admin user sees enabled buttons, + GOAL indicators, and END MATCH DAY button', () => {
+    it('admin user sees enabled buttons, tap-to-score names, and END MATCH DAY button', () => {
       const playersA = makePlayers('A', 7);
       const playersB = makePlayers('B', 7);
       const onEndSession = vi.fn();
@@ -431,7 +431,7 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
       const btn = screen.getByText('APlayer_1').closest('button');
       expect(btn).not.toBeDisabled();
 
-      const goalBadges = screen.getAllByText('+ GOAL');
+      const goalBadges = screen.getAllByRole('button', { name: /Record goal for/ });
       expect(goalBadges).toHaveLength(14); // 7 + 7
 
       const endMatchBtn = screen.getByText('END MATCH DAY');

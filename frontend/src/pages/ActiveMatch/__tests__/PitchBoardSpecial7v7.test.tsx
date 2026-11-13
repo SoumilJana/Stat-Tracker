@@ -122,13 +122,10 @@ describe('Milestone 3: 7v7 Special Mode (SPECIAL_7V7) Active Match & Pitch Board
         />
       );
 
-      // 7 Starters per team * 2 teams = 14 Starter badges
-      const starterBadges = screen.getAllByText('Starter');
-      expect(starterBadges).toHaveLength(14);
-
-      // 3 Subs per team * 2 teams = 6 Sub badges
-      const subBadges = screen.getAllByText('Sub');
-      expect(subBadges).toHaveLength(6);
+      // Live board: 10 tap-to-score names per team, no Starter/Sub badges
+      expect(screen.getAllByRole('button', { name: /Record goal for/ })).toHaveLength(20);
+      expect(screen.queryByText('Starter')).toBeNull();
+      expect(screen.queryByText('Sub')).toBeNull();
 
       // Section divider should be rendered for both teams: "Substitutes (3)"
       const dividers = screen.getAllByText('Substitutes (3)');
