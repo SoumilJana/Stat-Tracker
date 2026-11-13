@@ -198,14 +198,23 @@ describe('M1 Adversarial Challenge: MatchHeader & Scoreboard', () => {
         </MemoryRouter>
       );
 
-      const copyBtn = screen.getByTitle('Copy Teams');
+      const copyBtn = screen.getByTitle('Send Teams on WhatsApp');
       expect(copyBtn).toBeInTheDocument();
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
 
       fireEvent.click(copyBtn);
       expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
       const copiedText = (navigator.clipboard.writeText as any).mock.calls[0][0];
       expect(copiedText).toContain('Team Alpha');
       expect(copiedText).toContain('Team Bravo');
+
+      // Opens WhatsApp with the same text ready to send
+      expect(openSpy).toHaveBeenCalledWith(
+        `https://api.whatsapp.com/send?text=${encodeURIComponent(copiedText)}`,
+        '_blank',
+        'noopener,noreferrer'
+      );
+      openSpy.mockRestore();
 
       // Check for copied check feedback
       expect(screen.getByText('Copied!')).toBeInTheDocument();
@@ -241,7 +250,7 @@ describe('M1 Adversarial Challenge: MatchHeader & Scoreboard', () => {
         </MemoryRouter>
       );
 
-      const copyBtn = screen.getByTitle('Copy Match Stats');
+      const copyBtn = screen.getByTitle('Send Match Stats on WhatsApp');
       expect(copyBtn).toBeInTheDocument();
 
       fireEvent.click(copyBtn);

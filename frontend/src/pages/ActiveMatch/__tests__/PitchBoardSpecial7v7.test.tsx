@@ -429,7 +429,7 @@ describe('Milestone 3: 7v7 Special Mode (SPECIAL_7V7) Active Match & Pitch Board
         </MemoryRouter>
       );
 
-      const copyBtn = screen.getByTitle('Copy Teams');
+      const copyBtn = screen.getByTitle('Send Teams on WhatsApp');
       fireEvent.click(copyBtn);
 
       expect(navigator.clipboard.writeText).toHaveBeenCalled();
@@ -472,7 +472,7 @@ describe('Milestone 3: 7v7 Special Mode (SPECIAL_7V7) Active Match & Pitch Board
         </MemoryRouter>
       );
 
-      const copyBtn = screen.getByTitle('Copy Match Stats');
+      const copyBtn = screen.getByTitle('Send Match Stats on WhatsApp');
       fireEvent.click(copyBtn);
 
       expect(navigator.clipboard.writeText).toHaveBeenCalled();
@@ -510,7 +510,7 @@ describe('Milestone 3: 7v7 Special Mode (SPECIAL_7V7) Active Match & Pitch Board
 
       expect(screen.queryByText('7v7 Special')).toBeNull();
 
-      const copyBtn = screen.getByTitle('Copy Teams');
+      const copyBtn = screen.getByTitle('Send Teams on WhatsApp');
       fireEvent.click(copyBtn);
 
       expect(mockClipboardText).not.toContain('7v7 Special');

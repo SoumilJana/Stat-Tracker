@@ -329,7 +329,7 @@ describe('Empirical Challenge: Milestone 3 SPECIAL_7V7 Active Match, Headers, Ba
         </MemoryRouter>
       );
 
-      const copyBtn = screen.getByTitle('Copy Teams');
+      const copyBtn = screen.getByTitle('Send Teams on WhatsApp');
       fireEvent.click(copyBtn);
 
       expect(clipboardOutput).toContain('🎯 Mode: 7v7 Special');
@@ -389,7 +389,7 @@ describe('Empirical Challenge: Milestone 3 SPECIAL_7V7 Active Match, Headers, Ba
         </MemoryRouter>
       );
 
-      const copyBtn = screen.getByTitle('Copy Match Stats');
+      const copyBtn = screen.getByTitle('Send Match Stats on WhatsApp');
       fireEvent.click(copyBtn);
 
       expect(clipboardOutput).toContain('Match Day Stats');
@@ -448,7 +448,7 @@ describe('Empirical Challenge: Milestone 3 SPECIAL_7V7 Active Match, Headers, Ba
         </MemoryRouter>
       );
 
-      const copyBtn = screen.getByTitle('Copy Match Stats');
+      const copyBtn = screen.getByTitle('Send Match Stats on WhatsApp');
       fireEvent.click(copyBtn);
 
       expect(clipboardOutput).not.toContain('7v7 Special');

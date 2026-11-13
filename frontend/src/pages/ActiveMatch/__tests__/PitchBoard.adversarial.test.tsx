@@ -569,7 +569,7 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
         </MemoryRouter>
       );
 
-      fireEvent.click(screen.getByTitle('Copy Teams'));
+      fireEvent.click(screen.getByTitle('Send Teams on WhatsApp'));
 
       expect(clipboardText).toContain('🎯 Mode: 7v7 Special');
       expect(clipboardText).toContain('1. APlayer_1');
@@ -603,7 +603,7 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
         </MemoryRouter>
       );
 
-      fireEvent.click(screen.getByTitle('Copy Teams'));
+      fireEvent.click(screen.getByTitle('Send Teams on WhatsApp'));
 
       expect(clipboardText).toContain('7. APlayer_7');
       expect(clipboardText).toContain('8. APlayer_8');
@@ -642,7 +642,7 @@ describe('PitchBoard & Active Match Adversarial Stress Tests (SPECIAL_7V7)', () 
         </MemoryRouter>
       );
 
-      fireEvent.click(screen.getByTitle('Copy Match Stats'));
+      fireEvent.click(screen.getByTitle('Send Match Stats on WhatsApp'));
 
       expect(clipboardText).toContain('🎯 Mode: 7v7 Special');
       expect(clipboardText).toContain('- APlayer_1: 1 G');

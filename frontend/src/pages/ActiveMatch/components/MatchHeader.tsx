@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Activity, Copy, Check, Share2, CloudOff, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Activity, MessageCircle, Check, Share2, CloudOff, RefreshCw } from 'lucide-react';
+import { getWhatsAppShareUrl } from '../../../lib/whatsappSummary';
 import { buildWhatsAppShareText, executeMatchShare } from '../utils/shareUtils';
 
 interface MatchHeaderProps {
@@ -64,6 +65,14 @@ export function MatchHeader({
     }
   };
 
+  /** Opens WhatsApp with the text ready to send (like the Payments summary), and keeps a copy on the clipboard */
+  const sendToWhatsApp = (text: string) => {
+    Promise.resolve(navigator.clipboard?.writeText(text)).catch(() => {});
+    window.open(getWhatsAppShareUrl(text), '_blank', 'noopener,noreferrer');
+    setStatsCopied(true);
+    setTimeout(() => setStatsCopied(false), 2000);
+  };
+
   const copyStats = () => {
     if (!session) return;
 
@@ -97,9 +106,7 @@ export function MatchHeader({
           }
         });
 
-      navigator.clipboard.writeText(text);
-      setStatsCopied(true);
-      setTimeout(() => setStatsCopied(false), 2000);
+      sendToWhatsApp(text);
       return;
     }
 
@@ -220,9 +227,7 @@ export function MatchHeader({
     if (bestGk) text += `Best GK: ${bestGk}\n`;
     if (bestDef) text += `Best Defender: ${bestDef}\n`;
 
-    navigator.clipboard.writeText(text);
-    setStatsCopied(true);
-    setTimeout(() => setStatsCopied(false), 2000);
+    sendToWhatsApp(text);
   };
 
   return (
@@ -287,13 +292,11 @@ export function MatchHeader({
           <button
             onClick={copyStats}
             className="min-h-[36px] min-w-[36px] px-2 sm:px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 active:scale-95 border border-primary-500/20 transition-all flex items-center justify-center gap-1.5 shrink-0 touch-manipulation"
-            title={session?.status === 'COMPLETED' ? 'Copy Match Stats' : 'Copy Teams'}
-            aria-label={session?.status === 'COMPLETED' ? 'Copy Match Stats' : 'Copy Teams'}
+            title={session?.status === 'COMPLETED' ? 'Send Match Stats on WhatsApp' : 'Send Teams on WhatsApp'}
+            aria-label={session?.status === 'COMPLETED' ? 'Send Match Stats on WhatsApp' : 'Send Teams on WhatsApp'}
           >
-            {statsCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">
-              {statsCopied ? 'Copied!' : session?.status === 'COMPLETED' ? 'Copy Stats' : 'Copy Teams'}
-            </span>
+            {statsCopied ? <Check className="w-3.5 h-3.5" /> : <MessageCircle className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{statsCopied ? 'Copied!' : 'WhatsApp'}</span>
           </button>
           <button
             onClick={handleShare}

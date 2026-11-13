@@ -217,7 +217,7 @@ describe('Milestone 1 Adversarial Challenge & Stress Tests', () => {
       expect(screen.getByTitle('Bulk Import Stats')).toBeInTheDocument();
 
       // Shared controls
-      expect(screen.getByTitle('Copy Teams')).toBeInTheDocument();
+      expect(screen.getByTitle('Send Teams on WhatsApp')).toBeInTheDocument();
       expect(screen.getByTitle('Share Match Link')).toBeInTheDocument();
       expect(screen.getByText('IN PROGRESS')).toBeInTheDocument();
       expect(screen.getByTitle('Back to Matches')).toBeInTheDocument();
@@ -235,7 +235,7 @@ describe('Milestone 1 Adversarial Challenge & Stress Tests', () => {
       expect(screen.queryByTitle('Bulk Import Stats')).toBeNull();
 
       // Shared controls MUST remain visible
-      expect(screen.getByTitle('Copy Teams')).toBeInTheDocument();
+      expect(screen.getByTitle('Send Teams on WhatsApp')).toBeInTheDocument();
       expect(screen.getByTitle('Share Match Link')).toBeInTheDocument();
       expect(screen.getByText('IN PROGRESS')).toBeInTheDocument();
       expect(screen.getByTitle('Back to Matches')).toBeInTheDocument();
@@ -252,7 +252,7 @@ describe('Milestone 1 Adversarial Challenge & Stress Tests', () => {
       expect(screen.queryByTitle('Delete Match')).toBeNull();
       expect(screen.queryByTitle('Bulk Import Stats')).toBeNull();
 
-      expect(screen.getByTitle('Copy Teams')).toBeInTheDocument();
+      expect(screen.getByTitle('Send Teams on WhatsApp')).toBeInTheDocument();
       expect(screen.getByTitle('Share Match Link')).toBeInTheDocument();
       expect(screen.getByText('IN PROGRESS')).toBeInTheDocument();
     });
