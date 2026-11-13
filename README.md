@@ -1,4 +1,4 @@
-# StatTracker [![Version](https://img.shields.io/badge/version-v6.5-10b981.svg?style=flat-square)](#)
+# StatTracker [![Version](https://img.shields.io/badge/version-v6.6-10b981.svg?style=flat-square)](#)
 
 A high-performance football & futsal match tracking Progressive Web App (PWA) built with **React 19**, **Supabase**, **Tailwind CSS v4**, and **Framer Motion**.
 

@@ -2,7 +2,8 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { Home, Users, LogOut, Activity, Trophy, User as UserIcon, CreditCard, Award } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
+import { applyPendingUpdate, isUpdatePending, subscribeUpdatePending } from '../../lib/appUpdate';
 import { supabase } from '../../lib/supabase';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { APP_VERSION } from '../../version';
@@ -103,6 +104,12 @@ export default function AppLayout() {
   const location = useLocation();
   const shouldReduceMotion = useReducedMotion();
   const isMatchScreen = /^\/matches\/[^/]+/.test(location.pathname);
+  const updateReady = useSyncExternalStore(subscribeUpdatePending, isUpdatePending, () => false);
+
+  // An update that arrived during a match is applied once the user leaves the match screens
+  useEffect(() => {
+    applyPendingUpdate(location.pathname);
+  }, [location.pathname]);
 
   useEffect(() => {
     const isAnkita = profile?.username?.toLowerCase() === 'ankita' || profile?.full_name?.toLowerCase() === 'ankita' || profile?.name?.toLowerCase() === 'ankita';
@@ -233,6 +240,11 @@ export default function AppLayout() {
         </header>
 
         <div className="flex-1 min-h-0 overflow-y-auto w-full relative">
+          {updateReady && (
+            <div role="status" className="mx-4 mt-3 md:mx-8 px-3 py-2 rounded-xl bg-primary-950/60 border border-primary-500/30 text-primary-300 text-xs font-semibold text-center">
+              Update ready. It will load when you leave this screen.
+            </div>
+          )}
           <div className={cn("p-4 md:p-8 max-w-7xl mx-auto w-full min-h-full", isMatchScreen ? "pb-6 md:pb-8" : "pb-28 sm:pb-32 md:pb-8")}>
             <AnimatePresence mode="wait">
               <motion.div

@@ -15,8 +15,38 @@ export interface WhatsAppSummaryParams {
   appUrl?: string;
 }
 
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "2026-11-15" -> "Sun, 15 Nov" (same on every device, unlike toLocaleDateString) */
+export function formatGameDate(gameDate: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(gameDate || '');
+  if (!m) return gameDate;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
+/** "07:00" -> "7:00 AM"; anything unparseable is returned as-is */
+export function formatGameTime(startTime: string): string {
+  const m = /^(\d{1,2}):(\d{2})/.exec(startTime || '');
+  if (!m) return startTime;
+  const h = Number(m[1]);
+  return `${h % 12 === 0 ? 12 : h % 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+/** 90 -> "1 hr 30 min", 60 -> "1 hr", 45 -> "45 min" */
+export function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
+}
+
 /**
- * Format dynamic WhatsApp game announcement & payment status summary
+ * Format the WhatsApp game message.
+ * Under 10 IN: who's in and how many more are needed.
+ * 10+ IN: the squad grouped by payment (Paid / Cash at the turf / UPI being
+ * checked / Not paid yet), the waiting list, and the dropout note.
  */
 export function formatWhatsAppSummary({
   game,
@@ -24,87 +54,72 @@ export function formatWhatsAppSummary({
   waitingList = [],
   appUrl = 'https://stattracker.local/payments'
 }: WhatsAppSummaryParams): string {
-  const formattedDate = new Date(game.game_date + 'T00:00:00').toLocaleDateString('en-US', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  });
+  const formattedDate = formatGameDate(game.game_date);
+  const header =
+    `*⚽ Football: ${formattedDate} · ${formatGameTime(game.start_time)}*\n` +
+    `📍 ${game.location}\n`;
+  const fee = `💰 ₹${Number(game.amount_per_player).toFixed(0)} per player\n`;
 
   const activeCount = activeSquad.length;
-  const is15Mode = activeCount >= 15 || game.mode === 'WINNER_STAYS';
-  const modeTitle = is15Mode ? '3 Teams Winner Stays (1 hr 30 min)' : 'Standard 5v5 (1 Hour)';
+  const lines: string[] = [];
 
-  // Stage 1: Pre-Threshold (Under 10 players)
+  // Stage 1: under 10 players
   if (activeCount < 10) {
-    const slotsNeeded = 10 - activeCount;
-    let text = `*⚽ MATCH ANNOUNCEMENT*\n\n`;
-    text += `📅 Date: ${formattedDate}\n`;
-    text += `⏰ Time: ${game.start_time}\n`;
-    text += `📍 Location: ${game.location}\n`;
-    text += `💰 Fee: ₹${game.amount_per_player.toFixed(0)} per player\n\n`;
-
-    text += `*PLAYERS JOINED (${activeCount}/10)*\n`;
-    if (activeSquad.length === 0) {
-      text += `_No players registered yet_\n`;
+    const needed = 10 - activeCount;
+    lines.push(header + fee);
+    lines.push(`*IN SO FAR (${activeCount}/10)*`);
+    if (activeCount === 0) {
+      lines.push('_No one yet_');
     } else {
-      activeSquad.forEach((p, idx) => {
-        text += `${idx + 1}. ${p.username}\n`;
-      });
+      activeSquad.forEach((p, idx) => lines.push(`${idx + 1}. ${p.username}`));
     }
-
-    text += `\n*Slots Remaining: ${slotsNeeded} player${slotsNeeded > 1 ? 's' : ''} needed to confirm turf!*\n`;
-    text += `React IN on StatTracker to claim your slot:\n🔗 ${appUrl}`;
-
-    return text;
+    lines.push('');
+    lines.push(`Need *${needed} more* to book the turf.`);
+    lines.push(`Tap *I'm IN* to claim your spot 👇`);
+    lines.push(appUrl);
+    return lines.join('\n');
   }
 
-  // Stage 2: Threshold Met (10+ Players: 5v5 or 15-player Winner Stays)
-  const paidPlayers = activeSquad.filter((p) => p.payment?.status === 'VERIFIED');
-  const duePlayers = activeSquad.filter((p) => p.payment?.status !== 'VERIFIED');
+  // Stage 2: 10+ players
+  const is15Mode = activeCount >= 15 || (game.squad_capacity ?? 10) >= 15 || game.mode === 'WINNER_STAYS';
+  const capacity = activeCount >= 15 || (game.squad_capacity ?? 10) >= 15 ? 15 : 10;
+  const modeText = is15Mode ? '3 Teams Winner Stays' : '5v5';
 
-  let text = `*⚽ GAME UPDATE*\n\n`;
-  text += `📅 Date: ${formattedDate}\n`;
-  text += `⏰ Time: ${game.start_time} (${game.duration_minutes} min)\n`;
-  text += `📍 Location: ${game.location}\n`;
-  text += `⚽ Mode: ${modeTitle}\n`;
-  text += `💰 Amount: ₹${game.amount_per_player.toFixed(0)} per player\n\n`;
+  lines.push(header + `⚽ ${modeText} · ${formatDuration(game.duration_minutes)}\n` + fee);
+  lines.push(`*SQUAD (${activeCount}/${capacity})*`);
 
-  // Section 1: PAID PLAYERS
-  text += `*PAID (${paidPlayers.length})*\n`;
-  if (paidPlayers.length === 0) {
-    text += `_None verified yet_\n`;
-  } else {
-    paidPlayers.forEach((p) => {
-      text += `${p.slot_number}. ${p.username} ✅\n`;
-    });
-  }
+  const paid = activeSquad.filter((p) => p.payment?.status === 'VERIFIED');
+  const cash = activeSquad.filter((p) => p.payment?.status === 'PENDING' && p.payment.method === 'CASH');
+  const reviewing = activeSquad.filter((p) => p.payment?.status === 'AWAITING_VERIFICATION');
+  const grouped = new Set([...paid, ...cash, ...reviewing]);
+  const notPaid = activeSquad.filter((p) => !grouped.has(p));
 
-  text += `\n`;
+  const section = (title: string, players: PlayerRosterItem[], note?: (p: PlayerRosterItem) => string) => {
+    if (players.length === 0) return;
+    lines.push('');
+    lines.push(`${title} (${players.length})*`);
+    players.forEach((p) => lines.push(`${p.slot_number}. ${p.username}${note ? note(p) : ''}`));
+  };
 
-  // Section 2: DUE PLAYERS
-  text += `*DUE (${duePlayers.length})*\n`;
-  if (duePlayers.length === 0) {
-    text += `_All squad payments cleared! 🎉_\n`;
-  } else {
-    duePlayers.forEach((p) => {
-      text += `${p.slot_number}. ${p.username} ⏳\n`;
-    });
-  }
+  section('✅ *Paid', paid);
+  section('💵 *Cash, pay at the turf', cash);
+  section('🔎 *UPI sent, admin checking', reviewing);
+  section('⏳ *Not paid yet', notPaid, (p) =>
+    p.payment?.status === 'PENDING' && p.payment.method === 'LATER' ? ' (pay later)' : ''
+  );
 
-  text += `\n*Total Active: ${activeCount}/${activeCount}*\n`;
-
-  // Optional: Waiting List Section (if any remain on waitlist)
   if (waitingList.length > 0) {
-    text += `\n*WAITING LIST (${waitingList.length})*\n`;
-    waitingList.forEach((p) => {
-      text += `${p.slot_number}. ${p.username} (Waitlist #${p.slot_number - activeCount})\n`;
-    });
+    lines.push('');
+    lines.push(`*WAITING LIST (${waitingList.length})*`);
+    waitingList.forEach((p) => lines.push(`${p.slot_number}. ${p.username}`));
   }
 
-  text += `\nPayment Status:\n✅ Verified\n⏳ Pending / Unverified\n\n🔗 ${appUrl}`;
-
-  return text;
+  lines.push('');
+  lines.push("Can't make it? Tap *I'm OUT* so the next player gets your spot. If you've paid, you'll be refunded.");
+  lines.push('');
+  lines.push('Pay or check your status 👇');
+  lines.push(appUrl);
+  return lines.join('\n');
 }
 
 /**
