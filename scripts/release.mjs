@@ -60,7 +60,12 @@ function check() {
     console.error('✗ Version files are out of sync:', v);
     process.exit(1);
   }
-  console.log(`✓ Version v${v.versionTs} is in sync across version.ts, package.json and README.md`);
+  const escaped = v.versionTs.replace('.', '\\.');
+  if (!new RegExp(`^### v${escaped}\\s*$`, 'm').test(read(FILES.readme))) {
+    console.error(`✗ README.md has no changelog entry for v${v.versionTs}. Add a "### v${v.versionTs}" section with a few bullet points.`);
+    process.exit(1);
+  }
+  console.log(`✓ Version v${v.versionTs} is in sync across version.ts, package.json and README.md, with a changelog entry`);
 }
 
 function main(argv) {
