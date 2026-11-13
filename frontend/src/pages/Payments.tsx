@@ -17,10 +17,12 @@ import {
   adminConfirmRoster,
   adminSettleRefund,
   adminRemovePlayer,
+  adminSetPaymentStatus,
   createOrUpdateGame,
   buildPlayerRoster,
   gameKickoff
 } from '../lib/gamePaymentsApi';
+import type { PaymentStatusChoice } from '../lib/gamePaymentsApi';
 import { DEFAULT_PAYMENT_PROFILES } from '../lib/upiUtils';
 import { GameHeader } from './Payments/components/GameHeader';
 import { ThresholdProgressBar } from './Payments/components/ThresholdProgressBar';
@@ -302,6 +304,18 @@ export default function Payments() {
     }
   };
 
+  const handleChangePaymentStatus = async (userId: string, choice: PaymentStatusChoice) => {
+    if (!game) return;
+    try {
+      await adminSetPaymentStatus(game.id, userId, choice);
+      toast.success('Payment status updated.');
+      await loadData(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update payment status.');
+      throw err;
+    }
+  };
+
   const handleSettleRefund = async (paymentId: string) => {
     try {
       await adminSettleRefund(paymentId);
@@ -496,6 +510,7 @@ export default function Payments() {
         onQuickVerify={handleQuickVerify}
         currentUserId={user?.id}
         onOpenAddPlayer={() => setShowAddPlayerModal(true)}
+        onChangePaymentStatus={handleChangePaymentStatus}
       />
 
       {/* Modals */}

@@ -293,6 +293,31 @@ export async function adminQuickVerifyPlayer(
   return data;
 }
 
+export type PaymentStatusChoice = 'PAID_UPI' | 'PAID_CASH' | 'CASH_DUE' | 'PAY_LATER' | 'NOT_PAID';
+
+/**
+ * Admin action: set a squad player's payment status directly
+ * (e.g. turn an old cash "Paid" back into Cash Due).
+ */
+export async function adminSetPaymentStatus(
+  gameId: string,
+  userId: string,
+  choice: PaymentStatusChoice
+): Promise<{ success: boolean; payment_id: string | null; status: string | null }> {
+  const { data, error } = await supabase.rpc('admin_set_payment_status', {
+    p_game_id: gameId,
+    p_user_id: userId,
+    p_choice: choice
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (data?.status === 'VERIFIED' && data.payment_id) sendGamePush('PAYMENT_VERIFIED', { paymentId: data.payment_id });
+  return data;
+}
+
 /**
  * Admin action: Confirm & lock final match roster for next day
  */

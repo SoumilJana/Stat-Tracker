@@ -1,5 +1,8 @@
 import { Check, Clock, XCircle, User, ShieldCheck, UserPlus, Banknote } from 'lucide-react';
+import { useState } from 'react';
 import type { PlayerRosterItem } from '../../../types/gamePayment';
+import type { PaymentStatusChoice } from '../../../lib/gamePaymentsApi';
+import { PaymentStatusSheet } from './PaymentStatusSheet';
 
 export interface PlayerRosterListProps {
   activeSquad: PlayerRosterItem[];
@@ -9,6 +12,8 @@ export interface PlayerRosterListProps {
   onQuickVerify?: (userId: string) => void;
   currentUserId?: string;
   onOpenAddPlayer?: () => void;
+  /** Admin: change a player's payment status from their badge */
+  onChangePaymentStatus?: (userId: string, choice: PaymentStatusChoice) => Promise<void>;
 }
 
 export function PlayerRosterList({
@@ -18,8 +23,12 @@ export function PlayerRosterList({
   isAdmin = false,
   onQuickVerify,
   currentUserId,
-  onOpenAddPlayer
+  onOpenAddPlayer,
+  onChangePaymentStatus
 }: PlayerRosterListProps) {
+  const [editingPlayer, setEditingPlayer] = useState<PlayerRosterItem | null>(null);
+  const canEditStatus = isAdmin && !!onChangePaymentStatus;
+
   const renderPaymentBadge = (item: PlayerRosterItem) => {
     const status = item.payment?.status;
 
@@ -144,7 +153,19 @@ export function PlayerRosterList({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {renderPaymentBadge(player)}
+                    {canEditStatus ? (
+                      <button
+                        type="button"
+                        onClick={() => setEditingPlayer(player)}
+                        className="rounded-full transition-transform active:scale-95 hover:brightness-125"
+                        aria-label={`Change payment status for ${player.username}`}
+                        title="Change payment status"
+                      >
+                        {renderPaymentBadge(player)}
+                      </button>
+                    ) : (
+                      renderPaymentBadge(player)
+                    )}
 
                     {/* Admin 1-Tap Checkmark Button */}
                     {isAdmin && !isVerified && onQuickVerify && (
@@ -225,6 +246,14 @@ export function PlayerRosterList({
             ))}
           </div>
         </div>
+      )}
+      {editingPlayer && onChangePaymentStatus && (
+        <PaymentStatusSheet
+          username={editingPlayer.username}
+          payment={editingPlayer.payment}
+          onSave={(choice) => onChangePaymentStatus(editingPlayer.user_id, choice)}
+          onClose={() => setEditingPlayer(null)}
+        />
       )}
     </div>
   );
