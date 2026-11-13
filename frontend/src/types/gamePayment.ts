@@ -92,6 +92,8 @@ export interface GamePayment {
   utr?: string | null;
   status: PaymentStatus;
   rejection_reason?: string | null;
+  /** Status before a dropout flagged it REFUND_PENDING (restored if they rejoin) */
+  refund_from_status?: 'VERIFIED' | 'AWAITING_VERIFICATION' | null;
   verified_by?: string | null;
   verified_at?: string | null;
   created_at?: string;

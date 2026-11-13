@@ -167,11 +167,13 @@ describe('Phase 5: AdminReconciliationModal Component', () => {
         onConfirmRoster={vi.fn()}
         onSettleRefund={vi.fn()}
         onClose={vi.fn()}
+        playerNames={{ 'u-dropped': 'Dropped Dan' }}
       />
     );
 
     expect(screen.getByText(/Refunds to Settle \(1\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/The following players paid earlier but switched to OUT/i)).toBeInTheDocument();
+    expect(screen.getByText(/These players paid but dropped out/i)).toBeInTheDocument();
+    expect(screen.getByText('Dropped Dan')).toBeInTheDocument();
   });
 
   it('shows cash players as due on game day with a Confirm Cash action', () => {

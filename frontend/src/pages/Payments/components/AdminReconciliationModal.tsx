@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, X, Undo, ShieldCheck, AlertCircle, ArrowRight } from 'lucide-react';
+import { Check, X, Undo, ShieldCheck, AlertCircle, ArrowRight, UserMinus } from 'lucide-react';
 import type { Game, PlayerRosterItem, GamePayment } from '../../../types/gamePayment';
 
 export interface AdminReconciliationModalProps {
@@ -14,6 +14,10 @@ export interface AdminReconciliationModalProps {
   onSettleRefund?: (paymentId: string) => Promise<void>;
   onClose: () => void;
   onNavigateToMatch?: (gameId: string) => void;
+  /** Mark a player OUT (refund flagged if they paid; waiting list moves up) */
+  onRemovePlayer?: (userId: string, username: string) => void;
+  /** user_id -> username, used to name players owed a refund */
+  playerNames?: Record<string, string>;
 }
 
 export function AdminReconciliationModal({
@@ -27,7 +31,9 @@ export function AdminReconciliationModal({
   onConfirmRoster,
   onSettleRefund,
   onClose,
-  onNavigateToMatch
+  onNavigateToMatch,
+  onRemovePlayer,
+  playerNames = {}
 }: AdminReconciliationModalProps) {
   const [rejectingPaymentId, setRejectingPaymentId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('Payment not received in account');
@@ -119,13 +125,13 @@ export function AdminReconciliationModal({
                 Refunds to Settle ({pendingRefunds.length})
               </h4>
               <p className="text-xs text-neutral-300 mb-3">
-                The following players paid earlier but switched to OUT. Return ₹{game.amount_per_player} via your UPI app and tap Mark Settled:
+                These players paid but dropped out. Return their money via your UPI app and tap Mark Settled:
               </p>
               <div className="space-y-2">
                 {pendingRefunds.map((refund) => (
                   <div key={refund.id} className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/5">
                     <div>
-                      <p className="text-xs font-bold text-white">Player ID: {refund.user_id.slice(0, 8)}...</p>
+                      <p className="text-xs font-bold text-white">{playerNames[refund.user_id] || `Player ${refund.user_id.slice(0, 8)}…`}</p>
                       <p className="text-[10px] text-neutral-400">Amount: ₹{refund.amount} | Method: {refund.method}</p>
                     </div>
                     {onSettleRefund && (
@@ -182,6 +188,18 @@ export function AdminReconciliationModal({
 
                       {/* Status & Actions */}
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {onRemovePlayer && (
+                          <button
+                            type="button"
+                            disabled={actionLoading}
+                            onClick={() => onRemovePlayer(player.user_id, player.username)}
+                            className="p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            title="Remove player"
+                            aria-label={`Remove ${player.username}`}
+                          >
+                            <UserMinus className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         {isVerified ? (
                           <div className="flex items-center gap-1">
                             <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">

@@ -6,6 +6,9 @@ export interface RegistrationDockProps {
   onSelectResponse: (response: RegistrationResponse) => void;
   loading?: boolean;
   disabled?: boolean;
+  /** Disable only one button (e.g. IN after the roster is locked) */
+  inDisabled?: boolean;
+  outDisabled?: boolean;
   disabledReason?: string;
 }
 
@@ -14,8 +17,12 @@ export function RegistrationDock({
   onSelectResponse,
   loading = false,
   disabled = false,
+  inDisabled = false,
+  outDisabled = false,
   disabledReason
 }: RegistrationDockProps) {
+  const inOff = disabled || inDisabled || loading;
+  const outOff = disabled || outDisabled || loading;
   return (
     <div className="bg-neutral-900 border border-white/10 rounded-2xl p-4 sm:p-5 shadow-lg">
       <div className="flex items-center justify-between mb-3">
@@ -39,7 +46,7 @@ export function RegistrationDock({
         )}
       </div>
 
-      {disabled && disabledReason && (
+      {disabledReason && (disabled || inDisabled || outDisabled) && (
         <div className="mb-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{disabledReason}</span>
@@ -50,13 +57,13 @@ export function RegistrationDock({
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          disabled={disabled || loading}
+          disabled={inOff}
           onClick={() => onSelectResponse('IN')}
           className={`py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 ${
             currentResponse === 'IN'
               ? 'bg-emerald-500 text-neutral-950 shadow-lg shadow-emerald-500/20 ring-2 ring-emerald-400'
               : 'bg-neutral-800 hover:bg-neutral-700/80 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40'
-          } ${disabled || loading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+          } ${inOff ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
         >
           <CheckCircle2 className="w-4 h-4" />
           <span>I'm IN</span>
@@ -64,13 +71,13 @@ export function RegistrationDock({
 
         <button
           type="button"
-          disabled={disabled || loading}
+          disabled={outOff}
           onClick={() => onSelectResponse('OUT')}
           className={`py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 ${
             currentResponse === 'OUT'
               ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 ring-2 ring-red-400'
               : 'bg-neutral-800 hover:bg-neutral-700/80 text-red-400 border border-red-500/20 hover:border-red-500/40'
-          } ${disabled || loading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+          } ${outOff ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
         >
           <XCircle className="w-4 h-4" />
           <span>I'm OUT</span>

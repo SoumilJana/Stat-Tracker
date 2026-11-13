@@ -68,7 +68,7 @@ export default function Matches() {
     e.stopPropagation();
     const ok = await confirm({
       title: "Delete Match Completely?",
-      description: "Are you sure you want to delete this match completely? This cannot be undone.",
+      description: "Are you sure you want to delete this match completely? This cannot be undone. Payments for this game day are not affected.",
       confirmText: "Delete Match",
       variant: "danger",
       isDestructive: true

@@ -112,6 +112,76 @@ async function handleRosterConfirmed(gameId: string) {
   return sendToUsers(payloads);
 }
 
+// Caller must be signed in; returns their id and whether they are an admin
+async function getCaller(req: Request): Promise<{ id: string; isAdmin: boolean }> {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  const { data: { user } } = await supabase.auth.getUser(token);
+  if (!user) throw new Error('Unauthorized');
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  return { id: user.id, isAdmin: profile?.role === 'admin' };
+}
+
+// PLAYER_DROPPED: tell admins who left (and any refund owed), and tell anyone
+// who just moved from the waiting list into the squad. Sent by the player who
+// tapped OUT, or by the admin who removed them.
+async function handlePlayerDropped(
+  caller: { id: string; isAdmin: boolean },
+  gameId: string,
+  droppedUserId: string,
+  promotedUserIds: unknown
+) {
+  if (!gameId || !droppedUserId) throw new Error('gameId and droppedUserId are required');
+  if (!caller.isAdmin && caller.id !== droppedUserId) throw new Error('Not allowed to send this notification');
+
+  const [{ data: game }, { data: reg }, { data: payment }] = await Promise.all([
+    supabase.from('games').select('id, game_date, start_time, location, status').eq('id', gameId).single(),
+    supabase.from('game_registrations').select('response, updated_at').eq('game_id', gameId).eq('user_id', droppedUserId).single(),
+    supabase.from('game_payments').select('status, amount').eq('game_id', gameId).eq('user_id', droppedUserId).maybeSingle()
+  ]);
+  if (!game) throw new Error('Game not found');
+  // Only for a dropout that just happened
+  if (!reg || reg.response !== 'OUT' || Date.now() - new Date(reg.updated_at).getTime() > 10 * 60 * 1000) {
+    throw new Error('No recent dropout for this player');
+  }
+
+  // Only notify promoted players who really are in the squad now
+  const { data: squad } = await supabase.rpc('game_squad_user_ids', { p_game_id: gameId });
+  const squadSet = new Set<string>((squad as string[]) || []);
+  const promoted = (Array.isArray(promotedUserIds) ? promotedUserIds : [])
+    .filter((id): id is string => typeof id === 'string' && squadSet.has(id) && id !== droppedUserId);
+
+  const { data: people } = await supabase
+    .from('profiles')
+    .select('id, username, role')
+    .or(`role.eq.admin,id.in.(${[droppedUserId, ...promoted].join(',')})`);
+  const nameOf = (id: string) => people?.find((p) => p.id === id)?.username || 'A player';
+  const admins = (people || []).filter((p) => p.role === 'admin' && p.id !== caller.id);
+
+  const slot = formatGameSlot(game.game_date, game.start_time);
+  const promotedText = promoted.length > 0
+    ? `${promoted.map(nameOf).join(', ')} moved into the squad.`
+    : 'No one was on the waiting list.';
+  const refundText = payment?.status === 'REFUND_PENDING' ? ` Refund ₹${Number(payment.amount).toFixed(0)} pending.` : '';
+  const removedBy = caller.isAdmin && caller.id !== droppedUserId ? ' was removed' : ' dropped out';
+
+  const payloads = new Map<string, Record<string, unknown>>();
+  for (const a of admins) {
+    payloads.set(a.id, {
+      title: `🚪 ${nameOf(droppedUserId)}${removedBy}`,
+      body: `${slot}: ${promotedText}${refundText}`,
+      icon: ICON, badge: BADGE, url: '/payments'
+    });
+  }
+  for (const id of promoted) {
+    payloads.set(id, {
+      title: "🎉 You're in the squad!",
+      body: `A spot opened for ${slot}${game.location ? ` at ${game.location}` : ''}. Payment is now unlocked.`,
+      icon: ICON, badge: BADGE, url: '/payments'
+    });
+  }
+  return sendToUsers(payloads);
+}
+
 serve(async (req) => {
   // CORS Headers
   const corsHeaders = {
@@ -124,10 +194,19 @@ serve(async (req) => {
   }
 
   try {
-    const { notificationType, sessionId, targetUserIds, timeZone: requestedTimeZone, paymentId, gameId } = await req.json();
+    const { notificationType, sessionId, targetUserIds, timeZone: requestedTimeZone, paymentId, gameId, droppedUserId, promotedUserIds } = await req.json();
 
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
       throw new Error("VAPID keys not configured in Edge Function environment");
+    }
+
+    if (notificationType === 'PLAYER_DROPPED') {
+      const caller = await getCaller(req);
+      const results = await handlePlayerDropped(caller, gameId, droppedUserId, promotedUserIds);
+      return new Response(JSON.stringify({ success: true, results }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
     if (notificationType === 'PAYMENT_VERIFIED' || notificationType === 'ROSTER_CONFIRMED') {

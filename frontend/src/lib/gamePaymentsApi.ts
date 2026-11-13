@@ -19,12 +19,13 @@ import type {
 } from '../types/gamePayment';
 
 /**
- * Fire-and-forget push notification (admin-only types). Never blocks or
- * fails the admin action that triggered it.
+ * Fire-and-forget push notification. PAYMENT_VERIFIED / ROSTER_CONFIRMED are
+ * admin-only; PLAYER_DROPPED is sent by the player who left or the admin who
+ * removed them. Never blocks or fails the action that triggered it.
  */
 export function sendGamePush(
-  notificationType: 'PAYMENT_VERIFIED' | 'ROSTER_CONFIRMED',
-  body: { paymentId?: string; gameId?: string }
+  notificationType: 'PAYMENT_VERIFIED' | 'ROSTER_CONFIRMED' | 'PLAYER_DROPPED',
+  body: { paymentId?: string; gameId?: string; droppedUserId?: string; promotedUserIds?: string[] }
 ): void {
   Promise.resolve()
     .then(() => supabase.functions.invoke('send-push-notification', { body: { notificationType, ...body } }))
@@ -178,8 +179,9 @@ export async function fetchPaymentProfiles(includeInactive = false): Promise<Pay
  */
 export async function registerForGame(
   gameId: string,
-  response: RegistrationResponse
-): Promise<{ success: boolean; active_count: number; game_status: string }> {
+  response: RegistrationResponse,
+  userId?: string
+): Promise<{ success: boolean; active_count: number; game_status: string; dropped_out?: boolean; promoted_user_ids?: string[] }> {
   const { data, error } = await supabase.rpc('register_for_game', {
     p_game_id: gameId,
     p_response: response
@@ -189,7 +191,41 @@ export async function registerForGame(
     throw new Error(error.message);
   }
 
+  if (data?.dropped_out && userId) {
+    sendGamePush('PLAYER_DROPPED', { gameId, droppedUserId: userId, promotedUserIds: data.promoted_user_ids || [] });
+  }
   return data;
+}
+
+/**
+ * Admin action: remove a player from the game. A paid player is flagged for a
+ * refund, an unpaid one is cleared, and the waiting list moves up.
+ */
+export async function adminRemovePlayer(
+  gameId: string,
+  userId: string
+): Promise<{ success: boolean; active_count: number; promoted_user_ids: string[] }> {
+  const { data, error } = await supabase.rpc('admin_remove_player', {
+    p_game_id: gameId,
+    p_user_id: userId
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  sendGamePush('PLAYER_DROPPED', { gameId, droppedUserId: userId, promotedUserIds: data?.promoted_user_ids || [] });
+  return data;
+}
+
+/**
+ * Kickoff as a local Date (game_date + start_time), or null if unparseable.
+ */
+export function gameKickoff(game: Pick<Game, 'game_date' | 'start_time'>): Date | null {
+  const m = /^(\d{1,2}):(\d{2})/.exec(game.start_time || '');
+  const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(game.game_date || '');
+  if (!m || !d) return null;
+  return new Date(Number(d[1]), Number(d[2]) - 1, Number(d[3]), Number(m[1]), Number(m[2]));
 }
 
 /**

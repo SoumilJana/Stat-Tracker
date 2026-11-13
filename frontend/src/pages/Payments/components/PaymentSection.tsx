@@ -140,6 +140,26 @@ export function PaymentSection({
     );
   }
 
+  // Case 2a: Dropped out after paying; the admin owes them a refund
+  if (!isUserInSquad && (userPayment?.status === 'REFUND_PENDING' || userPayment?.status === 'REFUNDED')) {
+    const settled = userPayment.status === 'REFUNDED';
+    return (
+      <div className="bg-neutral-900 border border-amber-500/20 rounded-2xl p-5 text-center shadow-lg">
+        <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mx-auto mb-3">
+          <Banknote className="w-6 h-6" />
+        </div>
+        <h3 className="text-base font-bold text-white tracking-tight">
+          {settled ? 'Refund settled' : 'Refund pending'}
+        </h3>
+        <p className="text-xs text-neutral-400 mt-1 max-w-sm mx-auto">
+          {settled
+            ? `The admin has returned your ₹${Number(userPayment.amount).toFixed(0)}.`
+            : `You dropped out, so the admin will return your ₹${Number(userPayment.amount).toFixed(0)}.`}
+        </p>
+      </div>
+    );
+  }
+
   // Case 2: Not in squad
   if (!isUserInSquad) {
     return (

@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, PlusCircle, ShieldCheck, RefreshCw, CalendarClock } from 'lucide-react';
+import { Calendar, PlusCircle, ShieldCheck, RefreshCw, CalendarClock, Swords } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { ConfirmContext, type ConfirmOptions } from '../contexts/ConfirmContext';
 import { supabase } from '../lib/supabase';
 import {
   fetchLatestGame,
@@ -15,8 +16,10 @@ import {
   adminQuickVerifyPlayer,
   adminConfirmRoster,
   adminSettleRefund,
+  adminRemovePlayer,
   createOrUpdateGame,
-  buildPlayerRoster
+  buildPlayerRoster,
+  gameKickoff
 } from '../lib/gamePaymentsApi';
 import { DEFAULT_PAYMENT_PROFILES } from '../lib/upiUtils';
 import { GameHeader } from './Payments/components/GameHeader';
@@ -42,6 +45,9 @@ export default function Payments() {
   const { user, profile } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const confirmCtx = useContext(ConfirmContext);
+  const askConfirm = (options: ConfirmOptions) =>
+    confirmCtx ? confirmCtx.confirm(options) : Promise.resolve(window.confirm(options.title));
   const isAdmin = profile?.role === 'admin';
 
   const [game, setGame] = useState<Game | null>(null);
@@ -145,15 +151,49 @@ export default function Payments() {
   const isUserInSquad = activeSquad.some((p) => p.user_id === user?.id);
   const isUserWaitlisted = waitingList.some((p) => p.user_id === user?.id);
   const isPaymentUnlocked = (game?.payment_opened_at !== null && game?.payment_opened_at !== undefined) || activeSquad.length >= 10;
-  const isRegistrationClosed = game?.status === 'ROSTER_CONFIRMED' || game?.status === 'REGISTRATION_CLOSED' || game?.status === 'COMPLETED' || game?.status === 'CANCELLED';
+  const isGameOver = game?.status === 'COMPLETED' || game?.status === 'CANCELLED';
+  const isRosterLocked = game?.status === 'ROSTER_CONFIRMED' || game?.status === 'REGISTRATION_CLOSED';
+  const kickoff = game ? gameKickoff(game) : null;
+  const hasKickedOff = kickoff !== null && Date.now() >= kickoff.getTime();
+  const isUserIn = currentRegistration?.response === 'IN';
+  const inCount = activeSquad.length + waitingList.length;
+  const canConvertToGame = isAdmin && !isGameOver && inCount >= 10;
+
+  const registrationNotice = isGameOver
+    ? 'This game is finished.'
+    : isUserIn && hasKickedOff
+    ? "The game has started. Message the admin if you can't play."
+    : isRosterLocked
+    ? isUserIn
+      ? 'Roster is locked. You can still drop out until kickoff.'
+      : 'Match roster has been finalized & locked by admin.'
+    : undefined;
 
   // Handle player registration response
   const handleSelectResponse = async (response: RegistrationResponse) => {
     if (!game) return;
+    const owesRefund = currentPayment?.status === 'VERIFIED' || currentPayment?.status === 'AWAITING_VERIFICATION';
+    if (response === 'OUT' && isUserIn) {
+      const ok = await askConfirm({
+        title: 'Drop out of this game?',
+        description: owesRefund
+          ? `Your spot goes to the next player on the waiting list, and the admin will refund your ₹${Number(currentPayment?.amount ?? game.amount_per_player).toFixed(0)}.`
+          : 'Your spot goes to the next player on the waiting list.' + (isRosterLocked ? " The roster is locked, so you can't rejoin yourself." : ''),
+        confirmText: "I'm OUT",
+        variant: 'danger'
+      });
+      if (!ok) return;
+    }
     try {
       setSubmittingAction(true);
-      await registerForGame(game.id, response);
-      toast.success(response === 'IN' ? "You're marked IN for the match!" : "You're marked OUT.");
+      await registerForGame(game.id, response, user?.id);
+      toast.success(
+        response === 'IN'
+          ? "You're marked IN for the match!"
+          : isUserIn && owesRefund
+          ? "You're marked OUT. The admin will refund your payment."
+          : "You're marked OUT."
+      );
       await loadData(true);
     } catch (err: any) {
       toast.error(err.message || 'Failed to update attendance response.');
@@ -237,6 +277,28 @@ export default function Payments() {
       await loadData(true);
     } catch (err: any) {
       toast.error(err.message || 'Failed to confirm roster.');
+    }
+  };
+
+  const handleRemovePlayer = async (userId: string, username: string) => {
+    if (!game) return;
+    const pay = payments.find((p) => p.user_id === userId);
+    const refund = pay?.status === 'VERIFIED' || pay?.status === 'AWAITING_VERIFICATION';
+    const ok = await askConfirm({
+      title: `Remove ${username}?`,
+      description: refund
+        ? `They'll be marked OUT and their ₹${Number(pay?.amount ?? game.amount_per_player).toFixed(0)} goes to Refunds to settle. The next waiting-list player moves into the squad.`
+        : "They'll be marked OUT and owe nothing. The next waiting-list player moves into the squad.",
+      confirmText: 'Remove Player',
+      variant: 'danger'
+    });
+    if (!ok) return;
+    try {
+      await adminRemovePlayer(game.id, userId);
+      toast.success(`${username} removed from the game.`);
+      await loadData(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove player.');
     }
   };
 
@@ -365,6 +427,18 @@ export default function Payments() {
             </button>
           )}
 
+          {canConvertToGame && (
+            <button
+              type="button"
+              onClick={() => navigate(`/matches/new?game_id=${game.id}`)}
+              className="px-3.5 py-2 rounded-xl bg-primary-500 hover:bg-primary-400 text-neutral-950 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm"
+              title="Set teams for this game in New Match"
+            >
+              <Swords className="w-4 h-4" />
+              <span>Convert to Game</span>
+            </button>
+          )}
+
           {isAdmin && (
             <button
               type="button"
@@ -395,12 +469,10 @@ export default function Payments() {
         currentResponse={currentRegistration?.response}
         onSelectResponse={handleSelectResponse}
         loading={submittingAction}
-        disabled={isRegistrationClosed}
-        disabledReason={
-          isRegistrationClosed
-            ? 'Match roster has been finalized & locked by admin.'
-            : undefined
-        }
+        disabled={isGameOver || (isRosterLocked && !isUserIn)}
+        inDisabled={isRosterLocked}
+        outDisabled={isUserIn && hasKickedOff}
+        disabledReason={registrationNotice}
       />
 
       {/* 4. Payment Section (Direct UPI, QR & Status) */}
@@ -460,6 +532,8 @@ export default function Payments() {
           game={game}
           activeSquad={activeSquad}
           allPayments={payments}
+          playerNames={Object.fromEntries(registrations.map((r) => [r.user_id, r.profile?.username || 'Unknown Player']))}
+          onRemovePlayer={handleRemovePlayer}
           onVerifyPayment={handleVerifyPayment}
           onRejectPayment={handleRejectPayment}
           onRevertPayment={handleRevertPayment}

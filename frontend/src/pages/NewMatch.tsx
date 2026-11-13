@@ -26,6 +26,9 @@ export default function NewMatch() {
   const [mode, setMode] = useState<SessionMode>('STANDARD');
   const [numTeams, setNumTeams] = useState(3);
   const [confirmedRosterLoaded, setConfirmedRosterLoaded] = useState(false);
+  // Game-day extras (walk-ins / replacements who never tapped IN)
+  const [showAllPlayers, setShowAllPlayers] = useState(false);
+  const [extraPlayers, setExtraPlayers] = useState<any[] | null>(null);
   
   const [teamA, setTeamA] = useState<string[]>([]);
   const [teamB, setTeamB] = useState<string[]>([]);
@@ -61,12 +64,7 @@ export default function NewMatch() {
           if (game.game_date) setDate(game.game_date);
           if (game.start_time) setTime(game.start_time);
           if (game.location) setLocation(game.location);
-          if (game.mode === 'WINNER_STAYS') {
-            setMode('WINNER_STAYS');
-            setNumTeams(3);
-          } else {
-            setMode('STANDARD');
-          }
+          if (game.mode === 'SPECIAL_7V7') setMode('SPECIAL_7V7');
         }
 
         if (regRes.data && regRes.data.length > 0) {
@@ -83,6 +81,14 @@ export default function NewMatch() {
 
           setPlayers(filteredProfiles);
           setConfirmedRosterLoaded(true);
+
+          // Team count follows the squad: 15 players -> 3 teams Winner Stays, otherwise 2 teams
+          if (activeSquad.length >= 15) {
+            setMode('WINNER_STAYS');
+            setNumTeams(3);
+          } else if (gameRes.data?.mode !== 'SPECIAL_7V7') {
+            setMode('STANDARD');
+          }
           return;
         }
 
@@ -97,6 +103,19 @@ export default function NewMatch() {
       });
     }
   }, []);
+
+  // Load everyone else the first time the admin asks for all players
+  useEffect(() => {
+    if (!showAllPlayers || extraPlayers !== null) return;
+    supabase.from('profiles').select('*').neq('role', 'manager').order('username').then(({ data }) => {
+      setExtraPlayers(data || []);
+    });
+  }, [showAllPlayers, extraPlayers]);
+
+  const squadIds = new Set(players.map((p) => p.id));
+  const visiblePlayers = confirmedRosterLoaded && showAllPlayers
+    ? [...players, ...(extraPlayers || []).filter((p) => !squadIds.has(p.id))]
+    : players;
 
   // When mode or numTeams changes, clear unused teams
   useEffect(() => {
@@ -235,7 +254,7 @@ export default function NewMatch() {
   const getFormattedMatchDetails = () => {
     const formatTeam = (teamName: string, teamIds: string[]) => {
       const playerNames = teamIds.map((id, index) => {
-        const player = players.find(p => p.id === id);
+        const player = [...players, ...(extraPlayers || [])].find(p => p.id === id);
         if (!player) return '';
         if (mode === 'SPECIAL_7V7') {
           const role = index < 7 ? '(Starter)' : '(Sub)';
@@ -311,9 +330,20 @@ export default function NewMatch() {
         <h2 className="text-2xl font-bold text-white">Start New Match</h2>
         <p className="mt-1 text-sm text-neutral-400">Set up teams and details to begin.</p>
         {confirmedRosterLoaded && (
-          <div className="mt-3 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold inline-flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4" />
-            Confirmed Payments Roster Loaded ({players.length} Players Verified)
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold inline-flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" />
+              Game Day Squad Loaded ({players.length} Players)
+            </div>
+            <label className="px-3 py-1.5 rounded-xl bg-neutral-900 border border-white/10 text-neutral-300 text-xs font-semibold inline-flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showAllPlayers}
+                onChange={(e) => setShowAllPlayers(e.target.checked)}
+                className="w-4 h-4 rounded border-white/10 bg-black text-primary-500 focus:ring-primary-500"
+              />
+              Show all players
+            </label>
           </div>
         )}
       </div>
@@ -391,7 +421,7 @@ export default function NewMatch() {
                   {teamData.name} <span className={`${teamData.colors.badge} px-3 py-1 rounded-full text-[10px]`}>{getTeamBadgeText(mode, teamData.teamArr.length)}</span>
                 </h4>
                 <div className="space-y-2">
-                  {players.map(p => {
+                  {visiblePlayers.map(p => {
                     const isSelected = teamData.teamArr.includes(p.id);
                     const isAssignedElsewhere = [teamA, teamB, teamC, teamD, teamE].some(arr => arr !== teamData.teamArr && arr.includes(p.id));
                     const maxCapacity = mode === 'SPECIAL_7V7' ? 10 : 5;
@@ -400,7 +430,12 @@ export default function NewMatch() {
 
                     return (
                       <label key={`${teamData.id}-${p.id}`} className={`flex items-center justify-between p-3 rounded-xl transition-all border border-transparent ${isDisabled ? 'opacity-40 cursor-not-allowed bg-black' : isSelected ? teamData.colors.bgSel : `bg-neutral-900/50 border-white/5 ${teamData.colors.hover} cursor-pointer`}`}>
-                        <span className={`font-medium text-sm ${isDisabled ? 'text-neutral-500' : isSelected ? 'text-white' : 'text-neutral-300'}`}>{p.username}</span>
+                        <span className={`font-medium text-sm ${isDisabled ? 'text-neutral-500' : isSelected ? 'text-white' : 'text-neutral-300'}`}>
+                          {p.username}
+                          {confirmedRosterLoaded && !squadIds.has(p.id) && (
+                            <span className="ml-1.5 text-[10px] uppercase tracking-wider text-amber-400">Not in squad</span>
+                          )}
+                        </span>
                         <input 
                           type="checkbox" 
                           checked={isSelected}
