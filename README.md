@@ -1,4 +1,4 @@
-# StatTracker [![Version](https://img.shields.io/badge/version-v6.8-10b981.svg?style=flat-square)](#)
+# StatTracker [![Version](https://img.shields.io/badge/version-v6.9-10b981.svg?style=flat-square)](#)
 
 A high-performance football & futsal match tracking Progressive Web App (PWA) built with **React 19**, **Supabase**, **Tailwind CSS v4**, and **Framer Motion**.
 
@@ -35,6 +35,11 @@ StatTracker uses a two-tier **Major.Minor (`X.Y`)** versioning system:
 ---
 
 ## 📝 Changelog
+
+### v6.9
+- Once 10 players are IN, players on the waiting list can pay too (UPI only), as long as someone in the squad hasn't paid.
+- Paying moves them above unpaid squad players; the last unpaid squad player drops to the waiting list and gets a push notification.
+- When every squad spot is already paid, payment stays locked for the waiting list so nobody pays for a spot they can't get.
 
 ### v6.8
 - Winner Stays (3/4 teams) uses the same side-by-side board: both teams on the pitch at once, scores on top, tap a name to record a goal.

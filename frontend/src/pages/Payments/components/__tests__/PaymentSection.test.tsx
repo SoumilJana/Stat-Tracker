@@ -53,6 +53,31 @@ describe('Phase 4: PaymentSection Component', () => {
     expect(screen.getByText(/Payment is locked/i)).toBeInTheDocument();
   });
 
+  it('lets a waitlisted player pay by UPI only while a squad player is unpaid', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <PaymentSection
+        game={mockGame}
+        paymentProfiles={mockProfiles}
+        isUserInSquad={false}
+        isUserWaitlisted={true}
+        isPaymentUnlocked={true}
+        canWaitlistPay={true}
+        onSubmitPayment={onSubmit}
+      />
+    );
+
+    expect(screen.getByText(/You are on the Waiting List/)).toBeInTheDocument();
+    expect(screen.getByText('(Pay now to jump ahead of unpaid players)')).toBeInTheDocument();
+    expect(screen.queryByText(/Payment is locked/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Cash')).not.toBeInTheDocument();
+    expect(screen.queryByText('Pay Later')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('I Have Made This Payment'));
+    fireEvent.click(screen.getByText('Mark as Paid'));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith('UPI', 'p-1', ''));
+  });
+
   it('renders invitation to react IN when user has not joined squad', () => {
     render(
       <PaymentSection

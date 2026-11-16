@@ -182,6 +182,47 @@ async function handlePlayerDropped(
   return sendToUsers(payloads);
 }
 
+// PLAYER_BUMPED: a waitlisted player paid and pushed unpaid squad players to
+// the waiting list. Sent by that payer; only notifies players who really are
+// IN and outside the squad now.
+async function handlePlayerBumped(
+  caller: { id: string; isAdmin: boolean },
+  gameId: string,
+  bumpedUserIds: unknown
+) {
+  if (!gameId) throw new Error('gameId is required');
+
+  const { data: game } = await supabase.from('games').select('id, game_date, start_time, location').eq('id', gameId).single();
+  if (!game) throw new Error('Game not found');
+
+  const { data: squad } = await supabase.rpc('game_squad_user_ids', { p_game_id: gameId });
+  const squadSet = new Set<string>((squad as string[]) || []);
+  if (!caller.isAdmin && !squadSet.has(caller.id)) throw new Error('Not allowed to send this notification');
+
+  const candidates = (Array.isArray(bumpedUserIds) ? bumpedUserIds : [])
+    .filter((id): id is string => typeof id === 'string' && !squadSet.has(id) && id !== caller.id);
+  if (candidates.length === 0) return [];
+
+  const { data: regs } = await supabase
+    .from('game_registrations')
+    .select('user_id')
+    .eq('game_id', gameId)
+    .eq('response', 'IN')
+    .in('user_id', candidates);
+
+  const slot = formatGameSlot(game.game_date, game.start_time);
+  const where = game.location ? ` at ${game.location}` : '';
+  const payloads = new Map<string, Record<string, unknown>>();
+  for (const r of regs || []) {
+    payloads.set(r.user_id, {
+      title: '⏳ Moved to the waiting list',
+      body: `A player paid for ${slot}${where} and took your squad spot. Pay now to get back in.`,
+      icon: ICON, badge: BADGE, url: '/payments'
+    });
+  }
+  return sendToUsers(payloads);
+}
+
 serve(async (req) => {
   // CORS Headers
   const corsHeaders = {
@@ -194,7 +235,7 @@ serve(async (req) => {
   }
 
   try {
-    const { notificationType, sessionId, targetUserIds, timeZone: requestedTimeZone, paymentId, gameId, droppedUserId, promotedUserIds } = await req.json();
+    const { notificationType, sessionId, targetUserIds, timeZone: requestedTimeZone, paymentId, gameId, droppedUserId, promotedUserIds, bumpedUserIds } = await req.json();
 
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
       throw new Error("VAPID keys not configured in Edge Function environment");
@@ -203,6 +244,15 @@ serve(async (req) => {
     if (notificationType === 'PLAYER_DROPPED') {
       const caller = await getCaller(req);
       const results = await handlePlayerDropped(caller, gameId, droppedUserId, promotedUserIds);
+      return new Response(JSON.stringify({ success: true, results }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    if (notificationType === 'PLAYER_BUMPED') {
+      const caller = await getCaller(req);
+      const results = await handlePlayerBumped(caller, gameId, bumpedUserIds);
       return new Response(JSON.stringify({ success: true, results }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

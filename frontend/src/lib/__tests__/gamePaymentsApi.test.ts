@@ -10,7 +10,8 @@ import {
   adminRegisterPlayer,
   adminRegisterPlayers,
   fetchGamePayments,
-  nextScheduledDate
+  nextScheduledDate,
+  canWaitlistPay
 } from '../gamePaymentsApi';
 import { supabase } from '../supabase';
 import type { GameRegistration, GamePayment } from '../../types/gamePayment';
@@ -168,6 +169,37 @@ describe('Phase 1: Game Management & Payment API + Roster Logic', () => {
       // Unpaid / pay-later players keep join order; the last two by join order are waitlisted
       expect(waitingList.map((p) => p.user_id)).toEqual(['u9', 'u10']);
       expect(waitingList[0].slot_number).toBe(11);
+    });
+
+    it('a waitlisted UPI payer moves above unpaid squad players; the last unpaid one is waitlisted', () => {
+      const registrations = Array.from({ length: 12 }, (_, i) => makeReg(`u${i + 1}`, `Player ${i + 1}`, joinAt(i)));
+      const payments = [makePay('u1', 'VERIFIED'), makePay('u12', 'AWAITING_VERIFICATION')];
+
+      const { activeSquad, waitingList } = buildPlayerRoster(registrations, payments, 10);
+      expect(activeSquad.map((p) => p.user_id)).toEqual(['u1', 'u12', 'u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9']);
+      expect(waitingList.map((p) => p.user_id)).toEqual(['u10', 'u11']);
+    });
+
+    it('canWaitlistPay: open while a squad player is unpaid, locked once all are paid', () => {
+      const registrations = Array.from({ length: 11 }, (_, i) => makeReg(`u${i + 1}`, `Player ${i + 1}`, joinAt(i)));
+      const somePaid = buildPlayerRoster(registrations, [makePay('u1', 'VERIFIED')], 10);
+      expect(canWaitlistPay(somePaid.activeSquad, true)).toBe(true);
+      expect(canWaitlistPay(somePaid.activeSquad, false)).toBe(false);
+
+      const allPaid = buildPlayerRoster(
+        registrations,
+        Array.from({ length: 10 }, (_, i) => makePay(`u${i + 1}`, i % 2 ? 'AWAITING_VERIFICATION' : 'VERIFIED')),
+        10
+      );
+      expect(canWaitlistPay(allPaid.activeSquad, true)).toBe(false);
+
+      // Cash due / pay later count as unpaid
+      const cashDue = buildPlayerRoster(
+        registrations,
+        Array.from({ length: 10 }, (_, i) => makePay(`u${i + 1}`, i === 9 ? 'PENDING' : 'VERIFIED')),
+        10
+      );
+      expect(canWaitlistPay(cashDue.activeSquad, true)).toBe(true);
     });
 
     it('defaults to capacity 10 when the game never reached 15', () => {
@@ -348,6 +380,28 @@ describe('Phase 1: Game Management & Payment API + Roster Logic', () => {
       expect(supabase.functions.invoke).toHaveBeenCalledWith('send-push-notification', {
         body: { notificationType: 'ROSTER_CONFIRMED', gameId: 'game-1' }
       });
+    });
+
+    it('sends PLAYER_BUMPED when a waitlist payment pushes players out of the squad', async () => {
+      (supabase.rpc as any).mockResolvedValue({
+        data: { success: true, payment_id: 'p-1', status: 'AWAITING_VERIFICATION', joined_squad: true, bumped_user_ids: ['u10'] },
+        error: null
+      });
+      await submitGamePayment('game-1', 'UPI', 'profile-1');
+      await flush();
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('send-push-notification', {
+        body: { notificationType: 'PLAYER_BUMPED', gameId: 'game-1', bumpedUserIds: ['u10'] }
+      });
+    });
+
+    it('does not send PLAYER_BUMPED when nobody was bumped', async () => {
+      (supabase.rpc as any).mockResolvedValue({
+        data: { success: true, payment_id: 'p-1', status: 'AWAITING_VERIFICATION', bumped_user_ids: [] },
+        error: null
+      });
+      await submitGamePayment('game-1', 'UPI', 'profile-1');
+      await flush();
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
     });
 
     it('does not send when the RPC fails', async () => {

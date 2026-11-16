@@ -216,7 +216,7 @@ export function PlayerRosterList({
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-neutral-200 truncate">{player.username}</p>
-                    <p className="text-[10px] text-neutral-400">Standby (Payment locked until promoted)</p>
+                    <p className="text-[10px] text-neutral-400">Standby</p>
                   </div>
                 </div>
 

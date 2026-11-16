@@ -21,11 +21,13 @@ import type {
 /**
  * Fire-and-forget push notification. PAYMENT_VERIFIED / ROSTER_CONFIRMED are
  * admin-only; PLAYER_DROPPED is sent by the player who left or the admin who
- * removed them. Never blocks or fails the action that triggered it.
+ * removed them; PLAYER_BUMPED is sent by a waitlisted player whose payment
+ * pushed unpaid players out of the squad. Never blocks or fails the action
+ * that triggered it.
  */
 export function sendGamePush(
-  notificationType: 'PAYMENT_VERIFIED' | 'ROSTER_CONFIRMED' | 'PLAYER_DROPPED',
-  body: { paymentId?: string; gameId?: string; droppedUserId?: string; promotedUserIds?: string[] }
+  notificationType: 'PAYMENT_VERIFIED' | 'ROSTER_CONFIRMED' | 'PLAYER_DROPPED' | 'PLAYER_BUMPED',
+  body: { paymentId?: string; gameId?: string; droppedUserId?: string; promotedUserIds?: string[]; bumpedUserIds?: string[] }
 ): void {
   Promise.resolve()
     .then(() => supabase.functions.invoke('send-push-notification', { body: { notificationType, ...body } }))
@@ -229,14 +231,15 @@ export function gameKickoff(game: Pick<Game, 'game_date' | 'start_time'>): Date 
 }
 
 /**
- * Submit payment claim (UPI / CASH / LATER)
+ * Submit payment claim (UPI / CASH / LATER). A waitlisted UPI payer moves
+ * above unpaid squad players; anyone pushed out of the squad gets a push.
  */
 export async function submitGamePayment(
   gameId: string,
   method: PaymentMethod,
   recipientProfileId?: string | null,
   utr?: string | null
-): Promise<{ success: boolean; payment_id: string; status: string }> {
+): Promise<{ success: boolean; payment_id: string; status: string; joined_squad?: boolean; bumped_user_ids?: string[] }> {
   const { data, error } = await supabase.rpc('submit_game_payment', {
     p_game_id: gameId,
     p_method: method,
@@ -248,6 +251,9 @@ export async function submitGamePayment(
     throw new Error(error.message);
   }
 
+  if (data?.bumped_user_ids?.length) {
+    sendGamePush('PLAYER_BUMPED', { gameId, bumpedUserIds: data.bumped_user_ids });
+  }
   return data;
 }
 
@@ -408,6 +414,14 @@ export function paymentPriority(payment?: GamePayment | null): number {
   if (payment?.status === 'VERIFIED') return 0;
   if (payment?.status === 'AWAITING_VERIFICATION') return 1;
   return 2;
+}
+
+/**
+ * A waitlisted player may pay (UPI) once payment is open and at least one
+ * squad player has not paid. Mirrors the check in submit_game_payment.
+ */
+export function canWaitlistPay(activeSquad: PlayerRosterItem[], isPaymentUnlocked: boolean): boolean {
+  return isPaymentUnlocked && activeSquad.some((p) => paymentPriority(p.payment) === 2);
 }
 
 /**

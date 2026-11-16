@@ -44,6 +44,8 @@ export interface PaymentSectionProps {
   isUserInSquad: boolean;
   isUserWaitlisted: boolean;
   isPaymentUnlocked: boolean;
+  /** Waitlisted player may pay (UPI) to move ahead of unpaid squad players */
+  canWaitlistPay?: boolean;
   onSubmitPayment: (method: PaymentMethod, recipientId?: string, utr?: string) => Promise<void>;
   loading?: boolean;
 }
@@ -55,6 +57,7 @@ export function PaymentSection({
   isUserInSquad,
   isUserWaitlisted,
   isPaymentUnlocked,
+  canWaitlistPay = false,
   onSubmitPayment,
   loading: _loading = false
 }: PaymentSectionProps) {
@@ -125,8 +128,11 @@ export function PaymentSection({
   const selectedProfile = paymentProfiles.find((p) => p.id === selectedRecipientId) || paymentProfiles[0];
   const amount = game.amount_per_player || 80.0;
 
-  // Case 1: User is waitlisted
-  if (isUserWaitlisted) {
+  // Waitlisted players pay by UPI only: cash and pay-later don't move them up
+  const waitlistPaying = isUserWaitlisted && canWaitlistPay;
+
+  // Case 1: User is waitlisted and every squad spot is already paid
+  if (isUserWaitlisted && !canWaitlistPay) {
     return (
       <div className="bg-neutral-900 border border-amber-500/20 rounded-2xl p-5 text-center shadow-lg">
         <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mx-auto mb-3">
@@ -134,7 +140,7 @@ export function PaymentSection({
         </div>
         <h3 className="text-base font-bold text-white tracking-tight">You are on the Waiting List</h3>
         <p className="text-xs text-neutral-400 mt-1 max-w-sm mx-auto">
-          Payment is locked. If an active player drops out or if 15 players join, you will be promoted to the active squad and payment will unlock!
+          Payment is locked because every squad spot is paid. If an active player drops out or if 15 players join, you will be promoted to the active squad and payment will unlock!
         </p>
       </div>
     );
@@ -160,8 +166,8 @@ export function PaymentSection({
     );
   }
 
-  // Case 2: Not in squad
-  if (!isUserInSquad) {
+  // Case 2: Not in squad (and not a waitlisted player who can pay)
+  if (!isUserInSquad && !waitlistPaying) {
     return (
       <div className="bg-neutral-900 border border-white/10 rounded-2xl p-5 text-center shadow-lg">
         <div className="w-12 h-12 rounded-xl bg-neutral-800 border border-white/10 flex items-center justify-center text-neutral-400 mx-auto mb-3">
@@ -216,7 +222,7 @@ export function PaymentSection({
   }
 
   // Case 5a: Chose cash. Nothing is paid until game day, so it stays due until the admin confirms.
-  if (userPayment?.status === 'PENDING' && userPayment.method === 'CASH' && !payingAgain) {
+  if (userPayment?.status === 'PENDING' && userPayment.method === 'CASH' && !payingAgain && !waitlistPaying) {
     return (
       <div className="bg-neutral-900 border border-orange-500/30 rounded-2xl p-6 text-center shadow-2xl">
         <div className="w-14 h-14 rounded-2xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-300 mx-auto mb-3">
@@ -290,7 +296,7 @@ export function PaymentSection({
   const handleReportPayment = async () => {
     try {
       setSubmitting(true);
-      await submitClaim(selectedMethod, selectedRecipientId, utrInput);
+      await submitClaim(waitlistPaying ? 'UPI' : selectedMethod, selectedRecipientId, utrInput);
       setShowReportModal(false);
       setUtrInput('');
     } catch (err) {
@@ -302,6 +308,16 @@ export function PaymentSection({
 
   return (
     <div className="bg-neutral-900 border border-white/10 rounded-3xl p-5 sm:p-7 shadow-2xl">
+      {waitlistPaying && (
+        <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
+          <Clock className="w-5 h-5 text-amber-400 shrink-0" />
+          <p className="text-sm font-bold text-white">
+            You are on the Waiting List{' '}
+            <span className="font-semibold text-amber-300">(Pay now to jump ahead of unpaid players)</span>
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-primary-400 bg-primary-950/80 border border-primary-500/30 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 mb-1">
@@ -317,7 +333,7 @@ export function PaymentSection({
       </div>
 
       {/* Paying again over an unverified claim */}
-      {payingAgain && (userPayment?.status === 'AWAITING_VERIFICATION' || (userPayment?.status === 'PENDING' && userPayment.method === 'CASH')) && (
+      {payingAgain && !waitlistPaying && (userPayment?.status === 'AWAITING_VERIFICATION' || (userPayment?.status === 'PENDING' && userPayment.method === 'CASH')) && (
         <div className="mb-5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs flex items-start justify-between gap-3">
           <p className="text-neutral-300">
             {userPayment.method === 'CASH' ? (
@@ -352,7 +368,8 @@ export function PaymentSection({
         </div>
       )}
 
-      {/* Payment Method Selector Tabs */}
+      {/* Payment Method Selector Tabs (UPI only while on the waiting list) */}
+      {!waitlistPaying && (
       <div className="grid grid-cols-3 gap-2 mb-6 bg-neutral-950 p-1.5 rounded-2xl border border-white/5">
         <button
           type="button"
@@ -393,9 +410,10 @@ export function PaymentSection({
           <span>Pay Later</span>
         </button>
       </div>
+      )}
 
       {/* Method A: UPI Content */}
-      {selectedMethod === 'UPI' && (
+      {(selectedMethod === 'UPI' || waitlistPaying) && (
         <div className="space-y-5">
           {/* Recipient Account Selector (if multiple exist) */}
           {paymentProfiles.length > 1 && (
@@ -451,7 +469,7 @@ export function PaymentSection({
       )}
 
       {/* Method B: Cash Content */}
-      {selectedMethod === 'CASH' && (
+      {selectedMethod === 'CASH' && !waitlistPaying && (
         <div className="bg-neutral-950/60 rounded-2xl p-6 text-center border border-white/5 space-y-4">
           <div className="w-12 h-12 rounded-xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center text-primary-400 mx-auto">
             <Banknote className="w-6 h-6" />
@@ -474,7 +492,7 @@ export function PaymentSection({
       )}
 
       {/* Method C: Pay Later Content */}
-      {selectedMethod === 'LATER' && (
+      {selectedMethod === 'LATER' && !waitlistPaying && (
         <div className="bg-neutral-950/60 rounded-2xl p-6 text-center border border-white/5 space-y-4">
           <div className="w-12 h-12 rounded-xl bg-neutral-800 border border-white/10 flex items-center justify-center text-neutral-300 mx-auto">
             <Clock className="w-6 h-6" />

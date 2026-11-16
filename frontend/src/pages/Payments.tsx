@@ -20,6 +20,7 @@ import {
   adminSetPaymentStatus,
   createOrUpdateGame,
   buildPlayerRoster,
+  canWaitlistPay,
   gameKickoff
 } from '../lib/gamePaymentsApi';
 import type { PaymentStatusChoice } from '../lib/gamePaymentsApi';
@@ -153,6 +154,7 @@ export default function Payments() {
   const isUserInSquad = activeSquad.some((p) => p.user_id === user?.id);
   const isUserWaitlisted = waitingList.some((p) => p.user_id === user?.id);
   const isPaymentUnlocked = (game?.payment_opened_at !== null && game?.payment_opened_at !== undefined) || activeSquad.length >= 10;
+  const waitlistCanPay = canWaitlistPay(activeSquad, isPaymentUnlocked);
   const isGameOver = game?.status === 'COMPLETED' || game?.status === 'CANCELLED';
   const isRosterLocked = game?.status === 'ROSTER_CONFIRMED' || game?.status === 'REGISTRATION_CLOSED';
   const kickoff = game ? gameKickoff(game) : null;
@@ -213,9 +215,11 @@ export default function Payments() {
     if (!game) return;
     try {
       setSubmittingAction(true);
-      await submitGamePayment(game.id, method, recipientProfileId, utr);
+      const result = await submitGamePayment(game.id, method, recipientProfileId, utr);
       toast.success(
-        method === 'UPI'
+        result?.joined_squad
+          ? "Payment claim submitted! You've moved into the squad. Awaiting admin verification."
+          : method === 'UPI'
           ? 'UPI payment claim submitted! Awaiting admin verification.'
           : method === 'CASH'
           ? 'Marked as cash due. Message the admin and pay at the turf on game day.'
@@ -497,6 +501,7 @@ export default function Payments() {
         isUserInSquad={isUserInSquad}
         isUserWaitlisted={isUserWaitlisted}
         isPaymentUnlocked={isPaymentUnlocked}
+        canWaitlistPay={waitlistCanPay}
         onSubmitPayment={handleSubmitPayment}
         loading={submittingAction}
       />
