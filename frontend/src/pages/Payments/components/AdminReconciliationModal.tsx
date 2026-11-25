@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, X, Undo, ShieldCheck, AlertCircle, ArrowRight, UserMinus } from 'lucide-react';
 import type { Game, PlayerRosterItem, GamePayment } from '../../../types/gamePayment';
+import { feeDifference } from '../../../lib/gamePaymentsApi';
 
 export interface AdminReconciliationModalProps {
   game: Game;
@@ -12,6 +13,8 @@ export interface AdminReconciliationModalProps {
   onQuickVerifyPlayer: (userId: string) => Promise<void>;
   onConfirmRoster: () => Promise<void>;
   onSettleRefund?: (paymentId: string) => Promise<void>;
+  /** Paid players after a fee change: refund returned / top-up collected */
+  onSettleFeeDifference?: (paymentId: string) => Promise<void>;
   onClose: () => void;
   onNavigateToMatch?: (gameId: string) => void;
   /** Mark a player OUT (refund flagged if they paid; waiting list moves up) */
@@ -30,6 +33,7 @@ export function AdminReconciliationModal({
   onQuickVerifyPlayer,
   onConfirmRoster,
   onSettleRefund,
+  onSettleFeeDifference,
   onClose,
   onNavigateToMatch,
   onRemovePlayer,
@@ -48,6 +52,15 @@ export function AdminReconciliationModal({
 
   // Find any payments needing refund (paid dropouts or cancelled game)
   const pendingRefunds = allPayments.filter((p) => p.status === 'REFUND_PENDING');
+
+  // Paid players whose payment no longer matches the fee (fee was changed)
+  const fee = Number(game.amount_per_player);
+  const feeDifferences = allPayments
+    .map((p) => ({ payment: p, diff: feeDifference(p, fee) }))
+    .filter((d) => d.diff !== 0);
+  const collected = activeSquad
+    .filter((p) => p.payment?.status === 'VERIFIED')
+    .reduce((sum, p) => sum + Number(p.payment?.amount ?? fee), 0);
 
   const handleVerify = async (paymentId: string) => {
     try {
@@ -113,7 +126,7 @@ export function AdminReconciliationModal({
             </div>
             <div className="bg-neutral-950/70 p-3 rounded-2xl border border-white/5">
               <p className="text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">Collected</p>
-              <p className="text-xl font-black text-primary-400">₹{(verifiedCount * game.amount_per_player).toFixed(0)}</p>
+              <p className="text-xl font-black text-primary-400">₹{collected.toFixed(0)}</p>
             </div>
           </div>
 
@@ -141,6 +154,53 @@ export function AdminReconciliationModal({
                         className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold hover:bg-amber-500/30 transition-all active:scale-95"
                       >
                         Mark Settled
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Fee changed after players paid */}
+          {feeDifferences.length > 0 && (
+            <div className="bg-sky-950/30 border border-sky-500/30 rounded-2xl p-4">
+              <h4 className="text-xs font-bold text-sky-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                <AlertCircle className="w-4 h-4 text-sky-300" />
+                Fee Changed: Settle Differences ({feeDifferences.length})
+              </h4>
+              <p className="text-xs text-neutral-300 mb-3">
+                The fee is now ₹{fee.toFixed(0)}. Return the extra or collect the rest, then tap Settled:
+              </p>
+              <div className="space-y-2">
+                {feeDifferences.map(({ payment, diff }) => (
+                  <div key={payment.id} className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/5">
+                    <div>
+                      <p className="text-xs font-bold text-white">{playerNames[payment.user_id] || `Player ${payment.user_id.slice(0, 8)}…`}</p>
+                      <p className="text-[10px] text-neutral-400">
+                        Paid ₹{Number(payment.amount).toFixed(0)} ·{' '}
+                        {diff > 0 ? (
+                          <span className="text-amber-300 font-semibold">Refund ₹{diff.toFixed(0)}</span>
+                        ) : (
+                          <span className="text-orange-300 font-semibold">Collect ₹{Math.abs(diff).toFixed(0)}</span>
+                        )}
+                      </p>
+                    </div>
+                    {onSettleFeeDifference && (
+                      <button
+                        type="button"
+                        disabled={actionLoading}
+                        onClick={async () => {
+                          try {
+                            setActionLoading(true);
+                            await onSettleFeeDifference(payment.id);
+                          } finally {
+                            setActionLoading(false);
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-200 border border-sky-500/30 text-xs font-bold hover:bg-sky-500/30 transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        {diff > 0 ? 'Refunded' : 'Collected'}
                       </button>
                     )}
                   </div>

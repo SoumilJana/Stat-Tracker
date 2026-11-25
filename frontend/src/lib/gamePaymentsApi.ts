@@ -360,6 +360,34 @@ export async function adminSettleRefund(
 }
 
 /**
+ * Fee difference for a paid player after the fee changed: amount paid minus
+ * the current fee. > 0 means the admin owes a refund, < 0 means the player
+ * owes a top-up, 0 (or unpaid) means nothing to settle.
+ */
+export function feeDifference(payment: GamePayment | null | undefined, fee: number): number {
+  if (!payment || (payment.status !== 'VERIFIED' && payment.status !== 'AWAITING_VERIFICATION')) return 0;
+  return Math.round((Number(payment.amount) - Number(fee)) * 100) / 100;
+}
+
+/**
+ * Admin action: settle a paid player's fee difference (refund returned or
+ * top-up collected). Sets their payment amount to the current fee.
+ */
+export async function adminSettleFeeDifference(
+  paymentId: string
+): Promise<{ success: boolean; amount: number; difference: number }> {
+  const { data, error } = await supabase.rpc('admin_settle_fee_difference', {
+    p_payment_id: paymentId
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+/**
  * Admin action: Create or update a game
  */
 export async function createOrUpdateGame(

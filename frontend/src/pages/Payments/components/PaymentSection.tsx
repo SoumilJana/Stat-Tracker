@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CreditCard, Banknote, Clock, CheckCircle2, ArrowRight, ShieldAlert, Sparkles } from 'lucide-react';
 import { DynamicQRCode } from '../../../components/payments/DynamicQRCode';
 import type { Game, GamePayment, PaymentProfile, PaymentMethod } from '../../../types/gamePayment';
+import { feeDifference } from '../../../lib/gamePaymentsApi';
 
 const PENDING_UPI_TTL_MS = 30 * 60 * 1000;
 const pendingUpiKey = (gameId: string) => `stattracker:pendingUpiPayment:${gameId}`;
@@ -198,6 +199,7 @@ export function PaymentSection({
 
   // Case 4: Payment already VERIFIED
   if (userPayment?.status === 'VERIFIED') {
+    const verifiedDiff = feeDifference(userPayment, amount);
     return (
       <div className="bg-gradient-to-br from-emerald-950/60 to-neutral-900 border border-emerald-500/30 rounded-2xl p-6 text-center shadow-2xl relative overflow-hidden">
         <div
@@ -214,6 +216,13 @@ export function PaymentSection({
         <p className="text-sm text-neutral-300 mt-1 max-w-sm mx-auto">
           Your payment of <span className="text-emerald-400 font-bold">₹{userPayment.amount.toFixed(0)}</span> has been confirmed by the match organizer.
         </p>
+        {verifiedDiff !== 0 && (
+          <p className={`text-xs mt-3 font-semibold ${verifiedDiff > 0 ? 'text-amber-300' : 'text-orange-300'}`}>
+            {verifiedDiff > 0
+              ? `The fee dropped to ₹${amount.toFixed(0)}. The admin will return your extra ₹${verifiedDiff.toFixed(0)}.`
+              : `The fee went up to ₹${amount.toFixed(0)}. Please pay the admin the remaining ₹${Math.abs(verifiedDiff).toFixed(0)}.`}
+          </p>
+        )}
         <p className="text-xs text-neutral-400 mt-3">
           See you on the pitch!
         </p>

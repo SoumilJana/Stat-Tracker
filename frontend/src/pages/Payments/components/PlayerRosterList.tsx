@@ -1,7 +1,8 @@
-import { Check, Clock, XCircle, User, ShieldCheck, UserPlus, Banknote } from 'lucide-react';
+import { Check, Clock, XCircle, User, ShieldCheck, UserPlus, UserMinus, Banknote } from 'lucide-react';
 import { useState } from 'react';
 import type { PlayerRosterItem } from '../../../types/gamePayment';
 import type { PaymentStatusChoice } from '../../../lib/gamePaymentsApi';
+import { feeDifference } from '../../../lib/gamePaymentsApi';
 import { PaymentStatusSheet } from './PaymentStatusSheet';
 
 export interface PlayerRosterListProps {
@@ -14,6 +15,10 @@ export interface PlayerRosterListProps {
   onOpenAddPlayer?: () => void;
   /** Admin: change a player's payment status from their badge */
   onChangePaymentStatus?: (userId: string, choice: PaymentStatusChoice) => Promise<void>;
+  /** Admin: take a player off the list (marked OUT, refund flagged if paid) */
+  onRemovePlayer?: (userId: string, username: string) => void;
+  /** Current fee, to flag paid players owed a refund or top-up after a change */
+  amountPerPlayer?: number;
 }
 
 export function PlayerRosterList({
@@ -24,10 +29,41 @@ export function PlayerRosterList({
   onQuickVerify,
   currentUserId,
   onOpenAddPlayer,
-  onChangePaymentStatus
+  onChangePaymentStatus,
+  onRemovePlayer,
+  amountPerPlayer
 }: PlayerRosterListProps) {
   const [editingPlayer, setEditingPlayer] = useState<PlayerRosterItem | null>(null);
   const canEditStatus = isAdmin && !!onChangePaymentStatus;
+  const canRemove = isAdmin && !!onRemovePlayer;
+
+  const renderRemoveButton = (player: PlayerRosterItem) =>
+    canRemove && (
+      <button
+        type="button"
+        onClick={() => onRemovePlayer!(player.user_id, player.username)}
+        className="p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 transition-all active:scale-95"
+        title="Remove from game"
+        aria-label={`Remove ${player.username}`}
+      >
+        <UserMinus className="w-4 h-4" />
+      </button>
+    );
+
+  const renderFeeDifference = (item: PlayerRosterItem) => {
+    if (amountPerPlayer === undefined) return null;
+    const diff = feeDifference(item.payment, amountPerPlayer);
+    if (diff === 0) return null;
+    return diff > 0 ? (
+      <span className="text-[10px] font-semibold text-amber-300" title="Fee went down: the admin returns the extra">
+        Refund ₹{diff.toFixed(0)}
+      </span>
+    ) : (
+      <span className="text-[10px] font-semibold text-orange-300" title="Fee went up: the rest is still due">
+        Owes ₹{Math.abs(diff).toFixed(0)}
+      </span>
+    );
+  };
 
   const renderPaymentBadge = (item: PlayerRosterItem) => {
     const status = item.payment?.status;
@@ -153,6 +189,7 @@ export function PlayerRosterList({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    {renderFeeDifference(player)}
                     {canEditStatus ? (
                       <button
                         type="button"
@@ -179,6 +216,7 @@ export function PlayerRosterList({
                         <ShieldCheck className="w-4 h-4" />
                       </button>
                     )}
+                    {renderRemoveButton(player)}
                   </div>
                 </div>
               );
@@ -220,9 +258,12 @@ export function PlayerRosterList({
                   </div>
                 </div>
 
-                <span className="text-xs font-medium text-neutral-400 px-2 py-0.5 rounded-md bg-neutral-800">
-                  Waitlist
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-medium text-neutral-400 px-2 py-0.5 rounded-md bg-neutral-800">
+                    Waitlist
+                  </span>
+                  {renderRemoveButton(player)}
+                </div>
               </div>
             ))}
           </div>

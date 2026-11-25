@@ -1,4 +1,4 @@
-# StatTracker [![Version](https://img.shields.io/badge/version-v6.9-10b981.svg?style=flat-square)](#)
+# StatTracker [![Version](https://img.shields.io/badge/version-v7.0-10b981.svg?style=flat-square)](#)
 
 A high-performance football & futsal match tracking Progressive Web App (PWA) built with **React 19**, **Supabase**, **Tailwind CSS v4**, and **Framer Motion**.
 
@@ -35,6 +35,12 @@ StatTracker uses a two-tier **Major.Minor (`X.Y`)** versioning system:
 ---
 
 ## 📝 Changelog
+
+### v7.0
+- Admins can change the fee per player and the total turf cost at any time, even after payments open.
+- Unpaid players owe the new fee. Paid players keep what they paid: if the fee drops they get the extra back, if it rises they owe the rest. The Admin Center lists each difference to settle.
+- A player who withdraws after paying is refunded what they paid.
+- Admins can remove a player straight from the squad or waiting list on the game page.
 
 ### v6.9
 - Once 10 players are IN, players on the waiting list can pay too (UPI only), as long as someone in the squad hasn't paid.

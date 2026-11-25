@@ -25,7 +25,8 @@ export function CreateGameModal({ existingGame, onSave, onClose }: CreateGameMod
   );
   const [saving, setSaving] = useState(false);
 
-  const isPaymentLocked = existingGame && existingGame.payment_opened_at !== null && existingGame.payment_opened_at !== undefined;
+  const paymentsOpen = Boolean(existingGame?.payment_opened_at);
+  const feeChanged = paymentsOpen && Number(amountPerPlayer) !== Number(existingGame?.amount_per_player);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,12 +138,9 @@ export function CreateGameModal({ existingGame, onSave, onClose }: CreateGameMod
                 type="number"
                 min="0"
                 step="1"
-                disabled={Boolean(isPaymentLocked)}
                 value={amountPerPlayer}
                 onChange={(e) => setAmountPerPlayer(e.target.value)}
-                className={`w-full px-3.5 py-2.5 bg-neutral-950 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 ${
-                  Boolean(isPaymentLocked) ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className="w-full px-3.5 py-2.5 bg-neutral-950 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50"
               />
             </div>
 
@@ -162,10 +160,10 @@ export function CreateGameModal({ existingGame, onSave, onClose }: CreateGameMod
             </div>
           </div>
 
-          {isPaymentLocked && (
-            <p className="text-[11px] text-amber-400 flex items-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-              Fee per player is locked because payments have already opened.
+          {feeChanged && (
+            <p className="text-[11px] text-amber-400 flex items-start gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+              Players who already paid keep their payment. Anyone who paid more gets the extra back, and anyone who paid less owes the rest. Settle each one from the Admin Center.
             </p>
           )}
 

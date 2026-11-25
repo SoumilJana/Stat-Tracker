@@ -124,4 +124,32 @@ describe('Phase 3: PlayerRosterList Component', () => {
     expect(screen.queryByText('Paid')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Mark Souvik Roy as paid/i })).toBeInTheDocument();
   });
+
+  it('lets an admin remove squad and waitlist players', () => {
+    const onRemove = vi.fn();
+    render(
+      <PlayerRosterList activeSquad={mockActiveSquad} waitingList={mockWaitingList} outList={[]} isAdmin onRemovePlayer={onRemove} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Souvik Roy' }));
+    expect(onRemove).toHaveBeenCalledWith('u2', 'Souvik Roy');
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Rohit Sharma' }));
+    expect(onRemove).toHaveBeenCalledWith('u11', 'Rohit Sharma');
+  });
+
+  it('hides remove buttons for non-admins', () => {
+    render(
+      <PlayerRosterList activeSquad={mockActiveSquad} waitingList={mockWaitingList} outList={[]} onRemovePlayer={vi.fn()} />
+    );
+    expect(screen.queryByRole('button', { name: /^Remove / })).not.toBeInTheDocument();
+  });
+
+  it('flags a paid player owed a refund after the fee drops', () => {
+    render(<PlayerRosterList activeSquad={mockActiveSquad} waitingList={[]} outList={[]} amountPerPlayer={70} />);
+    expect(screen.getByText('Refund ₹10')).toBeInTheDocument();
+  });
+
+  it('flags a paid player owing a top-up after the fee rises', () => {
+    render(<PlayerRosterList activeSquad={mockActiveSquad} waitingList={[]} outList={[]} amountPerPlayer={100} />);
+    expect(screen.getByText('Owes ₹20')).toBeInTheDocument();
+  });
 });

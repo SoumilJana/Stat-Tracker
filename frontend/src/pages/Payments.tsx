@@ -16,6 +16,7 @@ import {
   adminQuickVerifyPlayer,
   adminConfirmRoster,
   adminSettleRefund,
+  adminSettleFeeDifference,
   adminRemovePlayer,
   adminSetPaymentStatus,
   createOrUpdateGame,
@@ -320,6 +321,16 @@ export default function Payments() {
     }
   };
 
+  const handleSettleFeeDifference = async (paymentId: string) => {
+    try {
+      await adminSettleFeeDifference(paymentId);
+      toast.success('Fee difference settled.');
+      await loadData(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to settle fee difference.');
+    }
+  };
+
   const handleSettleRefund = async (paymentId: string) => {
     try {
       await adminSettleRefund(paymentId);
@@ -516,6 +527,8 @@ export default function Payments() {
         currentUserId={user?.id}
         onOpenAddPlayer={() => setShowAddPlayerModal(true)}
         onChangePaymentStatus={handleChangePaymentStatus}
+        onRemovePlayer={isGameOver ? undefined : handleRemovePlayer}
+        amountPerPlayer={Number(game.amount_per_player)}
       />
 
       {/* Modals */}
@@ -560,6 +573,7 @@ export default function Payments() {
           onQuickVerifyPlayer={handleQuickVerify}
           onConfirmRoster={handleConfirmRoster}
           onSettleRefund={handleSettleRefund}
+          onSettleFeeDifference={handleSettleFeeDifference}
           onClose={() => setShowReconciliationModal(false)}
           onNavigateToMatch={(gameId) => {
             setShowReconciliationModal(false);
